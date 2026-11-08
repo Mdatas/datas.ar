@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datas.ar — local AI for everyone</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#151a21; --panel2:#1b212b; --line:#273040; --text:#e6e9ee; --muted:#8b95a7;
+    --accent:#74acdf; --accent2:#f2c94c; --ok:#5ad38a; --warn:#f2a93b; --bad:#ef6f6c; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.45}
+  a{color:var(--accent)}
+  header{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(14,17,22,.92);backdrop-filter:blur(8px);z-index:5}
+  .brand{font-family:var(--mono);font-weight:700;letter-spacing:.5px;font-size:18px}
+  .brand b{color:var(--accent)}
+  .tag{color:var(--muted);font-size:13px}
+  .spacer{flex:1}
+  .pill{font-family:var(--mono);font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.on{border-color:var(--ok);color:var(--ok)}
+  button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#0b1420;border-color:var(--accent);font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button.small{padding:5px 10px;font-size:13px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  main{max-width:1100px;margin:0 auto;padding:22px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+  h2{margin:0 0 12px;font-size:15px;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .kv{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kv .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  .kv .v{font-family:var(--mono);font-size:15px;margin-top:3px;word-break:break-word}
+  .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .controls{margin-top:14px;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+  label.ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+  input[type=range]{width:220px;accent-color:var(--accent)}
+  select,input[type=text],input[type=password],input[type=number],textarea{font:inherit;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card.hero{border-color:var(--accent);box-shadow:0 0 0 3px rgba(116,172,223,.12)}
+  .model{font-size:22px;font-weight:700}
+  .model small{font-family:var(--mono);font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted)}
+  .chip.fast{border-color:var(--ok);color:var(--ok)} .chip.ok{border-color:var(--accent);color:var(--accent)}
+  .chip.slow{border-color:var(--warn);color:var(--warn)} .chip.crawl,.chip.bad{border-color:var(--bad);color:var(--bad)}
+  .bar{height:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;margin:10px 0 4px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#9ad0ff)}
+  .bar i.over{background:var(--bad)}
+  .bar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--accent2)}
+  .fine{color:var(--muted);font-size:13px}
+  ul.reasons{margin:10px 0 0;padding-left:18px;font-size:14px}
+  ul.reasons li{margin:3px 0}
+  .warn{color:var(--warn)} .bad{color:var(--bad)} .okc{color:var(--ok)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  td.mono,th.mono{font-family:var(--mono);font-size:13px}
+  details summary{cursor:pointer;color:var(--muted);margin:12px 0 6px}
+  .progress{margin-top:14px;display:none}
+  .progress.show{display:block}
+  .log{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:160px;overflow:auto;white-space:pre-wrap;margin-top:8px}
+  .chat{display:flex;flex-direction:column;height:520px}
+  .msgs{flex:1;overflow:auto;padding:6px 2px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:78%;padding:10px 14px;border-radius:12px;white-space:pre-wrap;word-break:break-word}
+  .msg.user{align-self:flex-end;background:#213247;border:1px solid #2d4a6b}
+  .msg.assistant{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
+  .msg .think{color:var(--muted);font-size:13px;border-left:2px solid var(--line);padding-left:8px;margin-bottom:6px}
+  .composer{display:flex;gap:10px;margin-top:10px}
+  .composer textarea{flex:1;resize:none;height:64px}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .tabs button.on{border-color:var(--accent);color:var(--accent)}
+  .hidden{display:none !important}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:20px}
+  .dots{letter-spacing:2px;color:var(--accent2);font-size:12px}
+  .inline{display:inline-flex;gap:8px;align-items:center}
+  code{font-family:var(--mono);background:var(--bg);padding:2px 6px;border-radius:6px;border:1px solid var(--line);font-size:13px}
+  @media (max-width:640px){ main{padding:12px} section{padding:14px} .msg{max-width:95%} header{padding:12px 14px} .tag{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Datas<b>.ar</b></div>
+  <div class="tag" data-i18n="tagline">Local AI for everyone. Download, hit run.</div>
+  <div class="spacer"></div>
+  <span id="status" class="pill">…</span>
+  <button class="small" id="langBtn">ES</button>
+</header>
+
+<main>
+  <!-- 1. DEVICE -->
+  <section id="device">
+    <h2><span class="n">1</span> <span data-i18n="device">Your device</span>
+      <span class="spacer"></span>
+      <button class="small" id="rescan" data-i18n="rescan">Rescan</button></h2>
+    <div class="grid" id="specGrid"></div>
+    <div class="controls">
+      <label class="ctl"><span><span data-i18n="headroom">Keep free for the rest of the system</span>: <b id="headroomLbl"></b></span>
+        <input type="range" id="headroom" min="5" max="60" step="5"></label>
+      <label class="ctl"><span data-i18n="context">Context window</span>
+        <select id="context"><option value="4096">4k</option><option value="8192">8k</option><option value="16384">16k</option><option value="32768">32k</option><option value="65536">64k</option></select></label>
+      <label class="ctl"><span data-i18n="kv">KV cache</span>
+        <select id="kv"><option value="16">16-bit (default)</option><option value="8">8-bit (half the memory)</option></select></label>
+      <label class="ctl"><span data-i18n="want">Looking for</span>
+        <select id="role"><option value="general">General</option><option value="coding">Coding</option><option value="vision">Vision (images)</option></select></label>
+      <label class="ctl"><span data-i18n="pool">Pool</span>
+        <select id="poolSel"><option value="0" data-i18n="thisDevice">This device only</option><option value="1" data-i18n="withPool">This device + LAN workers</option></select></label>
+    </div>
+    <p class="fine" id="notes"></p>
+  </section>
+
+  <!-- 2. RECOMMENDATION -->
+  <section id="reco">
+    <h2><span class="n">2</span> <span data-i18n="recommended">Recommended for this device</span></h2>
+    <div id="hero" class="card hero"></div>
+    <details><summary data-i18n="others">Other models that fit</summary>
+      <table><thead><tr><th data-i18n="model">Model</th><th>Quant</th><th data-i18n="needs">Needs</th><th data-i18n="runs">Runs</th><th data-i18n="speed">Speed</th><th></th></tr></thead><tbody id="fits"></tbody></table>
+    </details>
+    <details><summary data-i18n="nofit">Doesn't fit (yet)</summary>
+      <table><thead><tr><th data-i18n="model">Model</th><th>Quant</th><th data-i18n="needs">Needs</th><th data-i18n="hint">What would make it fit</th></tr></thead><tbody id="nofit"></tbody></table>
+    </details>
+    <details><summary data-i18n="custom">Run a GGUF you already have</summary>
+      <div class="row"><input type="text" id="customPath" placeholder="/path/to/model.gguf" style="flex:1;min-width:260px">
+        <button id="runCustom" data-i18n="run">Run</button></div>
+    </details>
+    <div class="progress" id="progress">
+      <div class="row"><b id="jobTitle"></b><span class="fine" id="jobPhase"></span><span class="spacer"></span><span class="fine mono" id="jobPct"></span></div>
+      <div class="bar"><i id="jobBar" style="width:0%"></i></div>
+      <div class="log" id="jobLog"></div>
+    </div>
+  </section>
+
+  <!-- 3. CHAT -->
+  <section id="chatSec">
+    <h2><span class="n">3</span> <span data-i18n="chat">Chat</span>
+      <span class="spacer"></span>
+      <span class="inline"><span class="fine" data-i18n="using">Using</span>
+        <select id="providerSel"></select>
+        <button class="small" id="providersBtn" data-i18n="providers">Providers & API keys</button>
+        <button class="small" id="benchBtn" data-i18n="bench">Benchmark</button>
+        <button class="small" id="stopBtn" data-i18n="stop">Stop model</button></span></h2>
+    <div class="chat">
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <textarea id="input" data-i18n-ph="ask" placeholder="Ask anything. Everything stays on this device."></textarea>
+        <button class="primary" id="send" data-i18n="send">Send</button>
+      </div>
+    </div>
+    <p class="fine"><span data-i18n="apiHint">Any OpenAI-compatible app can use this model at</span> <code id="apiUrl"></code></p>
+  </section>
+
+  <!-- PROVIDERS -->
+  <section id="provSec" class="hidden">
+    <h2><span data-i18n="providersTitle">Providers & API keys</span><span class="spacer"></span><button class="small" id="provClose">✕</button></h2>
+    <p class="fine" data-i18n="provHelp">Keys are stored only in your local config file and sent only to the base URL you enter. Local and pool need no key.</p>
+    <table><thead><tr><th data-i18n="name">Name</th><th data-i18n="kind">Kind</th><th>Base URL</th><th data-i18n="model">Model</th><th data-i18n="key">Key</th><th></th></tr></thead><tbody id="provRows"></tbody></table>
+    <h3 style="font-size:14px;color:var(--muted);margin:16px 0 8px" data-i18n="addProv">Add a remote provider</h3>
+    <div class="row">
+      <input type="text" id="pName" placeholder="name (e.g. openai)" style="width:160px">
+      <select id="pPreset"></select>
+      <input type="text" id="pUrl" placeholder="https://…/v1" style="flex:1;min-width:220px">
+      <input type="password" id="pKey" placeholder="API key" style="width:200px">
+      <input type="text" id="pModel" placeholder="model id (e.g. gpt-4.1-mini)" style="width:200px">
+      <button class="primary" id="pSave" data-i18n="save">Save</button>
+    </div>
+  </section>
+
+  <!-- POOL -->
+  <section id="poolSec">
+    <h2><span class="n">+</span> <span data-i18n="poolTitle">Pool several devices</span><span class="spacer"></span><button class="small" id="scanBtn" data-i18n="scan">Scan LAN</button></h2>
+    <p class="fine" data-i18n="poolHelp">On every other device, install Datas and run <code>datas pool worker</code>. Workers appear here; choose "This device + LAN workers" above and the recommendation will use the pooled memory. Same llama.cpp build required on all nodes (Datas pins it). Memory adds up; speed does not — best with MoE models.</p>
+    <table><thead><tr><th>Host</th><th class="mono">Endpoint</th><th>llama.cpp</th><th>RAM</th><th>VRAM</th><th>Backend</th></tr></thead><tbody id="nodes"></tbody></table>
+  </section>
+</main>
+<footer>Datas.ar v<span id="ver"></span> · <span data-i18n="footer">100% local. No accounts, no telemetry. Apache-2.0.</span> · <a href="/api/docs">API</a></footer>
+
+<script>
+const I18N = {
+  en:{},
+  es:{tagline:"IA local para todos. Descargá, dale a correr.",device:"Tu dispositivo",rescan:"Reescanear",headroom:"Dejar libre para el resto del sistema",context:"Ventana de contexto",kv:"Caché KV",want:"Busco",pool:"Pool",thisDevice:"Solo este dispositivo",withPool:"Este dispositivo + nodos en la red",recommended:"Recomendado para este dispositivo",others:"Otros modelos que entran",nofit:"No entra (todavía)",model:"Modelo",needs:"Necesita",runs:"Corre en",speed:"Velocidad",hint:"Qué haría que entre",custom:"Correr un GGUF que ya tenés",run:"Correr",chat:"Chat",using:"Usando",providers:"Proveedores y API keys",bench:"Benchmark",stop:"Detener modelo",send:"Enviar",ask:"Preguntá lo que quieras. Todo queda en este dispositivo.",apiHint:"Cualquier app compatible con OpenAI puede usar este modelo en",providersTitle:"Proveedores y API keys",provHelp:"Las keys se guardan solo en tu archivo de configuración local y se envían solo a la URL base que ingreses. Local y pool no necesitan key.",name:"Nombre",kind:"Tipo",key:"Key",addProv:"Agregar proveedor remoto",save:"Guardar",poolTitle:"Unir varios dispositivos",scan:"Buscar en la red",poolHelp:"En cada otro dispositivo, instalá Datas y corré <code>datas pool worker</code>. Los nodos aparecen acá; elegí \"Este dispositivo + nodos en la red\" arriba y la recomendación usará la memoria combinada. Misma versión de llama.cpp en todos los nodos (Datas la fija). La memoria se suma; la velocidad no — ideal con modelos MoE.",footer:"100% local. Sin cuentas, sin telemetría. Apache-2.0.",installRun:"Instalar y correr",running:"corriendo",stopped:"detenido",why:"Por qué",fits:"entra",tight:"justo",budget:"presupuesto",use:"Usar",delete:"Borrar",active:"activo",noModels:"Ningún modelo entra con esta configuración. Bajá el margen libre o el contexto.",ready:"Listo.",downloading:"Descargando",starting:"Iniciando",runtime:"motor llama.cpp",modelPhase:"modelo"}
+};
+let lang = "en";
+const t = (k, fallback) => (I18N[lang] && I18N[lang][k]) || fallback || k;
+function applyLang(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const k=el.dataset.i18n; const v=I18N[lang][k]; if(v!==undefined) el.innerHTML=v; else if(lang==="en" && el.dataset.en) el.innerHTML=el.dataset.en; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=I18N[lang][el.dataset.i18nPh]; if(v) el.placeholder=v; else if(el.dataset.en) el.placeholder=el.dataset.en; });
+  document.getElementById("langBtn").textContent = lang==="en" ? "ES" : "EN";
+}
+// remember English originals so we can switch back
+document.querySelectorAll("[data-i18n]").forEach(el=>el.dataset.en=el.innerHTML);
+document.querySelectorAll("[data-i18n-ph]").forEach(el=>el.dataset.en=el.placeholder);
+
+const $ = id => document.getElementById(id);
+const api = async (path, opts={}) => { const r = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, opts)); if(!r.ok){ throw new Error((await r.text()).slice(0,300)); } return r.json(); };
+const gib = b => (b/2**30).toFixed(1)+" GiB";
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let SPEC=null, REC=null, SETTINGS=null, STATUS=null, POLL=null;
+
+async function loadSettings(){ SETTINGS = await api("/api/settings"); lang = SETTINGS.lang||"en"; applyLang();
+  $("headroom").value = Math.round(SETTINGS.headroom*100); $("context").value = String(SETTINGS.context); }
+
+async function loadSpec(refresh=false){
+  SPEC = await api("/api/spec"+(refresh?"?refresh=1":""));
+  const g = $("specGrid"); g.innerHTML = "";
+  const gpu = SPEC.gpus && SPEC.gpus.length ? SPEC.gpus.map(x=>`${esc(x.name)}${x.vram_gib!=null?` · ${x.vram_gib} GiB`:""}${x.unified?" · unified":""}`).join("<br>") : "—";
+  const cells = [
+    ["OS", `${SPEC.os} / ${SPEC.arch}`], ["CPU", `${esc(SPEC.cpu_name)}<br><span class="fine">${SPEC.cpu_cores_physical}c / ${SPEC.cpu_cores_logical}t · ${(SPEC.cpu_flags||[]).join(" ")||"—"}</span>`],
+    ["RAM", `${SPEC.ram_gib} GiB`], ["GPU", gpu], ["Backend", SPEC.suggested_backend], ["Disk free (models)", gib(SPEC.disk_free_models)], ["Form factor", SPEC.form_factor + (SPEC.on_battery?" · on battery":"")]
+  ];
+  for (const [k,v] of cells){ g.insertAdjacentHTML("beforeend", `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`); }
+  $("notes").textContent = (SPEC.notes||[]).join(" ");
+  updateHeadroomLbl();
+}
+function updateHeadroomLbl(){ const pct = +$("headroom").value; const keep = SPEC ? Math.max(2, SPEC.ram_gib*pct/100) : 0; $("headroomLbl").textContent = `${pct}% ≈ ${keep.toFixed(1)} GiB`; }
+
+function tierDots(n){ return `<span class="dots" title="quality tier ${n}/5">${"●".repeat(n)}${"○".repeat(5-n)}</span>`; }
+function chip(c){ return `<span class="chip ${c.speed_class}">${c.speed_class}</span>`; }
+function placeLbl(c){ return {gpu:"GPU",split:`GPU ${Math.round(c.gpu_fraction*100)}% + RAM`,cpu:"CPU",unified:"unified memory",pool:"pooled",none:"—"}[c.placement]||c.placement; }
+
+async function loadReco(){
+  const pool = $("poolSel").value==="1";
+  const role = $("role").value;
+  const q = new URLSearchParams({headroom: (+$("headroom").value)/100, context: $("context").value, kv_bits: $("kv").value, role: role==="vision"?"general":role, want: role==="vision"?"vision":(role==="coding"?"coding":""), pool});
+  REC = await api("/api/recommend?"+q);
+  const d = REC.default, B = REC.budget;
+  const hero = $("hero");
+  if(!d){ hero.innerHTML = `<div class="warn">${t("noModels","No model fits this configuration. Lower the headroom or the context.")}</div>`; }
+  else {
+    const over = d.needed_gib > B.total_budget_gib;
+    const pct = Math.min(100, d.needed_gib / Math.max(B.total_budget_gib,0.1) * 100);
+    hero.innerHTML = `
+      <div class="row"><div class="model">${esc(d.name)}<small>${d.quant} · ${d.weights_gib} GiB</small></div><span class="spacer"></span>${tierDots(d.quality_tier)}</div>
+      <div class="chips">${chip(d)} <span class="chip">${placeLbl(d)}</span> <span class="chip">${d.fit_level}</span> ${(d.capabilities||[]).map(x=>`<span class="chip">${x}</span>`).join("")}</div>
+      <div class="bar"><i class="${over?"over":""}" style="width:${pct}%"></i></div>
+      <div class="fine">${t("needs","Needs")} ${d.needed_gib} GiB (${d.weights_gib} weights + ${d.kv_cache_gib} KV @ ${d.context}${d.kv_exact?"":" est."} + ${d.overhead_gib} runtime) · ${t("budget","budget")} ${B.total_budget_gib} GiB${B.nodes>1?` across ${B.nodes} nodes`:""} · ${t("headroom","kept free")}: ${B.ram_headroom_gib} GiB</div>
+      <ul class="reasons">${d.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}${d.warnings.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>
+      <div class="row" style="margin-top:14px"><button class="primary" id="installRun">${t("installRun","Install & run")}</button>
+        <a class="fine" href="https://huggingface.co/${d.hf_repo}" target="_blank" rel="noopener">${d.hf_repo}</a></div>`;
+    $("installRun").onclick = () => startRun(d.model_id, d.quant);
+  }
+  const rows = $("fits"); rows.innerHTML="";
+  for (const c of REC.fits){ if(d && c.model_id===d.model_id) continue;
+    rows.insertAdjacentHTML("beforeend", `<tr><td>${esc(c.name)} ${tierDots(c.quality_tier)}</td><td class="mono">${c.quant}</td><td class="mono">${c.needed_gib} GiB</td><td>${placeLbl(c)}</td><td>${chip(c)}${c.fit_level==="tight"?` <span class="chip">${t("tight","tight")}</span>`:""}</td><td><button class="small" data-run="${c.model_id}|${c.quant}">${t("run","Run")}</button></td></tr>`); }
+  const nf = $("nofit"); nf.innerHTML="";
+  for (const c of REC.does_not_fit.slice(0,12)){
+    nf.insertAdjacentHTML("beforeend", `<tr><td>${esc(c.name)} ${tierDots(c.quality_tier)}</td><td class="mono">${c.quant}</td><td class="mono">${c.needed_gib} GiB</td><td class="fine">${esc((c.fallbacks[0]||"") + (c.margin_gib<0?` (short ${(-c.margin_gib).toFixed(1)} GiB)`:""))}</td></tr>`); }
+  document.querySelectorAll("[data-run]").forEach(b=>b.onclick=()=>{ const [m,q]=b.dataset.run.split("|"); startRun(m,q); });
+}
+
+async function startRun(model_id, quant){
+  const job = await api("/api/run",{method:"POST",body:JSON.stringify({model_id, quant, context:+$("context").value, kv_bits:+$("kv").value, pool: $("poolSel").value==="1", with_vision: $("role").value==="vision"})});
+  watchJob(job.id);
+}
+async function runCustom(){ const p=$("customPath").value.trim(); if(!p) return; const job = await api("/api/run-custom",{method:"POST",body:JSON.stringify({path:p, context:+$("context").value, kv_bits:+$("kv").value})}); watchJob(job.id); }
+
+function watchJob(id){
+  $("progress").classList.add("show"); clearInterval(POLL);
+  POLL = setInterval(async ()=>{
+    const j = await api("/api/jobs/"+id);
+    $("jobTitle").textContent = j.title; $("jobPhase").textContent = " · "+(j.phase||j.state);
+    $("jobPct").textContent = j.percent!=null ? `${j.percent}% · ${(j.done/2**30).toFixed(2)}/${(j.total/2**30).toFixed(2)} GiB` : "";
+    $("jobBar").style.width = (j.percent||0)+"%"; $("jobLog").textContent = j.log.join("\n"); $("jobLog").scrollTop = 1e9;
+    if(j.state==="done"||j.state==="error"){ clearInterval(POLL); if(j.state==="done") $("jobBar").style.width="100%"; refreshStatus(); if(j.kind==="bench" && j.result){ addMsg("assistant", `Benchmark ${j.result.model}: prompt ${j.result.prompt_tps} tok/s · generation ${j.result.gen_tps} tok/s (${j.result.backend||""})`); } }
+  }, 700);
+}
+
+async function refreshStatus(){
+  STATUS = await api("/api/status"); $("ver").textContent = STATUS.version;
+  const s = STATUS.server; const pill = $("status");
+  if (s.running){ pill.textContent = `● ${s.model_id} ${s.quant||""}${s.rpc&&s.rpc.length?` · pool(${s.rpc.length})`:""}`; pill.classList.add("on"); }
+  else { pill.textContent = `○ ${t("stopped","no local model running")}`; pill.classList.remove("on"); }
+  $("apiUrl").textContent = `${location.origin}/v1`;
+  await loadProviders();
+}
+
+async function loadProviders(){
+  const p = await api("/api/providers");
+  const sel = $("providerSel"); sel.innerHTML="";
+  for (const x of p.providers){ const o=document.createElement("option"); o.value=x.name; o.textContent = `${x.name}${x.kind==="remote"?` (${x.model||"?"})`:""}${x.available?"":" — "+x.detail}`; if(x.name===p.active) o.selected=true; sel.appendChild(o); }
+  const rows = $("provRows"); rows.innerHTML="";
+  for (const x of p.providers){ rows.insertAdjacentHTML("beforeend", `<tr><td>${esc(x.name)}${x.name===p.active?` <span class="chip ok">${t("active","active")}</span>`:""}</td><td>${x.kind}</td><td class="mono">${esc(x.base_url)}</td><td class="mono">${esc(x.model||"")}</td><td>${x.kind==="remote"?(x.has_key?"✓":"—"):"n/a"}</td><td>${x.kind==="remote"?`<button class="small" data-del="${esc(x.name)}">${t("delete","Delete")}</button>`:""}</td></tr>`); }
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ await fetch("/api/providers/"+encodeURIComponent(b.dataset.del),{method:"DELETE"}); loadProviders(); });
+  const ps = $("pPreset"); if(!ps.options.length){ ps.insertAdjacentHTML("beforeend", `<option value="">preset…</option>`); for (const [k,v] of Object.entries(p.presets)) ps.insertAdjacentHTML("beforeend", `<option value="${esc(v)}">${esc(k)}</option>`); ps.onchange=()=>{ if(ps.value) $("pUrl").value=ps.value; if(!$("pName").value) $("pName").value=ps.options[ps.selectedIndex].text.split(" ")[0]; }; }
+}
+
+// ---- chat ----
+const history = [];
+function addMsg(role, text){ const d=document.createElement("div"); d.className="msg "+role; d.textContent=text; $("msgs").appendChild(d); $("msgs").scrollTop=1e9; return d; }
+async function send(){
+  const text = $("input").value.trim(); if(!text) return; $("input").value="";
+  history.push({role:"user", content:text}); addMsg("user", text);
+  const el = addMsg("assistant", ""); el.innerHTML = `<div class="think hidden"></div><div class="body"></div>`;
+  const think = el.querySelector(".think"), body = el.querySelector(".body");
+  $("send").disabled = true;
+  try{
+    const r = await fetch("/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"datas", messages:history, stream:true})});
+    if(!r.ok){ body.textContent = "Error: "+(await r.text()).slice(0,400); history.pop(); return; }
+    const reader = r.body.getReader(); const dec = new TextDecoder(); let buf="", full="", reasoning="";
+    while(true){ const {value, done} = await reader.read(); if(done) break; buf += dec.decode(value,{stream:true});
+      let idx; while((idx = buf.indexOf("\n")) >= 0){ const line = buf.slice(0,idx).trim(); buf = buf.slice(idx+1); if(!line.startsWith("data:")) continue; const data=line.slice(5).trim(); if(data==="[DONE]") continue;
+        try{ const j=JSON.parse(data); const d=j.choices && j.choices[0] && j.choices[0].delta || {}; if(d.reasoning_content){ reasoning+=d.reasoning_content; think.classList.remove("hidden"); think.textContent=reasoning; } if(d.content){ full+=d.content; body.textContent=full; } }catch(e){} $("msgs").scrollTop=1e9; } }
+    history.push({role:"assistant", content:full});
+  }catch(e){ body.textContent = "Error: "+e.message; }
+  finally{ $("send").disabled=false; }
+}
+
+// ---- pool ----
+async function scan(){ $("nodes").innerHTML = `<tr><td colspan="6" class="fine">scanning…</td></tr>`; const p = await api("/api/pool/nodes?refresh=1"); const rows=$("nodes"); rows.innerHTML="";
+  if(!p.nodes.length){ rows.innerHTML = `<tr><td colspan="6" class="fine">No workers found. Run <code>datas pool worker</code> on another device on this network.</td></tr>`; return; }
+  for (const n of p.nodes){ const same = !n.tag || n.tag===p.local_tag; rows.insertAdjacentHTML("beforeend", `<tr><td>${esc(n.host)}</td><td class="mono">${n.endpoint}</td><td class="mono ${same?"":"bad"}">${esc(n.tag||"?")}</td><td class="mono">${n.ram_budget_gib} GiB</td><td class="mono">${n.vram_budget_gib} GiB</td><td>${esc(n.backend||"")}</td></tr>`); } }
+
+// ---- wiring ----
+$("headroom").oninput = ()=>{ updateHeadroomLbl(); };
+$("headroom").onchange = async ()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({headroom:(+$("headroom").value)/100})}); loadReco(); };
+$("context").onchange = async ()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({context:+$("context").value})}); loadReco(); };
+$("kv").onchange = loadReco; $("role").onchange = loadReco; $("poolSel").onchange = loadReco;
+$("rescan").onclick = async ()=>{ await loadSpec(true); loadReco(); };
+$("send").onclick = send; $("input").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
+$("stopBtn").onclick = async ()=>{ await api("/api/stop",{method:"POST"}); refreshStatus(); };
+$("benchBtn").onclick = async ()=>{ const j = await api("/api/bench",{method:"POST"}); watchJob(j.id); };
+$("providersBtn").onclick = ()=>$("provSec").classList.toggle("hidden");
+$("provClose").onclick = ()=>$("provSec").classList.add("hidden");
+$("pSave").onclick = async ()=>{ await api("/api/providers",{method:"POST",body:JSON.stringify({name:$("pName").value.trim(), base_url:$("pUrl").value.trim(), api_key:$("pKey").value, model:$("pModel").value.trim()})}); $("pKey").value=""; loadProviders(); };
+$("providerSel").onchange = async ()=>{ await api("/api/providers/active",{method:"POST",body:JSON.stringify({name:$("providerSel").value})}); refreshStatus(); };
+$("scanBtn").onclick = scan;
+$("runCustom").onclick = runCustom;
+$("langBtn").onclick = async ()=>{ lang = lang==="en"?"es":"en"; applyLang(); await api("/api/settings",{method:"POST",body:JSON.stringify({lang})}); loadReco(); };
+
+(async function init(){ await loadSettings(); await loadSpec(); await loadReco(); await refreshStatus(); })();
+</script>
+</body>
+</html>

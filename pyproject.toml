@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datas-ar"
+version = "0.1.0"
+description = "Datas.ar — download, hit run, get the best open AI your device can carry. Local-first, open source, pools your devices."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Mdatas" }]
+keywords = ["local-ai", "llm", "llama.cpp", "gguf", "offline", "distributed-inference", "agents"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: Web Environment",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "psutil>=6.0",
+  "py-cpuinfo>=9.0",
+  "huggingface_hub>=0.30",
+  "gguf>=0.17",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "typer>=0.12",
+  "rich>=13.0",
+  "pydantic>=2.7",
+  "zeroconf>=0.132",
+  "platformdirs>=4.0",
+]
+
+[project.optional-dependencies]
+nvidia = ["nvidia-ml-py>=12.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.6", "mypy>=1.10"]
+
+[project.scripts]
+datas = "datas.cli:app"
+
+[project.urls]
+Homepage = "https://datas.ar"
+Repository = "https://github.com/mdatas/datas.ar"
+Issues = "https://github.com/mdatas/datas.ar/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["datas"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"datas/catalog/models.json" = "datas/catalog/models.json"
+"datas/server/ui/index.html" = "datas/server/ui/index.html"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "B008"]  # B008: typer.Option defaults are idiomatic
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

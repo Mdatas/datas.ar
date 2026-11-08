@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+      # Integration: fetch the pinned llama.cpp build and run the synthetic-GGUF server test
+      - name: install runtime (pinned tag)
+        if: matrix.os != 'windows-latest'
+        env:
+          DATAS_HOME: ${{ runner.temp }}/datas-home
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: datas install --quant Q4_0 qwen3-0.6b || datas runtime info
+      - name: integration tests
+        if: matrix.os != 'windows-latest'
+        env:
+          DATAS_HOME: ${{ runner.temp }}/datas-home
+        run: pytest -q tests/test_gguf_and_server.py
