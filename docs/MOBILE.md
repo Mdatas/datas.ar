@@ -1,6 +1,17 @@
 # Phones and tablets
 
-## Android — works today (via Termux)
+## Android — native app (`android/`)
+
+A Kotlin app with the same three steps (scan → recommend → install & run → chat), the
+same catalog file, a port of the recommender, Android's DownloadManager for the weights,
+and the official llama.cpp Android build bundled in the APK (~27 MB stripped). Chat is
+llama-server's own web UI in a WebView. Build it with Android Studio or let the
+`android-apk` GitHub Actions workflow produce the APK — see [android/README.md](../android/README.md).
+
+Status: written and reviewed, **not yet compiled on a phone** — the first APK built by CI
+or Android Studio is the real test. Report what your device picks.
+
+## Android — alternative path via Termux
 
 [Termux](https://termux.dev) (F-Droid or GitHub release, not the Play Store build) gives
 Android a real shell with Python. The llama.cpp project publishes `android-arm64` builds
@@ -30,12 +41,13 @@ Known rough edges: Termux's `wake-lock` is needed to keep the server alive in th
 background (`termux-wake-lock`); some vendors' background limits still kill it after a
 while. Mark this experimental.
 
-### Native Android app (planned)
+### Native app notes
 
-A thin Kotlin app that bundles the Datas server (Python via Chaquopy, or a port of the
-orchestrator) and the llama.cpp `.so`, with the same single-page UI in a WebView and a
-foreground service for the engine. Open-source reference implementations: PocketPal AI
-(MIT) and Google AI Edge Gallery (Apache-2.0).
+The native app in `android/` is the thin-shell design: a Kotlin port of the recommender
+(no Python on the phone), a foreground service owning the `llama-server` process, and
+the engine's web UI in a WebView. Open-source references for the next steps (file
+picker, vision, Play Store packaging): PocketPal AI (MIT) and Google AI Edge Gallery
+(Apache-2.0).
 
 ## iOS — planned
 

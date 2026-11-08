@@ -48,7 +48,8 @@ Anything that speaks the OpenAI API can now use your local model at
 `http://127.0.0.1:8420/v1` (model name: anything; Datas routes to the active provider).
 
 > **Requirements:** Python 3.10+. Linux, macOS (Apple Silicon or Intel), Windows 10/11.
-> Android via [Termux](https://termux.dev) — see [docs/MOBILE.md](docs/MOBILE.md).
+> **Android:** native app in [`android/`](android/README.md) (APK built by GitHub Actions or
+> Android Studio), or the Python version via [Termux](https://termux.dev) — see [docs/MOBILE.md](docs/MOBILE.md).
 > No admin rights, no drivers to install for CPU/Metal; NVIDIA/AMD need their normal
 > driver only (the CUDA/ROCm runtimes ship inside the llama.cpp download).
 

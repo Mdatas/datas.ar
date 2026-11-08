@@ -24,7 +24,8 @@
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server
-- [ ] Android native app (WebView + foreground service + bundled engine)
+- [~] Android native app (WebView + foreground service + bundled engine) — code in `android/`, first APK pending CI build
+- [ ] Android: file picker for existing GGUFs, vision, Snapdragon flavour
 - [ ] iOS app on the llama.cpp xcframework, recommender ported to Swift
 - [ ] exo backend for all-Apple-Silicon pools
 

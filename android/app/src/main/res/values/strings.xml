@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Datas</string>
+    <string name="tagline">Local AI for everyone. Download, hit run.</string>
+    <string name="section_device">1 · Your phone</string>
+    <string name="section_reco">2 · Recommended</string>
+    <string name="section_chat">3 · Chat</string>
+    <string name="install_run">Install &amp; run</string>
+    <string name="run">Run</string>
+    <string name="stop">Stop</string>
+    <string name="headroom_label">Keep free for Android and other apps: %1$d%% ≈ %2$.1f GiB</string>
+    <string name="context_label">Context: %1$s</string>
+    <string name="no_fit">No catalog model fits with this headroom. Lower the slider.</string>
+    <string name="needs">Needs %1$.1f GiB (weights %2$.1f + KV %3$.1f + runtime %4$.1f) · budget %5$.1f GiB</string>
+    <string name="downloading">Downloading %1$s… %2$d%%</string>
+    <string name="starting">Starting the engine… (first load can take a minute)</string>
+    <string name="running">Running %1$s on 127.0.0.1:8421</string>
+    <string name="stopped">No model running</string>
+    <string name="unsupported_abi">This phone is not arm64 — Datas needs a 64-bit ARM Android device.</string>
+    <string name="others">Other models that fit</string>
+    <string name="license_note">Model licenses apply (shown per model). Everything runs on this phone; nothing leaves it.</string>
+    <string name="notif_channel">Datas engine</string>
+    <string name="notif_title">Datas is running a local model</string>
+    <string name="notif_text">%1$s · tap to open</string>
+    <string name="error_engine">Engine stopped: %1$s</string>
+    <string name="battery_hint">On battery: inference is CPU-heavy, the phone will warm up. Plug in for long sessions.</string>
+</resources>

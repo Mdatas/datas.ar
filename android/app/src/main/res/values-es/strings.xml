@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagline">IA local para todos. Descargá, dale a correr.</string>
+    <string name="section_device">1 · Tu teléfono</string>
+    <string name="section_reco">2 · Recomendado</string>
+    <string name="section_chat">3 · Chat</string>
+    <string name="install_run">Instalar y correr</string>
+    <string name="run">Correr</string>
+    <string name="stop">Detener</string>
+    <string name="headroom_label">Dejar libre para Android y otras apps: %1$d%% ≈ %2$.1f GiB</string>
+    <string name="context_label">Contexto: %1$s</string>
+    <string name="no_fit">Ningún modelo del catálogo entra con este margen. Bajá el control.</string>
+    <string name="needs">Necesita %1$.1f GiB (pesos %2$.1f + KV %3$.1f + runtime %4$.1f) · presupuesto %5$.1f GiB</string>
+    <string name="downloading">Descargando %1$s… %2$d%%</string>
+    <string name="starting">Iniciando el motor… (la primera carga puede tardar un minuto)</string>
+    <string name="running">Corriendo %1$s en 127.0.0.1:8421</string>
+    <string name="stopped">Ningún modelo corriendo</string>
+    <string name="unsupported_abi">Este teléfono no es arm64 — Datas necesita un Android ARM de 64 bits.</string>
+    <string name="others">Otros modelos que entran</string>
+    <string name="license_note">Aplican las licencias de cada modelo. Todo corre en este teléfono; nada sale de él.</string>
+    <string name="notif_channel">Motor de Datas</string>
+    <string name="notif_title">Datas está corriendo un modelo local</string>
+    <string name="notif_text">%1$s · tocá para abrir</string>
+    <string name="error_engine">El motor se detuvo: %1$s</string>
+    <string name="battery_hint">Con batería: la inferencia usa mucho CPU y el teléfono se va a calentar. Enchufalo para sesiones largas.</string>
+</resources>
