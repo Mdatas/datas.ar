@@ -1,0 +1,68 @@
+name: windows-installer
+
+on:
+  push:
+    branches: [main]
+    paths: ["datas/**", "installer/windows/**", "pyproject.toml", ".github/workflows/windows-installer.yml"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  setup-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install package + pyinstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[nvidia]" pyinstaller
+      - name: version
+        id: v
+        shell: bash
+        run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: pyinstaller
+        run: pyinstaller --noconfirm installer/windows/datas.spec
+      - name: smoke test the frozen app
+        run: |
+          dist\Datas\datas.exe --version
+          dist\Datas\datas.exe scan
+          dist\Datas\datas.exe recommend --context 4096
+      - name: inno setup
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.v.outputs.version }} installer\windows\datas.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Datas-Setup-windows
+          path: dist/Datas-Setup-*.exe
+      - name: attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Datas-Setup-*.exe
+
+  # The no-build-tools path: zip the PowerShell installer + wheel (what this repo ships today).
+  script-installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build && python -m build --wheel
+      - name: assemble
+        run: |
+          mkdir -p Datas-Setup-Windows
+          cp installer/windows/Install-Datas.ps1 installer/windows/Install-Datas.cmd installer/windows/Uninstall-Datas.cmd installer/windows/datas.ico installer/windows/README.md Datas-Setup-Windows/
+          cp dist/*.whl Datas-Setup-Windows/
+          cd Datas-Setup-Windows && zip -r ../Datas-Setup-Windows.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Datas-Setup-Windows-script
+          path: Datas-Setup-Windows.zip
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Datas-Setup-Windows.zip
