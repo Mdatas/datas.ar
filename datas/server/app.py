@@ -28,6 +28,7 @@ from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
 from datas.orchestrator import Datas
 from datas.providers import PRESETS, active_provider, all_providers, remove_remote, set_remote
+from datas.recommend.abilities import assess
 from datas.recommend.engine import default_headroom, headroom_for_mode, wants_for
 
 app = FastAPI(title="Datas.ar", version=__version__, docs_url="/api/docs", redoc_url=None)
@@ -53,6 +54,14 @@ def index() -> str:
 # ---------------------------------------------------------------------------
 # Device + recommendation
 # ---------------------------------------------------------------------------
+
+
+@app.on_event("startup")
+def _start_background() -> None:
+    try:
+        core.start_scheduler()
+    except Exception:  # noqa: BLE001 - never block the server on this
+        pass
 
 
 @app.get("/api/status")
@@ -105,6 +114,10 @@ def recommend(
     out = rec.to_dict()
     out["unsupported_use_cases"] = unsupported
     out["headroom"] = headroom if headroom is not None else core.cfg.headroom
+    va = core.voice_status()["available"]
+    out["abilities"] = [
+        a.to_dict() for a in assess(core.spec(), rec, voice_available=va["stt"] and va["tts"])
+    ]
     if "sound" in uses:
         vs = core.voice_status()
         out["voice"] = vs.get("choice")
@@ -663,15 +676,23 @@ class AgentBody(BaseModel):
     task: str
     allow_shell: bool = False
     internet: bool = True
-    max_steps: int = 20
+    max_steps: int = 40
+    folders: list[str] = []
 
 
 @app.post("/api/agent/run")
 def agent_run(body: AgentBody):
     from datas.agents import AgentConfig, run_agent
+    from datas.agents.folders import resolve_grant
 
+    try:
+        roots = [resolve_grant(f) for f in body.folders]
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    core.granted_folders = [str(r) for r in roots]
     acfg = AgentConfig(
         base_url=f"http://127.0.0.1:{core.cfg.ui_port}/v1",
+        roots=roots,
         allow_shell=body.allow_shell,
         allow_network=body.internet,
         max_steps=body.max_steps,
@@ -703,6 +724,121 @@ def agent_workspace_list() -> dict:
 @app.post("/api/window/agent")
 def window_agent() -> dict:
     return core.open_agent_window()
+
+
+@app.get("/api/agent/folders")
+def agent_folders() -> dict:
+    """Well-known folders on this computer the user can grant to the agent (per session)."""
+    from datas.agents.folders import known_folders
+
+    return {"known": known_folders(), "granted": core.granted_folders}
+
+
+class FolderBody(BaseModel):
+    path: str
+
+
+@app.post("/api/agent/folders/check")
+def agent_folder_check(body: FolderBody) -> dict:
+    from datas.agents.folders import resolve_grant
+
+    try:
+        return {"ok": True, "path": str(resolve_grant(body.path))}
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+# ---- scheduled tasks ---------------------------------------------------------
+
+
+class TaskBody(BaseModel):
+    title: str
+    task: str
+    every: str = "day"
+    at: str = "09:00"
+    weekday: str = "mon"
+    folders: list[str] = []
+    internet: bool = True
+    allow_shell: bool = False
+    enabled: bool = True
+
+
+class TaskPatch(BaseModel):
+    title: str | None = None
+    task: str | None = None
+    every: str | None = None
+    at: str | None = None
+    weekday: str | None = None
+    folders: list[str] | None = None
+    internet: bool | None = None
+    allow_shell: bool | None = None
+    enabled: bool | None = None
+
+
+def _task_dict(t) -> dict:  # noqa: ANN001
+    from dataclasses import asdict
+
+    d = asdict(t)
+    nd = t.next_due()
+    d["next_due"] = nd.isoformat(timespec="minutes") if nd else None
+    d["running"] = core.scheduler is not None and core.scheduler.running_id == t.id
+    return d
+
+
+@app.get("/api/agent/tasks")
+def agent_tasks() -> dict:
+    sch = core.start_scheduler()
+    return {"tasks": [_task_dict(t) for t in sch.tasks]}
+
+
+@app.post("/api/agent/tasks")
+def agent_task_add(body: TaskBody) -> dict:
+    from datas.agents.folders import resolve_grant
+
+    try:
+        folders = [str(resolve_grant(f)) for f in body.folders]
+        if body.every not in ("hour", "day", "week", "once"):
+            raise ValueError("every must be hour, day, week or once")
+        hh, mm = (int(x) for x in body.at.split(":"))
+        assert 0 <= hh < 24 and 0 <= mm < 60
+    except (ValueError, AssertionError) as e:
+        raise HTTPException(400, f"bad task: {e}") from e
+    t = core.start_scheduler().add(**{**body.model_dump(), "folders": folders})
+    return _task_dict(t)
+
+
+@app.patch("/api/agent/tasks/{task_id}")
+def agent_task_patch(task_id: str, body: TaskPatch) -> dict:
+    t = core.start_scheduler().update(task_id, **body.model_dump())
+    if not t:
+        raise HTTPException(404, "no such task")
+    return _task_dict(t)
+
+
+@app.delete("/api/agent/tasks/{task_id}")
+def agent_task_delete(task_id: str) -> dict:
+    return {"removed": core.start_scheduler().remove(task_id)}
+
+
+@app.post("/api/agent/tasks/{task_id}/run")
+def agent_task_run(task_id: str) -> dict:
+    ok = core.start_scheduler().run_now(task_id)
+    if not ok:
+        raise HTTPException(409, "no such task, or another task is running")
+    return {"started": True}
+
+
+@app.get("/api/agent/results")
+def agent_results() -> dict:
+    from datas.agents.schedule import results_dir
+
+    files = sorted(results_dir().glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[:50]
+    return {
+        "results": [
+            {"name": f.name, "path": str(f), "when": f.stat().st_mtime, "text": f.read_text(encoding="utf-8")[:4000]}
+            for f in files
+        ]
+    }
 
 
 class OfferBody(BaseModel):

@@ -94,6 +94,8 @@ class Datas:
         self.server = LlamaServer(self.cfg)
         self.jobs: dict[str, Job] = {}
         self.recorder = voice_engine.Recorder()
+        self.granted_folders: list[str] = []  # agent folders allowed for this session
+        self.scheduler = None  # started by the server (datas.server.app)
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
@@ -446,6 +448,47 @@ class Datas:
                 with_voice=with_voice,
             ),
         )
+
+    # ---- agent: scheduled tasks ------------------------------------------------
+    def start_scheduler(self):
+        from datas.agents.schedule import Scheduler
+
+        if self.scheduler is None:
+            self.scheduler = Scheduler(self.run_scheduled_task)
+            self.scheduler.start()
+        return self.scheduler
+
+    def run_scheduled_task(self, t) -> tuple[str, str, str]:  # noqa: ANN001
+        """Runs one scheduled task through the agent; returns (state, summary, result path)."""
+        import time as _t
+
+        from datas.agents import AgentConfig, run_agent
+        from datas.agents.schedule import results_dir
+
+        if not self.server.state.running and self.cfg.provider == "local":
+            return "error", "No AI was running when the task came due.", ""
+        acfg = AgentConfig(
+            base_url=f"http://127.0.0.1:{self.cfg.ui_port}/v1",
+            roots=[Path(f) for f in t.folders],
+            allow_shell=t.allow_shell,
+            allow_network=t.internet,
+        )
+        lines, final, state = [], "", "done"
+        for ev in run_agent(t.task, acfg):
+            if ev["type"] == "tool_call":
+                lines.append(f"- {ev['name']} {str(ev.get('arguments', ''))[:160]}")
+            elif ev["type"] == "final":
+                final = ev.get("content", "")
+            elif ev["type"] == "error":
+                state, final = "error", ev.get("error", "")
+        stamp = _t.strftime("%Y-%m-%d_%H-%M")
+        out = results_dir() / f"{t.id}-{stamp}.md"
+        out.write_text(
+            f"# {t.title}\n\n{_t.strftime('%Y-%m-%d %H:%M')} — {state}\n\n{final}\n\n"
+            f"## Steps\n" + "\n".join(lines) + "\n",
+            encoding="utf-8",
+        )
+        return state, final, str(out)
 
     # ---- voice (hearing + speaking) -----------------------------------------
     def voice_choice(self) -> voice_engine.VoiceChoice:

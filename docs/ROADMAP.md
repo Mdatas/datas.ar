@@ -58,8 +58,11 @@ Status:
 - [ ] exo backend for all-Apple-Silicon pools
 
 ## 0.4 — agents
+- [x] Agent works in the user's own folders (per-session grants: Desktop, Documents, Downloads…, or any path; never the whole home), with find/move/copy/open tools, reversible delete (trash), web search, PDF/.docx reading
+- [x] Scheduled tasks ("every Monday at 9…") with a results inbox — run while Datas is open; catch up after the computer was off
+- [x] The Run screen reports what *this* device can do, per ability (yes / slow / no + what it would need / not yet in Datas) — `datas/recommend/abilities.py`
+- [ ] The agent's own browser: Playwright Firefox, isolated, hardened, optional Tor (docs/AGENTS.md)
 - [ ] MCP client: use any MCP tool server from Datas agents
-- [ ] Scheduled/background agents with a results inbox
 - [ ] Per-tool allowlists; audit log of every tool call
 - [ ] Agent templates (research → file, inbox triage via IMAP, local RAG over a folder)
 

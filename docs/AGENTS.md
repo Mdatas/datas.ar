@@ -18,7 +18,7 @@ datas agent --workspace ~/Projects/foo "…"                                  # 
 
 1. system prompt + task → model
 2. if the reply contains `tool_calls`, run each tool, append results, go to 1
-3. else stop and print the final answer (max 20 steps by default)
+3. else stop and print the final answer (max 40 steps by default)
 
 Events (`assistant`, `tool_call`, `tool_result`, `final`, `error`) stream to the CLI as
 they happen.
@@ -27,14 +27,48 @@ they happen.
 
 | Tool | Does | Gate |
 |---|---|---|
-| `list_dir(path)` | list files | workspace only |
-| `read_file(path)` | read text (200k chars cap) | workspace only |
-| `write_file(path, content)` | write text, creates folders | workspace only |
-| `fetch_url(url)` | HTTP GET, text/JSON/XML bodies (200k cap) | on by default; `--no-network` |
-| `run_command(command)` | shell in the workspace, 60 s timeout | **off by default**; `--allow-shell`, confirm per call unless `--yes` |
+| `list_dir(path)`, `find_files(pattern, path)` | list / search files | workspace + granted folders |
+| `read_file(path)` | read text; PDF and .docx converted to text (200k chars cap) | same |
+| `write_file(path, content)`, `make_dir(path)` | write text, create folders | same |
+| `move_file(src, dst)`, `copy_file(src, dst)` | move/rename/copy; a destination ending in `/` is a folder | same |
+| `delete_file(path)` | **never destroys**: moves to `<workspace>/_trash/<time>-<name>` | same; refuses to trash a granted folder itself |
+| `open_path(target)` | open a file, folder or URL with the user's usual app | same (URLs need internet on) |
+| `web_search(query)` | DuckDuckGo results: title, link, snippet | internet switch |
+| `fetch_url(url)` | GET a page; HTML reduced to text (200k cap) | internet switch |
+| `run_command(command)` | shell in the workspace, 60 s timeout | **off by default**; switch in the window / `--allow-shell` |
 
-Workspace default: `~/.local/share/datas/agent-workspace`. Paths that escape it are
-refused (`PermissionError` → the model sees "DENIED").
+**Folders.** The agent always has its own workspace (`<data>/agent-workspace`). In the agent
+window the user ticks which of their folders it may also use for this session — Desktop,
+Documents, Downloads, Pictures, Music, Videos (found per OS: XDG on Linux, OneDrive-aware on
+Windows) or any folder path typed in. The whole home folder or a disk root is refused on purpose.
+Every tool resolves paths against that list; anything outside answers `DENIED`.
+
+### Tasks it does by itself (scheduled)
+
+`datas/agents/schedule.py`: tasks live in `<data>/agent/tasks.json` with a job text, a cadence
+(`hour` / `day` / `week` + weekday / `once`), a time, the granted folders and the two switches.
+A background thread in the server checks every 30 s and runs due tasks one at a time through the
+same runner; a task missed while the computer was off runs at the next start. Each run writes
+`<data>/agent/results/<task>-<time>.md` (summary + the list of tool calls), shown in the window's
+inbox. They run while Datas is open — a tray/background service is roadmap 0.3.
+
+### What "do tasks on my computer by itself" means today
+
+Honest scope with the model sizes a normal laptop runs (4–14 B parameters): file and document
+work (sort, rename, summarise, convert text), web research saved to files, scripts when
+commands are allowed, and all of that on a schedule. Driving other programs by clicking around
+the screen is **not** offered: local models are not reliable enough at it yet, and a wrong click
+is not reversible the way a trashed file is.
+
+### Planned: the agent's own browser
+
+For sites that need JavaScript, forms or a login, the plan is a browser that belongs to the
+agent — Playwright's bundled **Firefox** (Mozilla's open-source build, downloaded on first use,
+~90 MB), isolated profile, no sign-ins, no telemetry, tracker blocking and fingerprint
+resistance on, wiped per session in Forget mode; optional Tor routing with the warning that it
+is slower and some sites refuse it. Off by default behind one switch. The user's own browser is
+never driven. Without Tor a website still sees the home IP address, exactly as when the user
+browses — no add-on changes that.
 
 ### Which models can do this
 

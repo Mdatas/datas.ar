@@ -13,11 +13,14 @@ from datas.agents import tools as T
 from datas.config import agent_workspace
 
 SYSTEM = (
-    "You are an agent running locally on the user's own device through Datas.ar. "
-    "You can call tools to list/read/write files in a sandboxed workspace"
-    "{shell}{net}. Work step by step: decide, call a tool, read the result, continue. "
-    "When the task is complete, answer with a short summary of what you did and where the results are. "
-    "Never claim to have done something a tool result does not confirm."
+    "You are an agent running locally on the user's own computer through Datas.ar. "
+    "You can call tools to list, find, read, write, move, copy and (reversibly) delete files, open "
+    "files or folders for the user{shell}{net}. Folders you may use: {roots}. "
+    "Paths may be absolute inside those folders or relative to your workspace ({workspace}). "
+    "Work step by step: decide, call a tool, read the result, continue. Prefer moving files into "
+    "clearly named folders over deleting; never delete what you were not asked to. "
+    "When the task is complete, answer with a short summary of what you did and where the results are, "
+    "in the user's language. Never claim to have done something a tool result does not confirm."
 )
 
 
@@ -27,9 +30,10 @@ class AgentConfig:
     api_key: str = ""
     model: str = "datas"
     workspace: Path = field(default_factory=agent_workspace)
+    roots: list[Path] = field(default_factory=list)  # user-granted folders (Documents, Downloads…)
     allow_shell: bool = False
     allow_network: bool = True
-    max_steps: int = 20
+    max_steps: int = 40
     temperature: float = 0.2
     confirm: Callable[[str], bool] | None = None
 
@@ -38,14 +42,17 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
     """Yield events: {'type': 'assistant'|'tool_call'|'tool_result'|'final'|'error', ...}."""
     ctx = T.ToolContext(
         workspace=cfg.workspace,
+        roots=[Path(r) for r in cfg.roots],
         allow_shell=cfg.allow_shell,
         allow_network=cfg.allow_network,
         confirm=cfg.confirm,
     )
     cfg.workspace.mkdir(parents=True, exist_ok=True)
     sys_msg = SYSTEM.format(
-        shell=" and run shell commands" if cfg.allow_shell else "",
-        net=" and fetch URLs" if cfg.allow_network else "",
+        shell=", run shell commands" if cfg.allow_shell else "",
+        net=", search the web and open web pages" if cfg.allow_network else "",
+        roots="; ".join(str(r) for r in ctx.all_roots()),
+        workspace=cfg.workspace,
     )
     messages: list[dict] = [
         {"role": "system", "content": sys_msg},

@@ -44,6 +44,7 @@
   .hidden{display:none!important}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:8} .modal.on{display:flex} .modal .card{width:min(680px,92vw);max-height:86vh;overflow:auto}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:14px}
+  .abilities{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px;margin-top:6px} .ab{display:flex;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)} .ab.picked{border-color:var(--accent)} .ab-icon{font-size:16px;line-height:1.3} .ab.no{opacity:.85}
 </style>
 </head>
 <body>
@@ -86,7 +87,7 @@
     <div class="choice" data-use="coding"><b data-t="u_coding">Programming</b><span data-t="u_coding_d">Write and fix code.</span></div>
     <div class="choice" data-use="agents"><b data-t="u_agents">Doing tasks for me</b><span data-t="u_agents_d">Look things up, read and write files, work step by step (an "agent").</span></div>
     <div class="choice" data-use="sound"><b data-t="u_sound">Voice &amp; sound</b><span data-t="u_sound_d">Talk to the AI and hear it answer. Adds a hearing model (whisper.cpp) and a voice (Kokoro); both run on the processor.</span></div>
-    <div class="choice off" data-use="video" title=""><b data-t="u_video">Images &amp; video (making them)</b><span data-t="u_soon2">Next up — needs a separate engine (stable-diffusion.cpp) and, for video, a real graphics card.</span></div>
+    <div class="choice" data-use="video"><b data-t="u_video">Images &amp; video (making them)</b><span data-t="u_soon2">Datas checks whether this device could do it (it needs a real graphics card). The engine for it comes next.</span></div>
   </div>
   <h2 data-t="h_res">How much of the computer may it use?</h2>
   <div class="choices" id="modes">
@@ -229,7 +230,8 @@ es:{
  w_for:"Olvidar todo",w_for_d:"No se guarda nada. Cada conversación arranca de cero y no deja rastro — ni siquiera registros técnicos. Totalmente anónimo.",w_change:"Podés cambiarlo cuando quieras en Ajustes.",w_go:"Continuar",
  h_title:"¿Para qué vas a usar tu IA?",h_lead:"Elegí una o más opciones. Después apretá Correr: Datas revisa tu computadora y elige la mejor IA que puede cargar sin trabar todo lo demás.",
  u_text:"Chat y escritura",u_text_d:"Preguntas, emails, resúmenes, ideas, traducciones.",u_images:"Entender imágenes",u_images_d:"Describir o leer una foto, una captura, un documento.",u_coding:"Programar",u_coding_d:"Escribir y corregir código.",
- u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Lo que sigue — necesita otro motor (stable-diffusion.cpp) y, para video, una placa de video de verdad.",
+ u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Datas revisa si este equipo podría hacerlo (necesita una placa de video de verdad). El motor para esto viene después.",
+ ab_title:"En esta computadora",ab_text:"Chat y escritura",ab_images:"Entender imágenes",ab_coding:"Programar",ab_agents:"Tareas por mí (agente)",ab_sound:"Voz y sonido",ab_image_gen:"Crear imágenes",ab_video:"Crear video",ab_pool:"Dispositivos en conjunto",ab_yes:"Sí",ab_slow:"Sí, lento",ab_no:"No",ab_not_yet:"Todavía no",ab_needs:"Necesita:",
  v_title:"Voz",v_hear:"Oído",v_speak:"Voz",v_extra:"se suma a la descarga",v_mem:"de memoria extra",v_install:"Instalar la voz (oído + habla)",v_installed:"Voz instalada",v_notavail:"Esta copia de Datas vino sin los paquetes de voz; reinstalá con el instalador más nuevo.",v_mic:"Hablar",v_listening:"Escuchando… tocá para terminar",v_working:"Entendiendo…",v_read:"Leer las respuestas en voz alta",v_nomic:"No se encontró micrófono en esta computadora.",v_model:"Modelo de oído",v_voice:"Voz",v_auto:"Automático (según la computadora)",ph_voice:"Descargando el oído y la voz…",
  h_res:"¿Cuánto de la computadora puede usar?",m_light:"Liviano",m_light_d:"La computadora queda ágil para todo lo demás (videollamadas, navegador, juegos).",m_bal:"Equilibrado",m_bal_d:"Recomendado. Una buena IA con un margen cómodo.",m_heavy:"Pesado",m_heavy_d:"Dale casi todo a la IA. Cerrá otros programas antes.",
  h_run:"▶ Correr — revisar mi computadora",h_adv:"Opciones avanzadas",adv_head:"Dejar libre para otros programas",adv_head_d:"Parte de la memoria de trabajo (RAM) que la IA no debe tocar. Más = IA más chica, computadora más fluida.",
@@ -299,7 +301,7 @@ $("saveMemBtn").onclick = async ()=>{ await api("/api/memory",{method:"PUT",body
 $("wipeBtn").onclick = async ()=>{ if(!confirm(tr("wipe_confirm","Delete all chats, notes and documents? Installed AIs stay."))) return; await api("/api/privacy/wipe",{method:"POST"}); chatMsgs=[]; chatId=null; $("msgs").innerHTML=""; toast(tr("wiped","Deleted.")); };
 
 // ---------- home ----------
-document.querySelectorAll("#useCases .choice").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("off")) { toast(tr("unsupported","Making images and video is not available yet; the recommendation covers the rest.")); return; } c.classList.toggle("on"); if(!document.querySelector("#useCases .choice.on")) c.classList.add("on"); }; });
+document.querySelectorAll("#useCases .choice").forEach(c=>{ c.onclick=()=>{ c.classList.toggle("on"); if(!document.querySelector("#useCases .choice.on")) c.classList.add("on"); }; });
 document.querySelectorAll("#modes .choice").forEach(c=>c.onclick=()=>{ document.querySelectorAll("#modes .choice").forEach(x=>x.classList.remove("on")); c.classList.add("on"); });
 $("kvSwitch").onclick=()=>sw($("kvSwitch"),!isOn($("kvSwitch")));
 $("poolSwitch").onclick=()=>{ sw($("poolSwitch"),!isOn($("poolSwitch"))); sw($("poolSwitch2"), isOn($("poolSwitch"))); };
@@ -335,6 +337,7 @@ function renderResult(){
   $("result").classList.remove("hidden");
   const B = REC.budget, d = REC.default;
   $("deviceCard").innerHTML = `<b>${tr("yourpc","Your computer")}:</b> ${esc(SPEC.os)} · ${SPEC.ram_gib} GB ${tr("ram","working memory (RAM)")} · ${gpuLine()} · ${(SPEC.disk_free_models/2**30).toFixed(0)} GB ${tr("disk","free on disk")}<div class="fine">${lang==="es"?"La IA podrá usar hasta":"The AI may use up to"} <b>${B.total_budget_gib} GB</b>${B.nodes>1?` (${B.nodes} ${lang==="es"?"dispositivos":"devices"})`:""}; ${lang==="es"?"quedan libres":"kept free"} ${B.ram_headroom_gib} GB.</div>${REC.unsupported_use_cases&&REC.unsupported_use_cases.length?`<div class="fine" style="color:var(--warn)">${tr("unsupported")}</div>`:""}${REC.relaxed_note?`<div class="fine" style="color:var(--accent2)">${esc(REC.relaxed_note)}</div>`:""}`;
+  $("deviceCard").innerHTML += abilitiesCard();
   if(!d){ $("hero").innerHTML = `<b>${tr("none_fit","No model fits with these settings. Try Heavy or lower the margin in Advanced options.")}</b>`; $("others").innerHTML=""; renderNofit(); return; }
   $("hero").innerHTML = heroCard(d, true) + voiceCard();
   $("hero").querySelector("[data-run]").onclick = ()=>startRun(d.model_id, d.quant);
@@ -356,6 +359,13 @@ function heroCard(c, main){
    <div class="compare"><div><small>OpenAI</small>${esc(cmp.openai)}</div><div><small>Google</small>${esc(cmp.google)}</div><div><small>Anthropic (Claude)</small>${esc(cmp.anthropic)}</div></div>
    <p class="fine">${esc(cmp.verdict)} <i>${esc(cmp.disclaimer)}</i></p>
    <div class="row" style="margin-top:8px"><button class="${main?"primary":""}" data-run="${c.model_id}|${c.quant}">${tr("install_start","Install and start")}</button><span class="fine">${c.quant} · ${c.capabilities.join(" · ")}</span></div>`;
+}
+const AB_NAMES={text:"Chat & writing",images:"Understanding pictures",coding:"Programming",agents:"Tasks for me (agent)",sound:"Voice & sound",image_gen:"Making images",video:"Making video",pool:"Devices together"};
+const AB_ICON={yes:"✅",slow:"🟡",no:"⛔",not_yet:"⏳"};
+function abilitiesCard(){
+  const A = REC.abilities||[]; if(!A.length) return "";
+  const picked = uses();
+  return `<div style="margin-top:10px"><b>${tr("ab_title","On this computer")}</b><div class="abilities">${A.map(a=>`<div class="ab ${a.verdict} ${picked.includes(a.id)?"picked":""}"><span class="ab-icon">${AB_ICON[a.verdict]||""}</span><div><b>${tr("ab_"+a.id, AB_NAMES[a.id]||a.id)}</b> — ${tr("ab_"+a.verdict, {yes:"Yes",slow:"Yes, slowly",no:"No",not_yet:"Not yet"}[a.verdict])}<div class="fine">${esc(lang==="es"?a.why_es:a.why)}${(lang==="es"?a.needs_es:a.needs)?` <i>${tr("ab_needs","Needs:")} ${esc(lang==="es"?a.needs_es:a.needs)}</i>`:""}</div></div></div>`).join("")}</div></div>`;
 }
 function voiceCard(){
   if(!uses().includes("sound")) return "";
