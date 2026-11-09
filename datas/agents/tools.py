@@ -27,6 +27,9 @@ MAX_FETCH = 200_000
 MAX_LIST = 400
 
 
+RISKY = {"run_command", "delete_file", "move_file", "copy_file", "write_file", "open_path"}
+
+
 @dataclass
 class ToolContext:
     workspace: Path
@@ -34,8 +37,32 @@ class ToolContext:
     allow_shell: bool = False
     allow_network: bool = True
     shell_timeout: int = 60
-    confirm: Callable[[str], bool] | None = None  # ask before dangerous actions (CLI)
+    # ask = "all" (approve every action) | "risky" (only what touches your folders, runs commands,
+    # opens things) | "none" (just do it, I'm watching). confirm(text) -> True/False blocks until answered.
+    ask: str = "risky"
+    confirm: Callable[[str], bool] | None = None
+    should_stop: Callable[[], bool] | None = None
     events: list[dict] = field(default_factory=list)
+
+    def is_risky(self, name: str, args: dict) -> bool:
+        """Risky = commands, opening things, and writes/moves/deletes that touch a granted folder
+        (inside the agent's own workspace everything is reversible via _trash)."""
+        if name in ("run_command", "open_path"):
+            return True
+        if name not in RISKY:
+            return False
+        ws = self.workspace.resolve()
+        for key in ("path", "source", "destination"):
+            v = args.get(key)
+            if not v:
+                continue
+            try:
+                p = self.inside(v)
+            except PermissionError:
+                return True
+            if p != ws and ws not in p.parents:
+                return True
+        return False
 
     def all_roots(self) -> list[Path]:
         return [self.workspace.resolve()] + [r.resolve() for r in self.roots]
@@ -228,8 +255,6 @@ def open_path(ctx: ToolContext, target: str) -> str:
 def run_command(ctx: ToolContext, command: str) -> str:
     if not ctx.allow_shell:
         return "DENIED: running commands is off. The user can allow it with the switch in the agent window."
-    if ctx.confirm and not ctx.confirm(f"Run shell command?\n  {command}"):
-        return "DENIED by user."
     try:
         out = subprocess.run(
             shlex.split(command, posix=platform.system() != "Windows"),
@@ -432,6 +457,16 @@ def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
         )
     except json.JSONDecodeError as e:
         return f"bad arguments: {e}"
+    if ctx.should_stop and ctx.should_stop():
+        result = "STOPPED by user."
+        ctx.events.append({"tool": name, "args": args, "result": result})
+        return result
+    if ctx.confirm and (ctx.ask == "all" or (ctx.ask == "risky" and ctx.is_risky(name, args))):
+        pretty = ", ".join(f"{k}={str(v)[:120]}" for k, v in args.items())
+        if not ctx.confirm(f"{name}({pretty})"):
+            result = "DENIED by user."
+            ctx.events.append({"tool": name, "args": args, "result": result})
+            return result
     try:
         result = fn[0](ctx, **args)
     except TypeError as e:

@@ -43,6 +43,20 @@ Documents, Downloads, Pictures, Music, Videos (found per OS: XDG on Linux, OneDr
 Windows) or any folder path typed in. The whole home folder or a disk root is refused on purpose.
 Every tool resolves paths against that list; anything outside answers `DENIED`.
 
+### Approving actions — three levels
+
+| Level | Asks before… | For whom |
+|---|---|---|
+| **Ask before risky actions** (default) | anything that writes, moves, copies or trashes inside *your* folders, runs a command, or opens a file/URL. Reading, searching and everything inside the agent's own workspace (reversible via `_trash`) run freely. | everyone |
+| **Ask before every action** | every single tool call, listings included | the first few runs, to see how it thinks |
+| **Never — just do it** | nothing; a **Stop** button and the Esc key halt it at the next step | people watching the log |
+
+The question appears as a card in the agent window (Allow / Deny / Allow everything for this
+task); unanswered questions are denied after 15 minutes. Approving every click exists in every
+serious agent product and is useful as a learning mode — but as a permanent setting it fails in
+practice: after a dozen "OK"s people stop reading and rubber-stamp, which is less safe than a
+good default. Hence the risk-based default plus a stop key.
+
 ### Tasks it does by itself (scheduled)
 
 `datas/agents/schedule.py`: tasks live in `<data>/agent/tasks.json` with a job text, a cadence

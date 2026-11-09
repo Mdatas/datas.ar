@@ -678,6 +678,7 @@ class AgentBody(BaseModel):
     internet: bool = True
     max_steps: int = 40
     folders: list[str] = []
+    ask: str = "risky"  # all | risky | none
 
 
 @app.post("/api/agent/run")
@@ -690,13 +691,17 @@ def agent_run(body: AgentBody):
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     core.granted_folders = [str(r) for r in roots]
+    core.agent_stop.clear()
+    ask = body.ask if body.ask in ("all", "risky", "none") else "risky"
     acfg = AgentConfig(
         base_url=f"http://127.0.0.1:{core.cfg.ui_port}/v1",
         roots=roots,
         allow_shell=body.allow_shell,
         allow_network=body.internet,
         max_steps=body.max_steps,
-        confirm=None,
+        ask=ask,
+        confirm=None if ask == "none" else core.ask_user,
+        should_stop=core.agent_stop.is_set,
     )
 
     def gen():
@@ -724,6 +729,30 @@ def agent_workspace_list() -> dict:
 @app.post("/api/window/agent")
 def window_agent() -> dict:
     return core.open_agent_window()
+
+
+@app.get("/api/agent/approvals")
+def agent_approvals() -> dict:
+    return {"pending": [{"id": a["id"], "text": a["text"], "asked": a["asked"]} for a in core.approvals.values()]}
+
+
+class ApprovalBody(BaseModel):
+    ok: bool
+
+
+@app.post("/api/agent/approvals/{aid}")
+def agent_approve(aid: str, body: ApprovalBody) -> dict:
+    if not core.answer(aid, body.ok):
+        raise HTTPException(404, "no such question (it may have timed out)")
+    return {"answered": True}
+
+
+@app.post("/api/agent/stop")
+def agent_stop() -> dict:
+    core.agent_stop.set()
+    for a in list(core.approvals.values()):  # unblock any pending question as "no"
+        core.answer(a["id"], False)
+    return {"stopping": True}
 
 
 @app.get("/api/agent/folders")

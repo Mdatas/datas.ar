@@ -35,7 +35,9 @@ class AgentConfig:
     allow_network: bool = True
     max_steps: int = 40
     temperature: float = 0.2
+    ask: str = "risky"  # all | risky | none
     confirm: Callable[[str], bool] | None = None
+    should_stop: Callable[[], bool] | None = None
 
 
 def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
@@ -45,7 +47,9 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         roots=[Path(r) for r in cfg.roots],
         allow_shell=cfg.allow_shell,
         allow_network=cfg.allow_network,
+        ask=cfg.ask,
         confirm=cfg.confirm,
+        should_stop=cfg.should_stop,
     )
     cfg.workspace.mkdir(parents=True, exist_ok=True)
     sys_msg = SYSTEM.format(
@@ -63,6 +67,9 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
     with httpx.Client(timeout=httpx.Timeout(600, connect=30)) as client:
         for step in range(cfg.max_steps):
+            if cfg.should_stop and cfg.should_stop():
+                yield {"type": "error", "step": step, "error": "stopped by user", "events": ctx.events}
+                return
             payload = {
                 "model": cfg.model,
                 "messages": messages,

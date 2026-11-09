@@ -385,8 +385,10 @@ def agent(
     workspace: Path | None = None,
     base_url: str | None = None,
     model: str = "datas",
-    max_steps: int = 20,
-    yes: bool = typer.Option(False, "--yes", "-y", help="don't ask before shell commands"),
+    max_steps: int = 40,
+    folder: list[Path] = typer.Option([], "--folder", help="a folder of yours the agent may use (repeatable)"),
+    ask: str = typer.Option("risky", help="approve actions: all | risky | none"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="same as --ask none"),
 ):
     """Run the built-in agent on a task. Files go to the agent workspace (~/.local/share/datas/agent-workspace)."""
     from datas.agents import AgentConfig, run_agent
@@ -396,10 +398,12 @@ def agent(
     acfg = AgentConfig(
         base_url=url,
         model=model,
+        roots=list(folder),
         allow_shell=allow_shell,
         allow_network=not no_network,
         max_steps=max_steps,
-        confirm=(None if yes else (lambda q: typer.confirm(q, default=False))),
+        ask="none" if yes else ask,
+        confirm=(None if yes or ask == "none" else (lambda q: typer.confirm(q, default=False))),
     )
     if workspace:
         acfg.workspace = workspace

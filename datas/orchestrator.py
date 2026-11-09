@@ -96,6 +96,8 @@ class Datas:
         self.recorder = voice_engine.Recorder()
         self.granted_folders: list[str] = []  # agent folders allowed for this session
         self.scheduler = None  # started by the server (datas.server.app)
+        self.approvals: dict[str, dict] = {}  # pending "may I?" questions from a running agent
+        self.agent_stop = threading.Event()
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
@@ -448,6 +450,26 @@ class Datas:
                 with_voice=with_voice,
             ),
         )
+
+    # ---- agent: approvals ("may I?") ---------------------------------------------
+    def ask_user(self, text: str, timeout: float = 900) -> bool:
+        """Blocks the agent until the window answers (or 15 min pass → denied)."""
+        aid = uuid.uuid4().hex[:8]
+        ev = threading.Event()
+        self.approvals[aid] = {"id": aid, "text": text, "event": ev, "answer": None, "asked": time.time()}
+        try:
+            ev.wait(timeout)
+            return bool(self.approvals[aid]["answer"])
+        finally:
+            self.approvals.pop(aid, None)
+
+    def answer(self, aid: str, ok: bool) -> bool:
+        a = self.approvals.get(aid)
+        if not a:
+            return False
+        a["answer"] = ok
+        a["event"].set()
+        return True
 
     # ---- agent: scheduled tasks ------------------------------------------------
     def start_scheduler(self):

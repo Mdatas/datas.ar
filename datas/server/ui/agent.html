@@ -33,10 +33,13 @@
     <div class="row" style="margin-top:10px">
       <label class="switch on" id="netSw"><i></i><span id="t_net">May search and read the internet</span></label>
       <label class="switch danger" id="shellSw"><i></i><span id="t_shell">May run commands on this computer (advanced — risky)</span></label>
+      <label><span id="t_ask">Ask me</span> <select id="askSel"><option value="risky">before anything that touches my folders, runs commands or opens things</option><option value="all">before every single action</option><option value="none">never — just do it, I'm watching</option></select></label>
       <span class="spacer"></span>
+      <button class="danger hidden" id="stop">■ <span id="t_stop">Stop</span></button>
       <button class="primary" id="run" >▶ <span id="t_run">Start</span></button>
     </div>
   </div>
+  <div class="card hidden" id="askCard" style="border-color:var(--warn)"><b id="t_mayi">The agent asks permission:</b><div id="askText" class="step" style="margin:8px 0"></div><div class="row"><button class="primary" id="askYes">✓ <span id="t_yes">Allow</span></button><button id="askNo">✕ <span id="t_no">Deny</span></button><button id="askAll"><span id="t_allowall">Allow everything for this task</span></button></div></div>
   <div class="card"><b id="t_steps">What the agent is doing</b><div class="steps" id="steps"></div></div>
   <div class="card"><b id="t_files">Files in the agent's folder</b><ul id="files"></ul></div>
   <div class="card">
@@ -57,9 +60,10 @@
 </main>
 <script>
 const $=id=>document.getElementById(id); let lang="en";
-const ES={t_grant:"Puede trabajar en:",t_sched:"Tareas que hace sola",t_sched_d:"Dale un trabajo y una hora: \"todos los lunes a las 9, ordená mis Descargas en carpetas por tipo y escribí un informe corto\". Corre mientras Datas está abierto; si la computadora estaba apagada, se pone al día al arrancar. Los resultados quedan en la bandeja de abajo.",t_task:"Tarea",t_when:"Cuándo",t_last:"Última vez",t_add:"Agregar",t_sched_f:"La tarea nueva usa las carpetas y los permisos marcados arriba.",t_inbox:"Bandeja — qué hizo",t_agent:"Agente",t_lead:"Un agente es una IA que trabaja paso a paso en una tarea usando herramientas: puede buscar, leer, escribir, ordenar y mover archivos, abrirte cosas y — si lo permitís — buscar en internet o ejecutar comandos. Solo toca las carpetas que marcás acá; lo que \"borra\" va a una papelera de la que podés recuperar. Todo lo que hace se muestra abajo.",t_net:"Puede buscar y leer en internet",t_shell:"Puede ejecutar comandos en esta computadora (avanzado — riesgoso)",t_run:"Iniciar",t_steps:"Qué está haciendo el agente",t_files:"Archivos en la carpeta del agente",ph:"Ejemplo: leé todos los archivos de texto de mi carpeta y escribí un resumen de una página llamado RESUMEN.md",folder:"Carpeta del agente: "};
+const ES={t_ask:"Preguntame",t_stop:"Parar",t_mayi:"El agente pide permiso:",t_yes:"Permitir",t_no:"Denegar",t_allowall:"Permitir todo en esta tarea",t_grant:"Puede trabajar en:",t_sched:"Tareas que hace sola",t_sched_d:"Dale un trabajo y una hora: \"todos los lunes a las 9, ordená mis Descargas en carpetas por tipo y escribí un informe corto\". Corre mientras Datas está abierto; si la computadora estaba apagada, se pone al día al arrancar. Los resultados quedan en la bandeja de abajo.",t_task:"Tarea",t_when:"Cuándo",t_last:"Última vez",t_add:"Agregar",t_sched_f:"La tarea nueva usa las carpetas y los permisos marcados arriba.",t_inbox:"Bandeja — qué hizo",t_agent:"Agente",t_lead:"Un agente es una IA que trabaja paso a paso en una tarea usando herramientas: puede buscar, leer, escribir, ordenar y mover archivos, abrirte cosas y — si lo permitís — buscar en internet o ejecutar comandos. Solo toca las carpetas que marcás acá; lo que \"borra\" va a una papelera de la que podés recuperar. Todo lo que hace se muestra abajo.",t_net:"Puede buscar y leer en internet",t_shell:"Puede ejecutar comandos en esta computadora (avanzado — riesgoso)",t_run:"Iniciar",t_steps:"Qué está haciendo el agente",t_files:"Archivos en la carpeta del agente",ph:"Ejemplo: leé todos los archivos de texto de mi carpeta y escribí un resumen de una página llamado RESUMEN.md",folder:"Carpeta del agente: "};
 const EN={}; for(const el of document.querySelectorAll("[id^=t_]")) EN[el.id]=el.textContent; EN.ph=$("task").placeholder; EN.folder="Agent folder: ";
-function applyLang(){ const D=lang==="es"?ES:EN; for(const k of Object.keys(EN)){ if(k==="ph") $("task").placeholder=D.ph; else if(k!=="folder" && $(k)) $(k).textContent=D[k]||EN[k]; } $("langBtn").textContent=lang==="en"?"ES":"EN"; loadFiles(); loadFolders(); loadTasks(); loadInbox(); }
+const ASK_ES=["antes de tocar mis carpetas, ejecutar comandos o abrir cosas","antes de cada acción","nunca — que lo haga, yo miro"], ASK_EN=[...$("askSel").options].map(o=>o.textContent);
+function applyLang(){ const D=lang==="es"?ES:EN; [...$("askSel").options].forEach((o,i)=>o.textContent=(lang==="es"?ASK_ES:ASK_EN)[i]); for(const k of Object.keys(EN)){ if(k==="ph") $("task").placeholder=D.ph; else if(k!=="folder" && $(k)) $(k).textContent=D[k]||EN[k]; } $("langBtn").textContent=lang==="en"?"ES":"EN"; loadFiles(); loadFolders(); loadTasks(); loadInbox(); }
 // ---- folders the agent may use (per session) ----
 let FOLDERS=[], GRANTED=new Set();
 async function loadFolders(){ try{ const r = await (await fetch("/api/agent/folders")).json(); FOLDERS=r.known; r.granted.forEach(g=>GRANTED.add(g)); renderFolders(); }catch(e){} }
@@ -81,17 +85,23 @@ $("langBtn").onclick=()=>{ lang=lang==="en"?"es":"en"; applyLang(); };
 const sw=(el)=>el.classList.toggle("on"); $("netSw").onclick=()=>sw($("netSw")); $("shellSw").onclick=()=>{ if(!$("shellSw").classList.contains("on") && !confirm(lang==="es"?"Con esto el agente puede ejecutar comandos reales en tu computadora, sin preguntar. ¿Continuar?":"This lets the agent run real commands on your computer without asking each time. Continue?")) return; sw($("shellSw")); };
 function step(cls, text){ const d=document.createElement("div"); d.className="step "+cls; d.textContent=text; $("steps").appendChild(d); $("steps").scrollTop=1e9; }
 async function loadFiles(){ try{ const r = await (await fetch("/api/agent/workspace")).json(); $("t_folder").textContent=(lang==="es"?ES.folder:EN.folder)+r.path; $("files").innerHTML = r.files.map(f=>`<li>${f.name} <span class="fine">(${(f.bytes/1024).toFixed(0)} KB)</span></li>`).join("") || `<li class="fine">—</li>`; }catch(e){} }
+let askPoll=null, allowAll=false;
+async function pollAsk(){ try{ const r = await (await fetch("/api/agent/approvals")).json(); const q=r.pending[0]; if(!q){ $("askCard").classList.add("hidden"); return; } if(allowAll){ await fetch(`/api/agent/approvals/${q.id}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ok:true})}); return; } $("askCard").dataset.id=q.id; $("askText").textContent=q.text; $("askCard").classList.remove("hidden"); }catch(e){} }
+async function answer(ok){ const id=$("askCard").dataset.id; if(!id) return; $("askCard").classList.add("hidden"); await fetch(`/api/agent/approvals/${id}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ok})}); }
+$("askYes").onclick=()=>answer(true); $("askNo").onclick=()=>answer(false); $("askAll").onclick=()=>{ allowAll=true; answer(true); };
+$("stop").onclick=async()=>{ await fetch("/api/agent/stop",{method:"POST"}); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("stop").classList.contains("hidden")) $("stop").click(); });
 $("run").onclick=async()=>{
-  const task=$("task").value.trim(); if(!task) return; $("run").disabled=true; $("steps").innerHTML="";
+  const task=$("task").value.trim(); if(!task) return; $("run").disabled=true; $("steps").innerHTML=""; allowAll=false; $("stop").classList.remove("hidden"); askPoll=setInterval(pollAsk, 600);
   step("", (lang==="es"?"Tarea: ":"Task: ")+task);
   try{
-    const r = await fetch("/api/agent/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task, internet:$("netSw").classList.contains("on"), allow_shell:$("shellSw").classList.contains("on"), folders:[...GRANTED]})});
+    const r = await fetch("/api/agent/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task, internet:$("netSw").classList.contains("on"), allow_shell:$("shellSw").classList.contains("on"), folders:[...GRANTED], ask:$("askSel").value})});
     if(!r.ok){ step("error","⚠ "+((await r.json()).detail||r.status)); $("run").disabled=false; return; }
     const rd=r.body.getReader(), dec=new TextDecoder(); let buf="";
     while(true){ const {value,done}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i; while((i=buf.indexOf("\n\n"))>=0){ const chunk=buf.slice(0,i); buf=buf.slice(i+2); const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue; let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
-      if(ev.type==="assistant") step("", ev.content); else if(ev.type==="tool_call") step("tool", `→ ${ev.name} ${typeof ev.arguments==="string"?ev.arguments:JSON.stringify(ev.arguments)}`); else if(ev.type==="tool_result") step("result", ev.result); else if(ev.type==="final") step("final", (lang==="es"?"Listo. ":"Done. ")+(ev.content||"")); else if(ev.type==="error") step("error", "⚠ "+ev.error); } }
+      if(ev.type==="assistant") step("", ev.content); else if(ev.type==="tool_call") step("tool", `→ ${ev.name} ${typeof ev.arguments==="string"?ev.arguments:JSON.stringify(ev.arguments)}`); else if(ev.type==="tool_result") step(ev.result.startsWith("DENIED")||ev.result.startsWith("STOPPED")?"error":"result", ev.result); else if(ev.type==="final") step("final", (lang==="es"?"Listo. ":"Done. ")+(ev.content||"")); else if(ev.type==="error") step("error", "⚠ "+ev.error); } }
   }catch(e){ step("error","⚠ "+e.message); }
-  $("run").disabled=false; loadFiles(); loadInbox();
+  $("run").disabled=false; clearInterval(askPoll); $("askCard").classList.add("hidden"); $("stop").classList.add("hidden"); loadFiles(); loadInbox();
 };
 applyLang();
 </script>
