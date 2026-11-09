@@ -45,27 +45,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/Datas-Setup-*.exe
-
-  # The no-build-tools path: zip the PowerShell installer + wheel (what this repo ships today).
-  script-installer:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install build && python -m build --wheel
-      - name: assemble
-        run: |
-          mkdir -p Datas-Setup-Windows
-          cp installer/windows/Install-Datas.ps1 installer/windows/Install-Datas.cmd installer/windows/Uninstall-Datas.cmd installer/windows/datas.ico installer/windows/README.md Datas-Setup-Windows/
-          cp dist/*.whl Datas-Setup-Windows/
-          cd Datas-Setup-Windows && zip -r ../Datas-Setup-Windows.zip .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Datas-Setup-Windows-script
-          path: Datas-Setup-Windows.zip
-      - if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: Datas-Setup-Windows.zip

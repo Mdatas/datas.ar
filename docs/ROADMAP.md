@@ -19,10 +19,10 @@
 - [x] My AIs library with per-AI Desktop icons; Remember/Forget privacy switch; chats, notes, "End & learn", documents, skills
 - [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; pool switches in Settings; About & sources page
 - [x] Spanish/English; acronyms spelled out
-- [x] Installers detect any earlier copy (Setup.exe or script), remove it, rebuild clean, keep every model/chat/note and say so (installer summary + first-start notice in the app)
+- [x] One installer file with a launcher window (Install · Repair · Uninstall · Exit · Read me); detects any earlier copy, removes it, installs clean, keeps every model/chat/note and says so (finish screen + first-start notice in the app)
 
 ## 0.2.x — polish the loop
-- [ ] Installer scripts: `curl … | sh` (Linux/macOS), `.ps1` (Windows), pipx fallback
+- [ ] Linux/macOS one-file installers with the same launcher window (AppImage / .dmg)
 - [ ] Multi-file (sharded) GGUF entries in the catalog (Qwen3.8-Flash-Next, DeepSeek V4)
 - [ ] Vision in the UI (image attach → `--mmproj`)
 - [ ] Download queue, pause/resume from the UI, disk cleanup of unused models

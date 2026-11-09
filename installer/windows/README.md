@@ -1,61 +1,53 @@
-# Datas.ar for Windows
+# Datas.ar for Windows — one file
 
-## Install (this folder)
+The download is **`Datas-Setup-<version>.exe`**. Double-click it and a small window opens:
 
-1. Double-click **`Install-Datas.cmd`**.
-   - It finds Python 3.10+ on your PC or installs Python 3.12 for your user with `winget` (no admin).
-   - Installs Datas into `%LOCALAPPDATA%\Datas\app` (a private virtual environment — nothing touches your other Python setups).
-   - Creates **Datas.ar** shortcuts on the Desktop and Start Menu, and an entry in *Settings → Apps*.
-   - Starts Datas: a console window stays open (close it to stop) and your browser opens `http://127.0.0.1:8420`.
-2. In the browser: **Install & run** on the recommended model. First run also downloads llama.cpp
-   for your GPU (CUDA build if an NVIDIA card is present, else Vulkan/CPU).
+| Button | What it does |
+|---|---|
+| **Install** | Installs Datas. If a Datas is already on the PC (any version, any kind of install) it is removed first and a clean copy goes in. Your downloaded AIs, chats, notes and settings are **always kept** and connected to the new install; the finish screen lists what was kept. |
+| **Repair** | Same as Install, for when Datas stopped opening: program files and icons are put back; data untouched. |
+| **Uninstall** | Removes the program, then asks one thing: *keep my AIs, chats and notes* or *delete everything*. |
+| **Exit** | Closes the window, changes nothing. |
+| Read me | This text, in the app's language (Spanish or English). |
 
-Windows SmartScreen may warn about an unsigned script the first time — *More info → Run anyway*.
-The script is plain text; read `Install-Datas.ps1` if you want to see exactly what it does.
+No other questions are asked. There is no Next/Next/Finish wizard, no folder to pick, no
+administrator password: Datas installs into the user's own Programs folder
+(`%LOCALAPPDATA%\Programs\Datas`, the per-user equivalent of Program Files that Windows
+recommends for apps such as VS Code or Zoom). Desktop icon + Start Menu entry + *Settings → Apps*
+entry are created automatically; each AI you install gets its own Desktop icon, and the
+uninstaller removes those too.
 
-## Upgrades = clean install, data always kept
-
-Both installers (`Install-Datas.cmd` and `Datas-Setup-<version>.exe`) do the same thing when a
-Datas is already on the PC:
-
-1. **Stop** any running Datas, `llama-server` or pool worker.
-2. **Remove the old program** — whichever kind it was: a Setup.exe install in Program Files (it is
-   uninstalled silently with `/KEEPDATA`) or a script install in `%LOCALAPPDATA%\Datas\app`
-   (the virtual environment is deleted and rebuilt from scratch). Shortcuts and the
-   *Settings → Apps* entry of the old copy are removed so there is never two.
-3. **Keep the data** in `%LOCALAPPDATA%\Datas` untouched: downloaded AI models (`models\*.gguf`),
-   chats, notes (`memory.md`), the llama.cpp engine, settings and logs.
-4. **Tell you what was kept** — the installer reports "kept: N AI models, M chats, your notes", and
-   the app shows the same notice on its first start, so you decide what to do with it from
-   *My AIs* and *Settings* (keep using, delete, or forget).
-
-Nothing is ever deleted by an install. Only the **uninstaller** asks whether to delete the data,
-and it only asks when you run it yourself (`Uninstall-Datas.cmd`, or *Settings → Apps → Datas.ar →
-Uninstall*). `Install-Datas.ps1 -Uninstall -Purge` deletes everything without asking.
-
-Command line: open a new terminal and type `datas` (the venv's Scripts folder is added to your PATH).
+Windows SmartScreen will warn about an unknown publisher until the exe is code-signed:
+*More info → Run anyway*.
 
 ## Where things are
 
 | | |
 |---|---|
-| App (venv, launcher) | `%LOCALAPPDATA%\Datas\app` |
-| Models, llama.cpp, config, logs | `%LOCALAPPDATA%\Datas` |
-| UI | http://127.0.0.1:8420 |
-| OpenAI-compatible API | http://127.0.0.1:8420/v1 (proxy) · http://127.0.0.1:8421/v1 (engine) |
+| Program | `%LOCALAPPDATA%\Programs\Datas` (`Datas.exe`, `datas-cli.exe`) |
+| Your data: AI models, chats, notes, engine, settings, logs | `%LOCALAPPDATA%\Datas` |
+| Log of the last start (if something went wrong) | `%LOCALAPPDATA%\Datas\logs\datas.log` |
+| OpenAI-compatible API (for other apps) | `http://127.0.0.1:8420/v1` |
 
-## Setup.exe (CI)
+## For power users / IT
 
-`.github/workflows/windows-installer.yml` builds a classic **`Datas-Setup-<version>.exe`**
-(PyInstaller bundle — no Python needed on the target — wrapped by Inno Setup, per-user, with a
-clean uninstall) on every push and attaches it to tagged releases. Scripts: `datas.spec`,
-`datas.iss`. That exe is unsigned until a code-signing certificate exists; SmartScreen will show
-the usual warning for new publishers.
+- `Datas-Setup.exe /ALLUSERS` installs into `C:\Program Files\Datas` for every account (asks for admin once).
+- `Datas-Setup.exe /VERYSILENT` installs without any window (clean install, data kept).
+- `unins000.exe /VERYSILENT /KEEPDATA` or `/PURGEDATA` uninstalls without questions.
+- `datas-cli.exe` is added to the user PATH: `datas-cli scan`, `datas-cli doctor`, `datas-cli recommend`.
+- Developers install from source instead: `pip install -e ".[dev]"` (see CONTRIBUTING.md).
+
+## How it is built
+
+`.github/workflows/windows-installer.yml`: PyInstaller (`datas.spec`) freezes the app so no Python
+is needed on the target, a smoke test runs the frozen exe, then Inno Setup compiles `datas.iss`
+(the launcher window, clean-install logic and uninstaller live in its `[Code]` section).
+Every push produces the exe as a build artifact; tags `v*` attach it to the GitHub Release.
 
 ## GPU notes
 
-- **NVIDIA**: only the normal GeForce/Studio driver is needed. The installer adds NVML support;
-  Datas downloads the CUDA llama.cpp build plus its `cudart` DLLs.
-- **AMD / Intel**: Vulkan build is used (works with the standard driver). ROCm builds exist for
-  supported AMD cards; set `backend` to `rocm` in `%LOCALAPPDATA%\Datas\config.json` to prefer them.
+- **NVIDIA**: only the normal GeForce/Studio driver is needed; Datas downloads the CUDA llama.cpp
+  build plus its `cudart` DLLs.
+- **AMD / Intel**: Vulkan build (works with the standard driver). ROCm builds exist for supported
+  AMD cards; set `backend` to `rocm` in `%LOCALAPPDATA%\Datas\config.json` to prefer them.
 - **No GPU / laptop iGPU**: CPU build; expect the small models.

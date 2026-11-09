@@ -84,8 +84,28 @@ def _safe(name: str) -> str:
     return "".join(c for c in name if c.isalnum() or c in " -_.()").strip() or "Datas AI"
 
 
+def _register(path: Path) -> None:
+    """Remember every shortcut we create (``<data>/shortcuts.txt``) so the uninstaller can remove them."""
+    try:
+        from datas.config import home
+
+        f = home() / "shortcuts.txt"
+        lines = f.read_text(encoding="utf-8").splitlines() if f.exists() else []
+        if str(path) not in lines:
+            lines.append(str(path))
+            f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    except Exception:  # noqa: BLE001 - bookkeeping only
+        pass
+
+
 def create(name: str, args: list[str], description: str = "Datas.ar — local AI") -> Path:
     """Create a desktop shortcut that runs the Datas launcher with ``args``. Returns its path."""
+    path = _create(name, args, description)
+    _register(path)
+    return path
+
+
+def _create(name: str, args: list[str], description: str) -> Path:
     sysname = platform.system()
     cmd = launcher()
     exe, base_args = cmd[0], cmd[1:]

@@ -56,7 +56,7 @@ Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md
 
 | Platform | How |
 |---|---|
-| **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page. One installer, one Desktop icon, uninstall from *Settings → Apps* (asks whether to keep or delete your AIs and notes). Until a release exists: the `windows-installer` GitHub Action builds it on every push; or unzip `Datas-Setup-Windows.zip` and double-click `Install-Datas.cmd`. |
+| **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit** (and *Read me*). Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No wizard, no folder to pick, no administrator password. Until a release exists, the `windows-installer` GitHub Action builds the exe on every push. |
 | **macOS / Linux** | `pipx install datas-ar` then `datas` (opens the window; `datas shortcut` puts it on your Desktop). |
 | **Android** | Native app in [`android/`](android/README.md) — APK built by the `android-apk` Action. |
 | **Anything with Python** | `pip install datas-ar && datas` |
