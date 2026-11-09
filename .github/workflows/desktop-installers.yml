@@ -58,7 +58,7 @@ jobs:
             useradd -m build && mkdir -p /b && cp /src/installer/linux/arch/PKGBUILD /b/ && cd /b
             cp /out/datas-${{ steps.v.outputs.version }}-linux-x64.tar.gz /b/
             sed -i "s|^source=.*|source=(\"datas-${{ steps.v.outputs.version }}-linux-x64.tar.gz\")|" PKGBUILD
-            chown -R build /b && su build -c "cd /b && makepkg -f --noconfirm" >/dev/null
+            chown -R build /b && su build -c "cd /b && makepkg -f -d --noconfirm" >/dev/null
             pacman -U --noconfirm /b/datas-bin-*.pkg.tar.zst >/dev/null
             datas-cli --version && datas-cli scan
             cp /b/datas-bin-*.pkg.tar.zst /out/'
