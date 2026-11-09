@@ -18,7 +18,14 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - name: android sdk (preinstalled on ubuntu runners; make sure API 35 is there)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK=$SDK"
+          MGR="$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1)"
+          yes | "$MGR" --licenses >/dev/null 2>&1 || true
+          "$MGR" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" >/dev/null
+          echo "sdk.dir=$SDK" > android/local.properties
       - name: fetch llama.cpp android build (stripped) into jniLibs
         run: scripts/android-fetch-llamacpp.sh
       - name: sync catalog into assets
