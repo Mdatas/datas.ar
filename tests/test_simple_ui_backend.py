@@ -32,8 +32,8 @@ def test_comparable_tiers_cover_1_to_5():
 
 
 def test_use_case_mapping_and_modes():
-    want, unsupported = wants_for(["text", "images", "sound", "coding"])
-    assert want == ["vision", "coding"] and unsupported == ["sound"]
+    want, unsupported = wants_for(["text", "images", "sound", "coding", "video"])
+    assert want == ["vision", "coding"] and unsupported == ["video"]  # sound = voice engines
     s = spec(ram=16)
     assert (
         headroom_for_mode(s, "light")
@@ -47,7 +47,11 @@ def test_recommend_simple_params():
     r = client.get(
         "/api/recommend", params={"use": "text,sound", "mode": "light", "context": 4096}
     ).json()
-    assert r["unsupported_use_cases"] == ["sound"]
+    # "sound" is served by the voice engines; it is unsupported only when their packages are absent
+    assert r["unsupported_use_cases"] in ([], ["sound"])
+    if not r["unsupported_use_cases"]:
+        assert r["voice"]["stt_model"] in {"tiny", "base", "small", "large-v3-turbo-q5_0"}
+        assert r["voice"]["total_bytes"] > 100_000_000
     assert r["headroom"] >= 0.4
     if r["default"]:
         p = r["default"]["plain"]

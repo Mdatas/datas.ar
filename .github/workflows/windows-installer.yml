@@ -18,7 +18,7 @@ jobs:
       - name: install package + pyinstaller
         run: |
           python -m pip install --upgrade pip
-          pip install ".[nvidia]" pyinstaller
+          pip install ".[nvidia,voice]" pyinstaller
       - name: version
         id: v
         shell: bash
@@ -29,7 +29,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($args in @(@('--version'), @('scan'), @('recommend','--context','4096'), @('catalog','list'))) {
+          foreach ($args in @(@('--version'), @('scan'), @('recommend','--context','4096'), @('catalog','list'), @('voice','status'), @('voice','say','Datas can talk.','--out','say.wav'))) {
             & dist\Datas\datas-cli.exe @args
             if ($LASTEXITCODE -ne 0) { throw "datas-cli.exe $args failed with exit code $LASTEXITCODE" }
           }

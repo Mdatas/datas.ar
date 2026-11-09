@@ -99,6 +99,11 @@ class Config:
     pool_offer: bool = False
     # Version that last ran, to greet the user once after an upgrade or reinstall
     last_version: str = ""
+    # Voice: hearing model ("auto" picks by device: tiny/base/small/large-v3-turbo-q5_0),
+    # speaking voice ("auto" = language default), read answers aloud by default
+    voice_stt_model: str = "auto"
+    voice_tts_voice: str = "auto"
+    voice_speak_answers: bool = False
 
     @property
     def forget(self) -> bool:

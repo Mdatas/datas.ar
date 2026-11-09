@@ -98,8 +98,8 @@ USE_CASE_CAPS: dict[str, list[str]] = {
     "images": ["vision"],  # understanding pictures (generating pictures is a different engine)
     "coding": ["coding"],
     "agents": ["tools"],
-    "sound": None,  # not supported by this engine yet (whisper.cpp / TTS planned)
-    "video": None,  # not supported yet
+    "sound": [],  # hearing/speaking come from the voice engines (whisper.cpp + Kokoro), any chat model
+    "video": None,  # making video: stable-diffusion.cpp, not wired yet
 }
 
 

@@ -85,8 +85,8 @@
     <div class="choice" data-use="images"><b data-t="u_images">Understanding pictures</b><span data-t="u_images_d">Describe or read a photo, a screenshot, a document.</span></div>
     <div class="choice" data-use="coding"><b data-t="u_coding">Programming</b><span data-t="u_coding_d">Write and fix code.</span></div>
     <div class="choice" data-use="agents"><b data-t="u_agents">Doing tasks for me</b><span data-t="u_agents_d">Look things up, read and write files, work step by step (an "agent").</span></div>
-    <div class="choice off" data-use="sound" title=""><b data-t="u_sound">Voice &amp; sound</b><span data-t="u_soon">Coming later — the engine Datas uses today (llama.cpp) handles text and pictures.</span></div>
-    <div class="choice off" data-use="video" title=""><b data-t="u_video">Video</b><span data-t="u_soon2">Coming later.</span></div>
+    <div class="choice" data-use="sound"><b data-t="u_sound">Voice &amp; sound</b><span data-t="u_sound_d">Talk to the AI and hear it answer. Adds a hearing model (whisper.cpp) and a voice (Kokoro); both run on the processor.</span></div>
+    <div class="choice off" data-use="video" title=""><b data-t="u_video">Images &amp; video (making them)</b><span data-t="u_soon2">Next up — needs a separate engine (stable-diffusion.cpp) and, for video, a real graphics card.</span></div>
   </div>
   <h2 data-t="h_res">How much of the computer may it use?</h2>
   <div class="choices" id="modes">
@@ -146,7 +146,8 @@
     <div class="side hidden" id="chatSide"><b class="fine" data-t="c_prev">Previous chats</b><div id="chatList"></div></div>
     <div class="chatbox">
       <div class="msgs" id="msgs"></div>
-      <div class="composer"><textarea id="input" data-tp="c_ask" placeholder="Write here. Everything stays on this computer."></textarea><button class="primary" id="send" data-t="c_send">Send</button></div>
+      <div class="composer"><textarea id="input" data-tp="c_ask" placeholder="Write here. Everything stays on this computer."></textarea><button id="micBtn" class="hidden" title="">🎙 <span data-t="v_mic">Talk</span></button><button class="primary" id="send" data-t="c_send">Send</button></div>
+      <div class="row hidden" id="voiceRow" style="margin-top:4px"><label class="switch" id="speakSwitch"><i></i><span data-t="v_read">Read answers aloud</span></label><button class="small hidden" id="stopSpeakBtn">⏹</button></div>
       <div class="fine" id="chatNote"></div>
     </div>
   </div>
@@ -179,6 +180,15 @@
     <div class="row"><label class="switch" id="offerSwitch"><i></i><span data-t="s_offer">Offer this device's memory to my other devices</span></label></div>
     <div class="row" style="margin-top:8px"><label class="switch" id="poolSwitch2"><i></i><span data-t="adv_pool">Also use my other devices on this network (pool)</span></label><button class="small" id="scanBtn" data-t="s_scan">Look for my devices</button></div>
     <table style="margin-top:8px"><thead><tr><th data-t="t_device">Device</th><th data-t="t_mem">Memory offered</th><th data-t="t_engine">Engine version</th></tr></thead><tbody id="nodes"></tbody></table>
+  </div>
+  <div class="card" id="voiceCard">
+    <h2>🎙 <span data-t="v_title">Voice</span></h2>
+    <p class="fine" id="voiceInfo"></p>
+    <div class="row" id="voiceRowS">
+      <label><span data-t="v_model">Hearing model</span> <select id="vModel"><option value="auto" data-t="v_auto">Automatic (by this computer)</option><option value="tiny">tiny (75 MB)</option><option value="base">base (141 MB)</option><option value="small">small (465 MB)</option><option value="large-v3-turbo-q5_0">large v3 turbo (547 MB)</option></select></label>
+      <label><span data-t="v_voice">Voice</span> <select id="vVoice"><option value="auto" data-t="v_auto">Automatic (by language)</option><option value="af_heart">af_heart (EN, female)</option><option value="am_michael">am_michael (EN, male)</option><option value="bf_emma">bf_emma (EN-GB, female)</option><option value="ef_dora">ef_dora (ES, female)</option><option value="em_alex">em_alex (ES, male)</option></select></label>
+      <button id="vInstall" data-t="v_install">Install voice (hearing + speaking)</button>
+    </div>
   </div>
   <div class="card">
     <h2 data-t="s_misc">Other</h2>
@@ -219,7 +229,8 @@ es:{
  w_for:"Olvidar todo",w_for_d:"No se guarda nada. Cada conversación arranca de cero y no deja rastro — ni siquiera registros técnicos. Totalmente anónimo.",w_change:"Podés cambiarlo cuando quieras en Ajustes.",w_go:"Continuar",
  h_title:"¿Para qué vas a usar tu IA?",h_lead:"Elegí una o más opciones. Después apretá Correr: Datas revisa tu computadora y elige la mejor IA que puede cargar sin trabar todo lo demás.",
  u_text:"Chat y escritura",u_text_d:"Preguntas, emails, resúmenes, ideas, traducciones.",u_images:"Entender imágenes",u_images_d:"Describir o leer una foto, una captura, un documento.",u_coding:"Programar",u_coding_d:"Escribir y corregir código.",
- u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_soon:"Más adelante — el motor que Datas usa hoy (llama.cpp) maneja texto e imágenes.",u_video:"Video",u_soon2:"Más adelante.",
+ u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Lo que sigue — necesita otro motor (stable-diffusion.cpp) y, para video, una placa de video de verdad.",
+ v_title:"Voz",v_hear:"Oído",v_speak:"Voz",v_extra:"se suma a la descarga",v_mem:"de memoria extra",v_install:"Instalar la voz (oído + habla)",v_installed:"Voz instalada",v_notavail:"Esta copia de Datas vino sin los paquetes de voz; reinstalá con el instalador más nuevo.",v_mic:"Hablar",v_listening:"Escuchando… tocá para terminar",v_working:"Entendiendo…",v_read:"Leer las respuestas en voz alta",v_nomic:"No se encontró micrófono en esta computadora.",v_model:"Modelo de oído",v_voice:"Voz",v_auto:"Automático (según la computadora)",ph_voice:"Descargando el oído y la voz…",
  h_res:"¿Cuánto de la computadora puede usar?",m_light:"Liviano",m_light_d:"La computadora queda ágil para todo lo demás (videollamadas, navegador, juegos).",m_bal:"Equilibrado",m_bal_d:"Recomendado. Una buena IA con un margen cómodo.",m_heavy:"Pesado",m_heavy_d:"Dale casi todo a la IA. Cerrá otros programas antes.",
  h_run:"▶ Correr — revisar mi computadora",h_adv:"Opciones avanzadas",adv_head:"Dejar libre para otros programas",adv_head_d:"Parte de la memoria de trabajo (RAM) que la IA no debe tocar. Más = IA más chica, computadora más fluida.",
  adv_ctx:"Cuánto texto tiene en mente a la vez",adv_kv:"Memoria compacta para chats largos (caché de 8 bits, un poco menos precisa)",adv_pool:"Usar también mis otros dispositivos de esta red (pool)",adv_custom:"Correr un archivo de modelo que ya tengo",
@@ -239,7 +250,7 @@ es:{
  fast:"Rápida",ok:"Cómoda",slow:"Lenta",crawl:"Muy lenta",comfortable:"entra con margen",tight:"entra justo",quality:"Calidad",
  yourpc:"Tu computadora",ram:"memoria de trabajo (RAM)",gpu:"placa de video (GPU)",nogpu:"sin placa de video dedicada — usa el procesador (CPU)",disk:"libres en disco",
  none_fit:"Ningún modelo entra con esta configuración. Probá \"Pesado\" o bajá el margen en Opciones avanzadas.",
- unsupported:"Voz/sonido y video todavía no están disponibles; la recomendación es para texto e imágenes.",
+ unsupported:"Crear imágenes y video todavía no está disponible; la recomendación cubre el resto.",
  ph_runtime:"Preparando el motor (llama.cpp)…",ph_model:"Descargando la IA…",ph_starting:"Iniciando la IA… (la primera vez puede tardar un minuto)",ph_done:"¡Lista! Ya podés chatear.",ph_error:"Algo falló:",
  shortcut:"Ícono en el Escritorio",shortcut_done:"Listo: hay un ícono en tu Escritorio.",remove:"Quitar",remove_confirm:"¿Quitar esta IA del disco? Podés volver a instalarla después.",
  no_ai:"Todavía no hay ninguna IA en uso. Andá a Inicio y apretá Correr, o iniciá una en Mis IAs.",net_on:"Internet encendido para esta sesión: la IA puede buscar y abrir páginas, y te dirá cuáles usó.",net_off:"Internet apagado: la IA solo usa lo que sabe y tus documentos.",
@@ -288,7 +299,7 @@ $("saveMemBtn").onclick = async ()=>{ await api("/api/memory",{method:"PUT",body
 $("wipeBtn").onclick = async ()=>{ if(!confirm(tr("wipe_confirm","Delete all chats, notes and documents? Installed AIs stay."))) return; await api("/api/privacy/wipe",{method:"POST"}); chatMsgs=[]; chatId=null; $("msgs").innerHTML=""; toast(tr("wiped","Deleted.")); };
 
 // ---------- home ----------
-document.querySelectorAll("#useCases .choice").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("off")) { toast(tr("unsupported","Voice/sound and video are not available yet; recommendations are for text and pictures.")); return; } c.classList.toggle("on"); if(!document.querySelector("#useCases .choice.on")) c.classList.add("on"); }; });
+document.querySelectorAll("#useCases .choice").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("off")) { toast(tr("unsupported","Making images and video is not available yet; the recommendation covers the rest.")); return; } c.classList.toggle("on"); if(!document.querySelector("#useCases .choice.on")) c.classList.add("on"); }; });
 document.querySelectorAll("#modes .choice").forEach(c=>c.onclick=()=>{ document.querySelectorAll("#modes .choice").forEach(x=>x.classList.remove("on")); c.classList.add("on"); });
 $("kvSwitch").onclick=()=>sw($("kvSwitch"),!isOn($("kvSwitch")));
 $("poolSwitch").onclick=()=>{ sw($("poolSwitch"),!isOn($("poolSwitch"))); sw($("poolSwitch2"), isOn($("poolSwitch"))); };
@@ -325,7 +336,7 @@ function renderResult(){
   const B = REC.budget, d = REC.default;
   $("deviceCard").innerHTML = `<b>${tr("yourpc","Your computer")}:</b> ${esc(SPEC.os)} · ${SPEC.ram_gib} GB ${tr("ram","working memory (RAM)")} · ${gpuLine()} · ${(SPEC.disk_free_models/2**30).toFixed(0)} GB ${tr("disk","free on disk")}<div class="fine">${lang==="es"?"La IA podrá usar hasta":"The AI may use up to"} <b>${B.total_budget_gib} GB</b>${B.nodes>1?` (${B.nodes} ${lang==="es"?"dispositivos":"devices"})`:""}; ${lang==="es"?"quedan libres":"kept free"} ${B.ram_headroom_gib} GB.</div>${REC.unsupported_use_cases&&REC.unsupported_use_cases.length?`<div class="fine" style="color:var(--warn)">${tr("unsupported")}</div>`:""}${REC.relaxed_note?`<div class="fine" style="color:var(--accent2)">${esc(REC.relaxed_note)}</div>`:""}`;
   if(!d){ $("hero").innerHTML = `<b>${tr("none_fit","No model fits with these settings. Try Heavy or lower the margin in Advanced options.")}</b>`; $("others").innerHTML=""; renderNofit(); return; }
-  $("hero").innerHTML = heroCard(d, true);
+  $("hero").innerHTML = heroCard(d, true) + voiceCard();
   $("hero").querySelector("[data-run]").onclick = ()=>startRun(d.model_id, d.quant);
   const others = REC.fits.filter(c=>c.model_id!==d.model_id);
   $("others").innerHTML = others.length ? others.map(c=>`<div class="card">${heroCard(c,false)}</div>`).join("") : `<p class="fine">—</p>`;
@@ -346,12 +357,20 @@ function heroCard(c, main){
    <p class="fine">${esc(cmp.verdict)} <i>${esc(cmp.disclaimer)}</i></p>
    <div class="row" style="margin-top:8px"><button class="${main?"primary":""}" data-run="${c.model_id}|${c.quant}">${tr("install_start","Install and start")}</button><span class="fine">${c.quant} · ${c.capabilities.join(" · ")}</span></div>`;
 }
+function voiceCard(){
+  if(!uses().includes("sound")) return "";
+  if(REC.voice_missing) return `<div class="card" style="margin-top:10px"><h3>${tr("v_title","Voice")}</h3><p class="fine" style="color:var(--warn)">${tr("v_notavail","This copy of Datas came without the voice packages; reinstall with the newest installer.")}</p></div>`;
+  const v = REC.voice; if(!v) return "";
+  return `<div class="card" style="margin-top:10px"><h3>🎙 ${tr("v_title","Voice")}</h3>
+    <ul class="plain"><li><b>${tr("v_hear","Hearing")}:</b> ${esc(v.plain.stt)}</li><li><b>${tr("v_speak","Speaking")}:</b> ${esc(v.plain.tts)}</li>${v.reasons.map(r=>`<li class="fine">${esc(r)}</li>`).join("")}</ul>
+    <div class="chips"><span class="chip">+${esc(v.plain.download)} ${tr("v_extra","added to the download")}</span><span class="chip">+${esc(v.plain.memory)} ${tr("v_mem","extra memory")}</span></div></div>`;
+}
 function renderNofit(){ $("nofit").innerHTML = (REC.does_not_fit||[]).slice(0,10).map(c=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><b>${esc(c.name)}</b> ${dots(c.quality_tier)} <span class="fine">${lang==="es"?"necesita":"needs"} ${c.needed_gib} GB — ${esc(c.fallbacks[0]||"")}</span></div>`).join("") || "—"; }
 
 $("runCustom").onclick = async ()=>{ const p=$("customPath").value.trim(); if(!p) return; const j = await api("/api/run-custom",{method:"POST",body:JSON.stringify({path:p, context:+$("context").value, kv_bits:isOn($("kvSwitch"))?8:16})}); watchJob(j.id, p); };
 
 async function startRun(model_id, quant){
-  const j = await api("/api/run",{method:"POST",body:JSON.stringify({model_id, quant, context:+$("context").value, kv_bits:isOn($("kvSwitch"))?8:16, pool:isOn($("poolSwitch")), with_vision: uses().includes("images")})});
+  const j = await api("/api/run",{method:"POST",body:JSON.stringify({model_id, quant, context:+$("context").value, kv_bits:isOn($("kvSwitch"))?8:16, pool:isOn($("poolSwitch")), with_vision: uses().includes("images"), with_voice: uses().includes("sound") && !!(REC&&REC.voice)})});
   watchJob(j.id, model_id);
 }
 function watchJob(id, label){
@@ -359,7 +378,7 @@ function watchJob(id, label){
   $("progress").scrollIntoView({behavior:"smooth", block:"center"});
   POLL = setInterval(async ()=>{
     const j = await api("/api/jobs/"+id);
-    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)")}[j.phase] || "";
+    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)"), voice:tr("ph_voice","Downloading the hearing model and the voice…")}[j.phase] || "";
     $("pPhase").textContent = " · "+ph; $("pPct").textContent = j.percent!=null?`${j.percent}% · ${(j.done/2**30).toFixed(1)} / ${(j.total/2**30).toFixed(1)} GB`:""; $("pBar").style.width=(j.percent||0)+"%"; $("pLog").textContent=j.log.join("\n");
     $("pHint").textContent = j.phase==="model" ? (lang==="es"?"Podés seguir usando la computadora. La descarga se reanuda sola si se corta.":"You can keep using the computer. The download resumes by itself if it drops.") : "";
     if(j.state==="done"||j.state==="error"){ clearInterval(POLL);
@@ -401,6 +420,10 @@ async function enterChat(){
   const sk = await api("/api/skills"); $("skills").innerHTML = sk.skills.map(s=>`<span class="chip pick ${currentSkill===s.id?"on":""}" data-skill="${s.id}">${esc(lang==="es"?s.es:s.en)}</span>`).join("");
   $("skills").querySelectorAll("[data-skill]").forEach(c=>c.onclick=()=>{ currentSkill = currentSkill===c.dataset.skill?null:c.dataset.skill; enterChat(); });
   $("chatNote").textContent = STATUS.server.running ? (isOn($("netSwitch"))?tr("net_on"):tr("net_off")) : tr("no_ai","No AI is running yet. Go to Home and press Run, or start one in My AIs.");
+  const V = STATUS.voice||{}; const vReady = V.installed && V.installed.ready;
+  $("micBtn").classList.toggle("hidden", !(vReady && V.available && V.available.mic));
+  $("voiceRow").classList.toggle("hidden", !(vReady && V.available && V.available.tts));
+  sw($("speakSwitch"), !!V.speak_answers);
   const forget = PRIV && PRIV.memory_mode==="forget";
   $("endBtn").classList.toggle("hidden", forget); $("chatSide").classList.toggle("hidden", forget); $("chatwrap").classList.toggle("side", !forget);
   if(!forget){ const c = await api("/api/chats"); $("chatList").innerHTML = c.chats.slice(0,30).map(x=>`<button data-load="${x.id}">${esc(x.title||tr("prev_chat","Previous chat"))}<br><span class="fine">${new Date(x.updated*1000).toLocaleString()}</span></button>`).join("") || `<span class="fine">—</span>`;
@@ -425,10 +448,37 @@ async function send(){
     while(true){ const {value,done}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i; while((i=buf.indexOf("\n\n"))>=0){ const chunk=buf.slice(0,i); buf=buf.slice(i+2); const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue; let ev; try{ ev=JSON.parse(line.slice(5)); }catch(e){ continue; }
       if(ev.type==="token"){ full+=ev.text; body.textContent=full; } else if(ev.type==="thinking"){ thinking+=ev.text; think.classList.remove("hidden"); think.textContent=thinking.slice(-400); } else if(ev.type==="tool"){ tools.classList.remove("hidden"); tools.textContent += (lang==="es"?"🔎 Buscando: ":"🔎 Looking up: ")+(ev.args.query||ev.args.url||"")+"\n"; } else if(ev.type==="tool_result"){ } else if(ev.type==="error"){ body.textContent = "⚠ "+ev.message; } $("msgs").scrollTop=1e9; } }
     if(full) chatMsgs.push({role:"assistant",content:full});
+    if(full && isOn($("speakSwitch")) && !$("voiceRow").classList.contains("hidden")) speakText(full);
     if(PRIV.memory_mode!=="forget" && full){ const s = await api("/api/chats",{method:"POST",body:JSON.stringify({chat_id:chatId, messages:chatMsgs, model:STATUS.model_id})}); chatId = s.chat_id; }
   }catch(e){ body.textContent="Error: "+e.message; }
   $("send").disabled=false;
 }
+// ---- voice: server-side microphone (works in every window toolkit) + read aloud ----
+let listening=false, levelPoll=null, player=null;
+$("micBtn").onclick = async ()=>{
+  if(!listening){
+    try{ await api("/api/voice/listen/start",{method:"POST"}); }catch(e){ toast(tr("v_nomic","No microphone found on this computer.")+" "+e.message, 6000); return; }
+    listening=true; $("micBtn").classList.add("primary"); $("micBtn").innerHTML = "⏺ "+tr("v_listening","Listening… click to finish");
+    levelPoll = setInterval(async()=>{ try{ const l = await api("/api/voice/listen/level"); $("micBtn").style.boxShadow = `0 0 0 ${Math.round(l.level*10)}px rgba(255,80,80,.35)`; }catch(e){} }, 250);
+  } else {
+    clearInterval(levelPoll); $("micBtn").style.boxShadow=""; $("micBtn").innerHTML = "⌛ "+tr("v_working","Understanding…"); $("micBtn").disabled=true;
+    try{ const r = await api("/api/voice/listen/stop",{method:"POST",body:JSON.stringify({lang})}); if(r.text){ $("input").value = r.text; send(); } }
+    catch(e){ toast("Error: "+e.message, 6000); }
+    listening=false; $("micBtn").disabled=false; $("micBtn").classList.remove("primary"); $("micBtn").innerHTML = "🎙 "+tr("v_mic","Talk");
+  }
+};
+async function speakText(text){
+  try{
+    stopSpeaking();
+    const r = await fetch("/api/voice/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text.slice(0,1500), lang})});
+    if(!r.ok) throw new Error(await r.text());
+    const url = URL.createObjectURL(await r.blob()); player = new Audio(url); $("stopSpeakBtn").classList.remove("hidden");
+    player.onended = ()=>{ URL.revokeObjectURL(url); $("stopSpeakBtn").classList.add("hidden"); }; await player.play();
+  }catch(e){ toast("Voice: "+e.message, 5000); }
+}
+function stopSpeaking(){ if(player){ try{ player.pause(); }catch(e){} player=null; } $("stopSpeakBtn").classList.add("hidden"); }
+$("stopSpeakBtn").onclick = stopSpeaking;
+$("speakSwitch").onclick = async ()=>{ const on = !isOn($("speakSwitch")); sw($("speakSwitch"), on); if(!on) stopSpeaking(); try{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_speak_answers:on})}); }catch(e){} };
 $("send").onclick=send; $("input").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
 
 // files modal
@@ -440,6 +490,15 @@ $("fileInput").onchange=async()=>{ for(const f of $("fileInput").files){ const b
 // ---------- settings ----------
 async function loadSettings(){
   await refreshStatus(); if(PRIV) renderPriv();
+  try{
+    const v = await api("/api/voice"), st = await api("/api/settings");
+    $("vModel").value = st.voice_stt_model||"auto"; $("vVoice").value = st.voice_tts_voice||"auto";
+    const ok = v.available.stt && v.available.tts;
+    $("voiceInfo").textContent = !ok ? tr("v_notavail","This copy of Datas came without the voice packages; reinstall with the newest installer.")
+      : (v.installed.ready ? `${tr("v_installed","Voice installed")} · ${tr("v_hear","Hearing")}: whisper ${v.installed.stt_models.join(", ")} · ${tr("v_speak","Speaking")}: Kokoro` + (v.available.mic?"":" · "+tr("v_nomic","No microphone found on this computer."))
+      : (v.choice ? `${tr("v_hear","Hearing")}: ${v.choice.plain.stt} · ${tr("v_speak","Speaking")}: ${v.choice.plain.tts} · ${v.choice.plain.download}` : ""));
+    $("vInstall").classList.toggle("hidden", !ok || v.installed.ready); $("voiceRowS").classList.toggle("hidden", !ok);
+  }catch(e){}
   const p = await api("/api/providers");
   $("provRows").innerHTML = p.providers.map(x=>`<tr><td>${esc(x.name)}${x.name===p.active?` <span class="chip good">${lang==="es"?"en uso":"in use"}</span>`:` <button class="small" data-use="${esc(x.name)}">${lang==="es"?"Usar":"Use"}</button>`}</td><td>${x.kind==="remote"?(lang==="es"?"pago / externo":"paid / external"):(lang==="es"?"en esta computadora":"on this computer")}</td><td class="mono">${esc(x.model||"")}</td><td>${x.kind==="remote"?(x.has_key?"✓":"—"):"n/a"}</td><td>${x.kind==="remote"?`<button class="small danger" data-del="${esc(x.name)}">✕</button>`:""}</td></tr>`).join("");
   $("provRows").querySelectorAll("[data-use]").forEach(b=>b.onclick=async()=>{ await api("/api/providers/active",{method:"POST",body:JSON.stringify({name:b.dataset.use})}); loadSettings(); });
@@ -449,6 +508,9 @@ async function loadSettings(){
   $("techInfo").textContent = `${lang==="es"?"Motor":"Engine"}: ${STATUS.runtime.version||"—"} · ${lang==="es"?"carpeta":"folder"}: ${STATUS.home}`;
 }
 $("pSave").onclick=async()=>{ try{ await api("/api/providers",{method:"POST",body:JSON.stringify({name:$("pName").value.trim(), base_url:$("pUrl").value.trim(), api_key:$("pKey").value, model:$("pModel").value.trim()})}); $("pKey").value=""; loadSettings(); }catch(e){ toast("Error: "+e.message); } };
+$("vModel").onchange = async()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_stt_model:$("vModel").value})}); loadSettings(); };
+$("vVoice").onchange = async()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_tts_voice:$("vVoice").value})}); };
+$("vInstall").onclick = async()=>{ try{ const j = await api("/api/voice/install",{method:"POST"}); go("home"); watchJob(j.id, tr("v_title","Voice")); }catch(e){ toast("Error: "+e.message, 6000); } };
 $("offerSwitch").onclick=async()=>{ const r = await api("/api/pool/offer",{method:"POST",body:JSON.stringify({on:!isOn($("offerSwitch"))})}); sw($("offerSwitch"), r.offering); };
 $("scanBtn").onclick=async()=>{ $("nodes").innerHTML=`<tr><td colspan="3" class="fine">…</td></tr>`; const p = await api("/api/pool/nodes?refresh=1"); $("nodes").innerHTML = p.nodes.length ? p.nodes.map(n=>`<tr><td>${esc(n.host)} <span class="fine mono">${n.endpoint}</span></td><td>${(n.ram_budget_gib+n.vram_budget_gib).toFixed(1)} GB</td><td class="mono ${n.tag&&n.tag!==p.local_tag?"warn":""}">${esc(n.tag||"?")}</td></tr>`).join("") : `<tr><td colspan="3" class="fine">${tr("nodes_none")}</td></tr>`; };
 $("deskBtn").onclick=async()=>{ try{ await api("/api/shortcut/app",{method:"POST"}); toast(tr("desktop_done","Datas is now on your Desktop.")); }catch(e){ toast("Error: "+e.message,6000);} };

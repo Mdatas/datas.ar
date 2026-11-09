@@ -52,7 +52,8 @@ via `huggingface_hub` (Apache-2.0).
   [Google AI Edge Gallery](https://github.com/google-ai-edge/gallery) (Apache-2.0),
   MLC Chat — references for the native apps on the roadmap.
 - **Desktop local AI**: Jan, LM Studio, Ollama, Open WebUI — the UX bar Datas aims to
-- **Planned engines for voice and video** (not shipped yet, see docs/ROADMAP.md): whisper.cpp (ggml-org, MIT), Kokoro-82M (hexgrad, Apache-2.0), Piper (GPL-3.0), Chatterbox (Resemble AI, MIT), stable-diffusion.cpp (leejet, MIT)
+- **Voice**: whisper.cpp (ggml-org, MIT; Whisper weights by OpenAI, MIT) via pywhispercpp (absadiki, MIT); Kokoro-82M (hexgrad, Apache-2.0) via kokoro-onnx (thewh1teagle, MIT) on ONNX Runtime (Microsoft, MIT); espeak-ng (GPL-3.0-or-later) for phonemes; python-sounddevice / PortAudio (MIT) for the microphone
+- **Planned for images and video** (see docs/ROADMAP.md): stable-diffusion.cpp (leejet, MIT)
   clear with zero configuration.
 
 ## Not reused, by choice

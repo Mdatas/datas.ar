@@ -15,6 +15,7 @@ if not os.path.exists(ICON):
 
 datas = [
     (os.path.join(ROOT, "datas", "catalog", "models.json"), os.path.join("datas", "catalog")),
+    (os.path.join(ROOT, "datas", "catalog", "media.json"), os.path.join("datas", "catalog")),
     (os.path.join(ROOT, "datas", "sources.json"), "datas"),
     (os.path.join(ROOT, "datas", "server", "ui", "index.html"), os.path.join("datas", "server", "ui")),
     (os.path.join(ROOT, "datas", "server", "ui", "agent.html"), os.path.join("datas", "server", "ui")),
@@ -34,7 +35,10 @@ if WIN:
 if LINUX:  # Qt backend for pywebview: self-contained, works on Debian and Arch families alike
     hiddenimports += ["qtpy", "PyQt6.QtWebEngineWidgets", "PyQt6.QtWebEngineCore", "PyQt6.QtWebChannel",
                       "PyQt6.QtNetwork", "PyQt6.QtPrintSupport", "PyQt6.QtOpenGLWidgets"]
-for pkg in ("gguf", "zeroconf", "huggingface_hub", "rich", "typer", "fastapi", "starlette", "webview"):
+# voice stack (optional at runtime; bundled when installed): whisper.cpp bindings, Kokoro + ONNX Runtime,
+# espeak-ng data for phonemes, PortAudio for the microphone
+for pkg in ("gguf", "zeroconf", "huggingface_hub", "rich", "typer", "fastapi", "starlette", "webview",
+            "pywhispercpp", "kokoro_onnx", "onnxruntime", "espeakng_loader", "phonemizer", "sounddevice", "_sounddevice_data"):
     try:
         d, b, h = collect_all(pkg)
         datas += d

@@ -17,11 +17,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: system deps (Qt WebEngine runtime for the smoke test, deb tools)
-        run: sudo apt-get update -q && sudo apt-get install -y -q dpkg-dev libgl1 libegl1 libxcb-cursor0 libxkbcommon-x11-0 libnss3 libasound2 libxcomposite1 libxdamage1 libxrandr2 libxtst6
+        run: sudo apt-get update -q && sudo apt-get install -y -q dpkg-dev libgl1 libegl1 libxcb-cursor0 libxkbcommon-x11-0 libnss3 libasound2 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libportaudio2
       - name: install package + pyinstaller
         run: |
           python -m pip install --upgrade pip
-          pip install ".[qt]" pyinstaller
+          pip install ".[qt,voice]" pyinstaller
       - name: version
         id: v
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
@@ -34,6 +34,8 @@ jobs:
           dist/Datas/datas-cli scan
           dist/Datas/datas-cli recommend --context 4096
           dist/Datas/datas-cli catalog list
+          dist/Datas/datas-cli voice status
+          dist/Datas/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
       - name: prune unused Qt libraries
         run: python installer/linux/prune-qt.py dist/Datas
       - name: deb
@@ -87,7 +89,7 @@ jobs:
       - name: install package + pyinstaller
         run: |
           python -m pip install --upgrade pip
-          pip install . pyinstaller
+          pip install ".[voice]" pyinstaller
       - name: version
         id: v
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
@@ -104,6 +106,8 @@ jobs:
           dist/Datas.app/Contents/MacOS/datas-cli scan
           dist/Datas.app/Contents/MacOS/datas-cli recommend --context 4096
           dist/Datas.app/Contents/MacOS/datas-cli catalog list
+          dist/Datas.app/Contents/MacOS/datas-cli voice status
+          dist/Datas.app/Contents/MacOS/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
       - name: dmg
         run: installer/macos/build-dmg.sh ${{ steps.v.outputs.version }}
       - uses: actions/upload-artifact@v4

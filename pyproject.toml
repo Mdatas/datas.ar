@@ -41,6 +41,7 @@ dependencies = [
 [project.optional-dependencies]
 nvidia = ["nvidia-ml-py>=12.0"]
 qt = ["qtpy>=2.4", "PyQt6>=6.6", "PyQt6-WebEngine>=6.6"]  # Linux window toolkit (self-contained)
+voice = ["pywhispercpp>=1.5", "kokoro-onnx>=0.6", "sounddevice>=0.5"]  # hearing (whisper.cpp), speaking (Kokoro), microphone
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.6", "mypy>=1.10"]
 
 [project.scripts]
@@ -56,6 +57,7 @@ packages = ["datas"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "datas/catalog/models.json" = "datas/catalog/models.json"
+"datas/catalog/media.json" = "datas/catalog/media.json"
 "datas/sources.json" = "datas/sources.json"
 "datas/server/ui/index.html" = "datas/server/ui/index.html"
 "datas/server/ui/agent.html" = "datas/server/ui/agent.html"

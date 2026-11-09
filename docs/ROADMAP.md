@@ -45,12 +45,10 @@ prebuilt for Windows/Linux/macOS, MIT licensed:
 | Images (make / edit) | [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) (MIT) | Z-Image, Qwen-Image, FLUX.2, SDXL in GGUF quantisations | Has an embedded web UI and an HTTP server, same shape as `llama-server` |
 | Video (make) | stable-diffusion.cpp as well | Wan 2.1/2.2, LTX-2.3 | Heavy: needs a GPU with 8 GB+ VRAM; the recommender must say so plainly |
 
-Plan:
-- [ ] `datas/runtime/engines.py`: generalise the llama.cpp release fetcher (tag pin, platform asset, HEAD-probe fallback) so whisper.cpp and stable-diffusion.cpp reuse it
-- [ ] Catalog entries get a `media` field (`text`, `vision`, `speech-to-text`, `text-to-speech`, `image`, `video`) and the recommender uses the same RAM/VRAM budget per engine
-- [ ] Home chips "Voice & sound" and "Video" become real; the chat gets a microphone button (whisper.cpp) and a speaker toggle (Kokoro)
-- [ ] An "Images" tab fronting stable-diffusion.cpp's server, with the same privacy rules (Forget = nothing saved)
-- [ ] The user can always pick the engine per media in Settings → Advanced, same as the AI model
+Status:
+- [x] **Voice shipped** (`datas/engines/voice.py`): whisper.cpp runs in-process through `pywhispercpp` (prebuilt wheels, no release binaries needed — ggml-org ships source only), Kokoro through `kokoro-onnx` + ONNX Runtime, microphone through PortAudio on the server side (works in every window toolkit, no browser permission prompts). Catalog `datas/catalog/media.json` with exact sizes/hashes. Home chip "Voice & sound" is live; the hearing model is chosen by processor/memory (tiny → base → small → large-v3-turbo); chat gets **Talk** and **Read answers aloud**; Settings lets you pick model and voice. Audio is never written to disk.
+- [ ] Android: the same through whisper.cpp's and Kokoro's Android builds (not yet)
+- [ ] Images & video: stable-diffusion.cpp prebuilt releases exist for Windows (CPU/CUDA/Vulkan/ROCm), Linux (CPU/Vulkan/ROCm) and macOS arm64; next step is `datas/engines/images.py` (download `sd-server`, pick Z-Image / Qwen-Image / FLUX.2 by VRAM, an "Images" tab) and then video (Wan 2.2, LTX-2.3 — needs a GPU with 8 GB+)
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server

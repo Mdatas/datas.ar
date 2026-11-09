@@ -37,7 +37,7 @@ Datas falls back to your browser at http://127.0.0.1:8420.
 ## Build it yourself
 
 ```
-pip install ".[qt]" pyinstaller
+pip install ".[qt,voice]" pyinstaller
 pyinstaller --noconfirm installer/datas.spec
 installer/linux/build-deb.sh 0.2.0            # needs dpkg-deb
 ```

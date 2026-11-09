@@ -22,7 +22,7 @@ SIZE=$(du -sk "$PKG/opt" | cut -f1)
   echo "Installed-Size: $SIZE"
   echo "Maintainer: Datas.ar contributors <https://github.com/Mdatas/datas.ar/issues>"
   echo "Homepage: https://github.com/Mdatas/datas.ar"
-  echo "Depends: libc6 (>= 2.35), libgl1, libegl1, libxcb-cursor0, libxkbcommon-x11-0, libxcb-xinerama0, libnss3, libasound2 | libasound2t64, libfontconfig1, libdbus-1-3, libxcomposite1, libxdamage1, libxrandr2, libxtst6"
+  echo "Depends: libc6 (>= 2.35), libgl1, libegl1, libxcb-cursor0, libxkbcommon-x11-0, libxcb-xinerama0, libnss3, libasound2 | libasound2t64, libfontconfig1, libdbus-1-3, libxcomposite1, libxdamage1, libxrandr2, libxtst6, libportaudio2"
   echo "Description: Local AI for everyone"
   echo " Datas looks at your computer (memory, graphics card, processor), picks the best"
   echo " free open AI model it can run without freezing it, downloads it and runs it."

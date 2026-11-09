@@ -1,0 +1,41 @@
+{
+  "_comment": "Models for the non-text engines. Sizes in bytes are the exact values published by the host (Hugging Face API / GitHub release headers); sha256 given where we verified a download ourselves.",
+  "speech_to_text": {
+    "engine": "whisper.cpp",
+    "repo": "ggerganov/whisper.cpp",
+    "page": "https://huggingface.co/ggerganov/whisper.cpp",
+    "maker": "OpenAI (Whisper weights, MIT) converted by ggml-org",
+    "license": "MIT",
+    "languages": "99 languages including English and Spanish (the .en variants are English-only and are not used)",
+    "models": [
+      {"id": "tiny", "file": "ggml-tiny.bin", "bytes": 77691713, "ram_gib": 0.5, "quality": 1,
+       "plain_en": "Tiny — fast on any device, makes mistakes with names and accents.",
+       "plain_es": "Tiny — rápido en cualquier equipo, se equivoca con nombres y acentos."},
+      {"id": "base", "file": "ggml-base.bin", "bytes": 147951465, "ram_gib": 0.7, "quality": 2,
+       "plain_en": "Base — good for dictation on a normal laptop.",
+       "plain_es": "Base — bien para dictar en una notebook normal."},
+      {"id": "small", "file": "ggml-small.bin", "bytes": 487601967, "ram_gib": 1.2, "quality": 3,
+       "plain_en": "Small — clearly better with accents and Spanish; needs a 4-core processor to keep up.",
+       "plain_es": "Small — claramente mejor con acentos y castellano; necesita 4 núcleos para seguir el ritmo."},
+      {"id": "large-v3-turbo-q5_0", "file": "ggml-large-v3-turbo-q5_0.bin", "bytes": 574041195, "ram_gib": 1.5, "quality": 4,
+       "plain_en": "Large v3 Turbo (compressed) — best quality; comfortable on 8+ cores or Apple Silicon.",
+       "plain_es": "Large v3 Turbo (comprimido) — la mejor calidad; cómodo con 8+ núcleos o Apple Silicon."}
+    ]
+  },
+  "text_to_speech": {
+    "engine": "kokoro",
+    "page": "https://huggingface.co/hexgrad/Kokoro-82M",
+    "maker": "hexgrad (Kokoro-82M, Apache-2.0); ONNX export and voices by thewh1teagle/kokoro-onnx",
+    "license": "Apache-2.0",
+    "release": "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0",
+    "files": [
+      {"name": "kokoro-v1.0.int8.onnx", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx", "bytes": 92361271, "sha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb"},
+      {"name": "voices-v1.0.bin", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin", "bytes": 28214398, "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"}
+    ],
+    "ram_gib": 0.6,
+    "voices": {"en": ["af_heart", "am_michael", "af_bella", "bf_emma"], "es": ["ef_dora", "em_alex", "em_santa"]},
+    "langs": {"en": "en-us", "es": "es"},
+    "plain_en": "Kokoro — a small, natural-sounding voice that runs on the processor; English and Spanish voices.",
+    "plain_es": "Kokoro — una voz chica y natural que corre en el procesador; voces en inglés y castellano."
+  }
+}

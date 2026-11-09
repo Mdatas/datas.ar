@@ -20,6 +20,7 @@ from datas import __version__
 from datas.catalog import Catalog, CatalogModel, ModelFile
 from datas.catalog import load as load_catalog
 from datas.config import Config, home, models_dir
+from datas.engines import voice as voice_engine
 from datas.hardware.detect import DeviceSpec, detect
 from datas.pool.discovery import Node, discover, parse_manual
 from datas.recommend.engine import (
@@ -92,6 +93,7 @@ class Datas:
         self.cfg = cfg or Config.load()
         self.server = LlamaServer(self.cfg)
         self.jobs: dict[str, Job] = {}
+        self.recorder = voice_engine.Recorder()
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
@@ -266,10 +268,13 @@ class Datas:
         job: Job | None = None,
         exact_layers: bool = False,
         with_vision: bool = False,
+        with_voice: bool = False,
     ) -> dict:
         say = job.say if job else print
         self.ensure_runtime(job)
         path = self.ensure_model(model_id, quant, job, with_vision=with_vision)
+        if with_voice:
+            self.ensure_voice(job)
         m, f, c = self.candidate(model_id, quant, context, kv_bits, pool_nodes)
         rec_budget = self.recommendation(
             context=context, kv_bits=kv_bits, pool_nodes=pool_nodes
@@ -424,15 +429,68 @@ class Datas:
         kv_bits: int = 16,
         pool: bool = False,
         with_vision: bool = False,
+        with_voice: bool = False,
     ) -> Job:
         job = self._job("run", f"Run {model_id} {quant}")
         nodes = self.pool_nodes() if pool else None
         return self._run_job(
             job,
             lambda j: self.run(
-                model_id, quant, context, kv_bits, nodes, j, with_vision=with_vision
+                model_id,
+                quant,
+                context,
+                kv_bits,
+                nodes,
+                j,
+                with_vision=with_vision,
+                with_voice=with_voice,
             ),
         )
+
+    # ---- voice (hearing + speaking) -----------------------------------------
+    def voice_choice(self) -> voice_engine.VoiceChoice:
+        return voice_engine.choose(self.spec(), self.cfg)
+
+    def ensure_voice(self, job: Job | None = None) -> dict:
+        avail = voice_engine.available()
+        if not (avail["stt"] and avail["tts"]):
+            raise RuntimeError(
+                "Voice packages are not installed on this copy of Datas "
+                f"(missing: {', '.join(avail['missing'])}). Reinstall Datas or run: pip install 'datas[voice]'"
+            )
+        return voice_engine.ensure(self.voice_choice(), job)
+
+    def start_voice_install_job(self) -> Job:
+        job = self._job("voice", "Install voice (hearing + speaking)")
+        return self._run_job(job, lambda j: self.ensure_voice(j))
+
+    def voice_status(self) -> dict:
+        avail = voice_engine.available()
+        out = {"available": avail, "installed": voice_engine.installed(self.cfg, self.spec())}
+        if avail["stt"] and avail["tts"]:
+            ch = self.voice_choice()
+            out["choice"] = {
+                "stt_model": ch.stt_model,
+                "total_bytes": ch.total_bytes,
+                "ram_gib": ch.ram_gib,
+                "reasons": ch.reasons,
+                "plain": ch.plain(self.cfg.lang),
+            }
+        out["recording"] = self.recorder.recording
+        out["speak_answers"] = self.cfg.voice_speak_answers
+        return out
+
+    def hear(self, pcm16k, language: str | None) -> str:  # noqa: ANN001
+        model = voice_engine.installed(self.cfg, self.spec())
+        mid = model.get("stt_model") or (model["stt_models"][0] if model["stt_models"] else None)
+        if not mid or mid not in model["stt_models"]:
+            # the auto choice is not downloaded yet but another size is: use what we have
+            if model["stt_models"]:
+                mid = model["stt_models"][-1]
+            else:
+                raise RuntimeError("No hearing model installed yet.")
+        threads = max(1, min(8, (self.spec().cpu_cores_logical or 4) - 1))
+        return voice_engine.transcribe(pcm16k, language, mid, threads=threads)
 
     def start_bench_job(self) -> Job:
         job = self._job("bench", "Benchmark")
@@ -522,4 +580,9 @@ class Datas:
             "lang": self.cfg.lang,
             "use_cases": self.cfg.use_cases,
             "resource_mode": self.cfg.resource_mode,
+            "voice": {
+                "available": voice_engine.available(),
+                "installed": voice_engine.installed(self.cfg),
+                "speak_answers": self.cfg.voice_speak_answers,
+            },
         }

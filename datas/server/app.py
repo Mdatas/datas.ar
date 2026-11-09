@@ -105,7 +105,91 @@ def recommend(
     out = rec.to_dict()
     out["unsupported_use_cases"] = unsupported
     out["headroom"] = headroom if headroom is not None else core.cfg.headroom
+    if "sound" in uses:
+        vs = core.voice_status()
+        out["voice"] = vs.get("choice")
+        if not (vs["available"]["stt"] and vs["available"]["tts"]):
+            out["unsupported_use_cases"] = unsupported + ["sound"]
+            out["voice_missing"] = vs["available"]["missing"]
     return out
+
+
+# ---- voice: hearing (microphone → text) and speaking (text → audio) ----------
+
+
+class SpeakBody(BaseModel):
+    text: str
+    lang: str = "en"
+    voice: str | None = None
+    speed: float = 1.0
+
+
+class HearBody(BaseModel):
+    lang: str | None = None
+
+
+@app.get("/api/voice")
+def voice_status() -> dict:
+    return core.voice_status()
+
+
+@app.post("/api/voice/install")
+def voice_install() -> dict:
+    return core.start_voice_install_job().to_dict()
+
+
+@app.post("/api/voice/listen/start")
+def voice_listen_start() -> dict:
+    try:
+        core.recorder.start()
+    except Exception as e:  # noqa: BLE001 - no microphone, PortAudio missing, device busy
+        raise HTTPException(500, f"Could not open the microphone: {e}") from e
+    return {"recording": True}
+
+
+@app.get("/api/voice/listen/level")
+def voice_listen_level() -> dict:
+    return {"recording": core.recorder.recording, "level": core.recorder.level()}
+
+
+@app.post("/api/voice/listen/stop")
+def voice_listen_stop(body: HearBody) -> dict:
+    audio = core.recorder.stop()
+    try:
+        text = core.hear(audio, body.lang)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, str(e)) from e
+    return {"text": text, "seconds": round(len(audio) / 16000, 1)}
+
+
+@app.post("/api/voice/hear")
+async def voice_hear(request: Request, lang: str | None = None) -> dict:
+    """Alternative to the server-side microphone: POST a 16-bit PCM WAV body (any sample rate)."""
+    from datas.engines import voice as voice_engine
+
+    data = await request.body()
+    try:
+        pcm = voice_engine.pcm_from_wav(data)
+        text = core.hear(pcm, lang)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(400, str(e)) from e
+    return {"text": text}
+
+
+@app.post("/api/voice/speak")
+def voice_speak(body: SpeakBody):
+    from fastapi.responses import Response
+
+    from datas.engines import voice as voice_engine
+
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "nothing to say")
+    try:
+        wav = voice_engine.speak(text[:4000], body.lang, body.voice, body.speed)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, str(e)) from e
+    return Response(content=wav, media_type="audio/wav", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/catalog")
@@ -145,6 +229,9 @@ class Settings(BaseModel):
     lang: str | None = None
     pool_nodes: str | None = None
     backend: str | None = None
+    voice_stt_model: str | None = None
+    voice_tts_voice: str | None = None
+    voice_speak_answers: bool | None = None
 
 
 @app.get("/api/settings")
@@ -161,6 +248,9 @@ def settings_get() -> dict:
         "ui_port": c.ui_port,
         "llama_port": c.llama_port,
         "rpc_port": c.rpc_port,
+        "voice_stt_model": c.voice_stt_model,
+        "voice_tts_voice": c.voice_tts_voice,
+        "voice_speak_answers": c.voice_speak_answers,
     }
 
 
@@ -177,6 +267,12 @@ def settings_set(body: Settings) -> dict:
         c.pool_nodes = body.pool_nodes
     if body.backend is not None:
         c.backend = body.backend
+    if body.voice_stt_model is not None:
+        c.voice_stt_model = body.voice_stt_model
+    if body.voice_tts_voice is not None:
+        c.voice_tts_voice = body.voice_tts_voice
+    if body.voice_speak_answers is not None:
+        c.voice_speak_answers = body.voice_speak_answers
     c.save()
     return settings_get()
 
@@ -199,6 +295,7 @@ class RunBody(BaseModel):
     kv_bits: int = 16
     pool: bool = False
     with_vision: bool = False
+    with_voice: bool = False
 
 
 class RunCustomBody(BaseModel):
@@ -215,7 +312,13 @@ def install(body: InstallBody) -> dict:
 @app.post("/api/run")
 def run(body: RunBody) -> dict:
     return core.start_run_job(
-        body.model_id, body.quant, body.context, body.kv_bits, body.pool, body.with_vision
+        body.model_id,
+        body.quant,
+        body.context,
+        body.kv_bits,
+        body.pool,
+        body.with_vision,
+        body.with_voice,
     ).to_dict()
 
 

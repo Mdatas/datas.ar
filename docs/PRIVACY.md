@@ -52,3 +52,12 @@ can leak information. Treat your pool like you treat your home Wi-Fi.
 No telemetry, no analytics, no account, no update check that sends data. The only outbound
 connections are GitHub (llama.cpp download), Hugging Face (model download + hash check),
 and whatever the user explicitly enables (internet switch, a paid provider).
+
+## Voice
+
+Hearing and speaking happen on this computer: whisper.cpp turns your voice into text and Kokoro
+turns answers into speech, both on the processor. What the microphone records is kept only in
+memory while it is being understood and is dropped afterwards; the spoken answer is streamed to
+the window and never written to disk. Nothing about voice changes between Remember and Forget
+modes — there is nothing to store either way. The only downloads are the model files, from
+Hugging Face (whisper) and GitHub (Kokoro), with exact sizes and checksums in `datas/catalog/media.json`.

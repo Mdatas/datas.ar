@@ -35,7 +35,9 @@ pool_app = typer.Typer(help="Pool several devices into one model.")
 provider_app = typer.Typer(help="Remote OpenAI-compatible providers (API keys).")
 runtime_app = typer.Typer(help="llama.cpp runtime management.")
 catalog_app = typer.Typer(help="Model catalog.")
+voice_app = typer.Typer(help="Hearing (whisper.cpp) and speaking (Kokoro).")
 app.add_typer(pool_app, name="pool")
+app.add_typer(voice_app, name="voice")
 app.add_typer(provider_app, name="provider")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(catalog_app, name="catalog")
@@ -685,6 +687,67 @@ def catalog_refresh(
         data["generated"] = time.strftime("%Y-%m-%d")
         bundled_path().write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         con.print(f"wrote {bundled_path()}")
+
+
+# ---- voice ---------------------------------------------------------------------
+
+
+@voice_app.command("status")
+def voice_status():
+    """Is the voice stack available, which models are installed, what would be picked."""
+    core = _core()
+    st = core.voice_status()
+    con.print_json(json.dumps(st))
+
+
+@voice_app.command("install")
+def voice_install():
+    """Download the hearing model chosen for this device and the Kokoro voice."""
+    core = _core()
+    job = core.start_voice_install_job()
+    last = None
+    while job.state in ("queued", "running"):
+        if job.log and job.log[-1] != last:
+            last = job.log[-1]
+            con.print(last)
+        time.sleep(0.5)
+    if job.state == "error":
+        con.print(f"[red]{job.error}[/red]")
+        raise typer.Exit(1)
+    con.print("[green]voice ready[/green]")
+
+
+@voice_app.command("say")
+def voice_say(
+    text: str,
+    lang: str = typer.Option("en", help="en or es"),
+    out: Path = typer.Option(Path("datas-say.wav"), help="WAV file to write"),
+    voice: str | None = typer.Option(None, help="Kokoro voice name, e.g. ef_dora"),
+):
+    """Speak TEXT into a WAV file (downloads the voice on first use)."""
+    from datas.engines import voice as ve
+
+    core = _core()
+    if not ve.installed()["tts"]:
+        ch = core.voice_choice()
+        for f in ve.catalog()["text_to_speech"]["files"]:
+            con.print(f"downloading {f['name']} ({f['bytes'] / 2**20:.0f} MB)")
+            ve._download_url(f["url"], ve.tts_paths()[f["name"]], f["bytes"], f.get("sha256"), None)
+        del ch
+    out.write_bytes(ve.speak(text, lang, voice))
+    con.print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
+
+
+@voice_app.command("hear")
+def voice_hear(
+    wav: Path, lang: str | None = typer.Option(None, help="en, es … or omit to auto-detect")
+):
+    """Transcribe a 16-bit WAV file with the installed hearing model."""
+    from datas.engines import voice as ve
+
+    core = _core()
+    text = core.hear(ve.pcm_from_wav(wav.read_bytes()), lang)
+    con.print(text or "[dim](nothing heard)[/dim]")
 
 
 if __name__ == "__main__":
