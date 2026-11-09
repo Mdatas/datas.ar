@@ -26,11 +26,13 @@ jobs:
       - name: pyinstaller
         run: pyinstaller --noconfirm installer/windows/datas.spec
       - name: smoke test the frozen app
+        shell: pwsh
         run: |
-          dist\Datas\datas-cli.exe --version
-          dist\Datas\datas-cli.exe scan
-          dist\Datas\datas-cli.exe recommend --context 4096
-          dist\Datas\datas-cli.exe catalog list
+          $ErrorActionPreference = 'Stop'
+          foreach ($args in @(@('--version'), @('scan'), @('recommend','--context','4096'), @('catalog','list'))) {
+            & dist\Datas\datas-cli.exe @args
+            if ($LASTEXITCODE -ne 0) { throw "datas-cli.exe $args failed with exit code $LASTEXITCODE" }
+          }
       - name: inno setup
         run: |
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.v.outputs.version }} installer\windows\datas.iss
