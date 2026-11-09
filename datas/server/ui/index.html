@@ -201,6 +201,7 @@
 <!-- ================= ABOUT ================= -->
 <section class="screen" id="s-about">
   <h1 data-t="a_title">About this app &amp; its sources</h1>
+  <div class="row" style="margin:8px 0"><button class="small" id="aboutGuideBtn">🧭 <span data-t="g_ask">Ask the guide about this computer</span></button></div>
   <p class="lead" id="aboutLead"></p>
   <div class="card"><b>GitHub:</b> <a id="repoLink" target="_blank" rel="noopener"></a><div class="fine" data-t="a_lic">License: GPL-3.0. Each AI model keeps its own license (shown on its card).</div></div>
   <h2 data-t="a_sources">Everything Datas is built on</h2>
@@ -231,6 +232,7 @@ es:{
  h_title:"¿Para qué vas a usar tu IA?",h_lead:"Elegí una o más opciones. Después apretá Correr: Datas revisa tu computadora y elige la mejor IA que puede cargar sin trabar todo lo demás.",
  u_text:"Chat y escritura",u_text_d:"Preguntas, emails, resúmenes, ideas, traducciones.",u_images:"Entender imágenes",u_images_d:"Describir o leer una foto, una captura, un documento.",u_coding:"Programar",u_coding_d:"Escribir y corregir código.",
  u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Datas revisa si este equipo podría hacerlo (necesita una placa de video de verdad). El motor para esto viene después.",
+ g_ask:"Preguntale a la guía sobre esta computadora",g_ask_d:"Un chat que conoce este equipo, los modelos y cómo usarlos bien. Necesita una IA corriendo.",g_title:"Guía de Datas",g_lead:"Preguntame qué puede hacer esta computadora, qué IA usar para qué, o cómo preguntar mejor. Probá una:",
  ab_title:"En esta computadora",ab_text:"Chat y escritura",ab_images:"Entender imágenes",ab_coding:"Programar",ab_agents:"Tareas por mí (agente)",ab_sound:"Voz y sonido",ab_image_gen:"Crear imágenes",ab_video:"Crear video",ab_pool:"Dispositivos en conjunto",ab_yes:"Sí",ab_slow:"Sí, lento",ab_no:"No",ab_not_yet:"Todavía no",ab_needs:"Necesita:",
  v_title:"Voz",v_hear:"Oído",v_speak:"Voz",v_extra:"se suma a la descarga",v_mem:"de memoria extra",v_install:"Instalar la voz (oído + habla)",v_installed:"Voz instalada",v_notavail:"Esta copia de Datas vino sin los paquetes de voz; reinstalá con el instalador más nuevo.",v_mic:"Hablar",v_listening:"Escuchando… tocá para terminar",v_working:"Entendiendo…",v_read:"Leer las respuestas en voz alta",v_nomic:"No se encontró micrófono en esta computadora.",v_model:"Modelo de oído",v_voice:"Voz",v_auto:"Automático (según la computadora)",ph_voice:"Descargando el oído y la voz…",
  h_res:"¿Cuánto de la computadora puede usar?",m_light:"Liviano",m_light_d:"La computadora queda ágil para todo lo demás (videollamadas, navegador, juegos).",m_bal:"Equilibrado",m_bal_d:"Recomendado. Una buena IA con un margen cómodo.",m_heavy:"Pesado",m_heavy_d:"Dale casi todo a la IA. Cerrá otros programas antes.",
@@ -337,7 +339,8 @@ function renderResult(){
   $("result").classList.remove("hidden");
   const B = REC.budget, d = REC.default;
   $("deviceCard").innerHTML = `<b>${tr("yourpc","Your computer")}:</b> ${esc(SPEC.os)} · ${SPEC.ram_gib} GB ${tr("ram","working memory (RAM)")} · ${gpuLine()} · ${(SPEC.disk_free_models/2**30).toFixed(0)} GB ${tr("disk","free on disk")}<div class="fine">${lang==="es"?"La IA podrá usar hasta":"The AI may use up to"} <b>${B.total_budget_gib} GB</b>${B.nodes>1?` (${B.nodes} ${lang==="es"?"dispositivos":"devices"})`:""}; ${lang==="es"?"quedan libres":"kept free"} ${B.ram_headroom_gib} GB.</div>${REC.unsupported_use_cases&&REC.unsupported_use_cases.length?`<div class="fine" style="color:var(--warn)">${tr("unsupported")}</div>`:""}${REC.relaxed_note?`<div class="fine" style="color:var(--accent2)">${esc(REC.relaxed_note)}</div>`:""}`;
-  $("deviceCard").innerHTML += abilitiesCard();
+  $("deviceCard").innerHTML += abilitiesCard() + `<div class="row" style="margin-top:10px"><button class="small" id="askGuideBtn">🧭 ${tr("g_ask","Ask the guide about this computer")}</button><span class="fine">${tr("g_ask_d","A chat that knows this device, the models and how to use them well. Needs an AI running.")}</span></div>`;
+  $("askGuideBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
   if(!d){ $("hero").innerHTML = `<b>${tr("none_fit","No model fits with these settings. Try Heavy or lower the margin in Advanced options.")}</b>`; $("others").innerHTML=""; renderNofit(); return; }
   $("hero").innerHTML = heroCard(d, true) + voiceCard();
   $("hero").querySelector("[data-run]").onclick = ()=>startRun(d.model_id, d.quant);
@@ -429,6 +432,7 @@ async function enterChat(){
   await refreshStatus();
   const sk = await api("/api/skills"); $("skills").innerHTML = sk.skills.map(s=>`<span class="chip pick ${currentSkill===s.id?"on":""}" data-skill="${s.id}">${esc(lang==="es"?s.es:s.en)}</span>`).join("");
   $("skills").querySelectorAll("[data-skill]").forEach(c=>c.onclick=()=>{ currentSkill = currentSkill===c.dataset.skill?null:c.dataset.skill; enterChat(); });
+  if(currentSkill==="guide" && chatMsgs.length===0){ try{ const g = await api("/api/guide?lang="+lang); $("msgs").innerHTML = `<div class="msg ai"><b>🧭 ${tr("g_title","Datas guide")}</b><div class="fine">${tr("g_lead","Ask me what this computer can do, which AI to use for what, or how to ask better. Try one:")}</div><div class="chips" style="margin-top:8px">${g.starters.map(q=>`<span class="chip pick" data-q="${esc(q)}">${esc(q)}</span>`).join("")}</div></div>`; $("msgs").querySelectorAll("[data-q]").forEach(c=>c.onclick=()=>{ $("input").value=c.dataset.q; send(); }); }catch(e){} }
   $("chatNote").textContent = STATUS.server.running ? (isOn($("netSwitch"))?tr("net_on"):tr("net_off")) : tr("no_ai","No AI is running yet. Go to Home and press Run, or start one in My AIs.");
   const V = STATUS.voice||{}; const vReady = V.installed && V.installed.ready;
   $("micBtn").classList.toggle("hidden", !(vReady && V.available && V.available.mic));
@@ -489,6 +493,7 @@ async function speakText(text){
 function stopSpeaking(){ if(player){ try{ player.pause(); }catch(e){} player=null; } $("stopSpeakBtn").classList.add("hidden"); }
 $("stopSpeakBtn").onclick = stopSpeaking;
 $("speakSwitch").onclick = async ()=>{ const on = !isOn($("speakSwitch")); sw($("speakSwitch"), on); if(!on) stopSpeaking(); try{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_speak_answers:on})}); }catch(e){} };
+$("aboutGuideBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
 $("send").onclick=send; $("input").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
 
 // files modal

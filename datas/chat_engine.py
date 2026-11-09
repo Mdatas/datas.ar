@@ -129,14 +129,18 @@ BASE = (
 )
 
 
-def system_prompt(cfg: Config, skill: str | None, internet: bool, lang: str) -> str:
+def system_prompt(
+    cfg: Config, skill: str | None, internet: bool, lang: str, extra: str | None = None
+) -> str:
     parts = [BASE]
     if lang == "es":
         parts.append(
             "The user's interface language is Spanish (Argentina); default to Spanish unless they write in another language."
         )
     sk = skill_prompt(skill)
-    if sk:
+    if sk == "GUIDE":
+        parts.append(extra or "You are the Datas guide; the device facts are unavailable right now.")
+    elif sk:
         parts.append("Current skill: " + sk)
     if internet:
         parts.append(
@@ -170,6 +174,7 @@ class ChatRequest:
     internet: bool = False
     skill: str | None = None
     lang: str = "en"
+    extra: str | None = None  # the guide's live briefing
     temperature: float = 0.7
 
 
@@ -179,7 +184,7 @@ def _sse(obj: dict) -> str:
 
 async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIterator[str]:
     messages = [
-        {"role": "system", "content": system_prompt(cfg, req.skill, req.internet, req.lang)}
+        {"role": "system", "content": system_prompt(cfg, req.skill, req.internet, req.lang, req.extra)}
     ] + [
         {"role": m["role"], "content": m.get("content", "")}
         for m in req.messages

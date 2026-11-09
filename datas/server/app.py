@@ -566,11 +566,20 @@ async def chat(body: ChatBody):
         return JSONResponse(
             {"error": "no_model", "message": "No AI is running yet."}, status_code=503
         )
+    extra = None
+    if body.skill == "guide":
+        from datas import guide
+
+        try:
+            extra = guide.build(core, body.lang or core.cfg.lang)
+        except Exception as e:  # noqa: BLE001 - the guide must never break the chat
+            extra = f"You are the Datas guide. (Device facts unavailable: {e})"
     req = chat_engine.ChatRequest(
         messages=body.messages,
         internet=body.internet,
         skill=body.skill,
         lang=body.lang or core.cfg.lang,
+        extra=extra,
     )
     return StreamingResponse(
         chat_engine.stream_chat(core.cfg, prov, req),
@@ -658,6 +667,15 @@ def context_add(body: ContextBody) -> dict:
 @app.delete("/api/context/{name}")
 def context_del(name: str) -> dict:
     return {"deleted": chats.delete_context(name)}
+
+
+@app.get("/api/guide")
+def guide_info(lang: str | None = None) -> dict:
+    """What the guide knows right now (for the UI and for curious users) + starter questions."""
+    from datas import guide
+
+    lg = lang or core.cfg.lang
+    return {"starters": guide.STARTERS.get(lg, guide.STARTERS["en"]), "briefing": guide.build(core, lg)}
 
 
 @app.get("/api/skills")

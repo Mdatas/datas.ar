@@ -225,6 +225,12 @@ def context_text(limit: int = MAX_CONTEXT_CHARS) -> str:
 
 SKILLS: list[dict] = [
     {
+        "id": "guide",
+        "en": "Ask Datas (guide)",
+        "es": "Preguntale a Datas (guía)",
+        "prompt": "GUIDE",  # replaced at request time by datas.guide.build(): this device, its verdicts, the models, how to prompt
+    },
+    {
         "id": "plain",
         "en": "Explain simply",
         "es": "Explicar fácil",

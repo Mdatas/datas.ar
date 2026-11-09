@@ -52,6 +52,9 @@ Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md
 - **Everything used is credited.** *About* lists GitHub and every project, model and library
   Datas is built on, with links.
 
+**Datas guide** — after the first run, a chat that knows *your* computer: what it can and can't do, which AI to
+use for what, how to ask better. It runs on the AI you already installed, no extra download.
+
 **Voice** — pick "Voice & sound" on the Run screen and Datas adds a hearing model (whisper.cpp) and a
 voice (Kokoro): a **Talk** button in the chat and **Read answers aloud**, English and Spanish, on the
 processor, nothing recorded to disk.
