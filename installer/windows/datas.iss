@@ -287,12 +287,10 @@ var
   BKeep, BAll, BBack: TNewButton;
   R: Integer;
 begin
-  F := CreateCustomForm;
+  F := CreateCustomForm(ScaleX(460), ScaleY(190), True, True);
   try
     F.Caption := T('Uninstall Datas', 'Desinstalar Datas');
-    F.ClientWidth := ScaleX(460);
-    F.ClientHeight := ScaleY(190);
-    F.Position := poScreenCenter;
+    F.CenterOnShow := True;
     L := TNewStaticText.Create(F);
     L.Parent := F;
     L.Left := ScaleX(20); L.Top := ScaleY(16); L.Width := ScaleX(420);
@@ -325,12 +323,10 @@ var
   M: TNewMemo;
   B: TNewButton;
 begin
-  F := CreateCustomForm;
+  F := CreateCustomForm(ScaleX(560), ScaleY(420), True, True);
   try
     F.Caption := T('Read me — Datas.ar', 'Leeme — Datas.ar');
-    F.ClientWidth := ScaleX(560);
-    F.ClientHeight := ScaleY(420);
-    F.Position := poScreenCenter;
+    F.CenterOnShow := True;
     M := TNewMemo.Create(F);
     M.Parent := F;
     M.Left := ScaleX(12); M.Top := ScaleY(12); M.Width := ScaleX(536); M.Height := ScaleY(360);
@@ -398,12 +394,10 @@ begin
   Result := False;
   Installed := FindInstalled(Loc, Ver, Uninst);
   InventoryData;
-  F := CreateCustomForm;
+  F := CreateCustomForm(ScaleX(460), ScaleY(300), True, True);
   try
     F.Caption := 'Datas.ar ' + '{#AppVersion}';
-    F.ClientWidth := ScaleX(460);
-    F.ClientHeight := ScaleY(300);
-    F.Position := poScreenCenter;
+    F.CenterOnShow := True;
 
     Title := TNewStaticText.Create(F); Title.Parent := F;
     Title.Left := ScaleX(20); Title.Top := ScaleY(16); Title.AutoSize := True;
