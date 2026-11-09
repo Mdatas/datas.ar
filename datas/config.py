@@ -97,6 +97,8 @@ class Config:
     resource_mode: str = "balanced"
     # Pool: offer this device to my other devices (runs a worker in the background)
     pool_offer: bool = False
+    # Version that last ran, to greet the user once after an upgrade or reinstall
+    last_version: str = ""
 
     @property
     def forget(self) -> bool:

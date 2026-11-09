@@ -474,6 +474,7 @@ $("langBtn").onclick=async()=>{ lang = lang==="en"?"es":"en"; applyLang(); if(PR
   if(!PRIV.onboarded) { go("welcome"); } else { go(params.get("screen") || "home"); }
   renderPriv();
   if(params.get("run")==="1" && PRIV.onboarded){ $("runBtn").click(); }
+  try{ const h = await api("/api/hello"); if(h.reinstalled && (h.models||h.chats||h.notes)){ const parts=[]; if(h.models) parts.push(lang==="es"?`${h.models} IA(s)`:`${h.models} AI(s)`); if(h.chats) parts.push(lang==="es"?`${h.chats} chat(s)`:`${h.chats} chat(s)`); if(h.notes) parts.push(lang==="es"?"tus notas":"your notes"); toast((lang==="es"?"Instalación nueva. Se conservó todo lo tuyo: ":"Fresh install. Everything of yours was kept: ")+parts.join(", ")+(lang==="es"?". Lo manejás desde Mis IAs y Ajustes.":". Manage it from My AIs and Settings."), 9000); } }catch(e){}
   const auto = new URLSearchParams(location.search).get("autorun");
   if(auto && PRIV.onboarded){ const it = LIB.find(x=>x.model_id===auto); if(it){ if(STATUS.server.running && STATUS.server.model_id===auto) go("chat"); else { go("home"); startRun(auto, it.quant); } } }
 })();

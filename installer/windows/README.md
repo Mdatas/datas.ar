@@ -13,8 +13,25 @@
 Windows SmartScreen may warn about an unsigned script the first time — *More info → Run anyway*.
 The script is plain text; read `Install-Datas.ps1` if you want to see exactly what it does.
 
-Re-run `Install-Datas.cmd` to upgrade. `Uninstall-Datas.cmd` removes the app and keeps your
-models (`Install-Datas.ps1 -Uninstall -Purge` deletes them too).
+## Upgrades = clean install, data always kept
+
+Both installers (`Install-Datas.cmd` and `Datas-Setup-<version>.exe`) do the same thing when a
+Datas is already on the PC:
+
+1. **Stop** any running Datas, `llama-server` or pool worker.
+2. **Remove the old program** — whichever kind it was: a Setup.exe install in Program Files (it is
+   uninstalled silently with `/KEEPDATA`) or a script install in `%LOCALAPPDATA%\Datas\app`
+   (the virtual environment is deleted and rebuilt from scratch). Shortcuts and the
+   *Settings → Apps* entry of the old copy are removed so there is never two.
+3. **Keep the data** in `%LOCALAPPDATA%\Datas` untouched: downloaded AI models (`models\*.gguf`),
+   chats, notes (`memory.md`), the llama.cpp engine, settings and logs.
+4. **Tell you what was kept** — the installer reports "kept: N AI models, M chats, your notes", and
+   the app shows the same notice on its first start, so you decide what to do with it from
+   *My AIs* and *Settings* (keep using, delete, or forget).
+
+Nothing is ever deleted by an install. Only the **uninstaller** asks whether to delete the data,
+and it only asks when you run it yourself (`Uninstall-Datas.cmd`, or *Settings → Apps → Datas.ar →
+Uninstall*). `Install-Datas.ps1 -Uninstall -Purge` deletes everything without asking.
 
 Command line: open a new terminal and type `datas` (the venv's Scripts folder is added to your PATH).
 

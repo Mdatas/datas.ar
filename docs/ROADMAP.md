@@ -19,6 +19,7 @@
 - [x] My AIs library with per-AI Desktop icons; Remember/Forget privacy switch; chats, notes, "End & learn", documents, skills
 - [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; pool switches in Settings; About & sources page
 - [x] Spanish/English; acronyms spelled out
+- [x] Installers detect any earlier copy (Setup.exe or script), remove it, rebuild clean, keep every model/chat/note and say so (installer summary + first-start notice in the app)
 
 ## 0.2.x — polish the loop
 - [ ] Installer scripts: `curl … | sh` (Linux/macOS), `.ps1` (Windows), pipx fallback
@@ -28,6 +29,27 @@
 - [ ] Benchmarks stored per model and shown as measured tok/s next to the speed class
 - [ ] Headless mode + systemd/launchd/Task Scheduler units (`datas service install`)
 - [ ] i18n beyond EN/ES (pt-BR first)
+
+## 0.2.x — voice, sound and video (the "later" chips on Home)
+
+Ollama is not an option here: it is itself a wrapper around llama.cpp (text and vision only), so it
+would add nothing Datas does not already run directly. The open, stable path is the rest of the
+**ggml family** — the same C/C++ engine style as llama.cpp, one small program per media type,
+prebuilt for Windows/Linux/macOS, MIT licensed:
+
+| Media | Engine | Models to start with | Notes |
+|---|---|---|---|
+| Speech → text (dictate to the AI) | [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (ggml-org, MIT) | Whisper `base`/`small` (CPU ok), `large-v3-turbo` (GPU) | Same download/launch code as llama.cpp; ships `whisper-server` with an HTTP API |
+| Text → speech (the AI talks back) | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0) via ONNX, CPU-friendly | one 82 M-parameter voice model, many voices | Fallback for very weak devices: Piper (GPL-3.0). Better quality / voice cloning on GPU: Chatterbox (MIT) |
+| Images (make / edit) | [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) (MIT) | Z-Image, Qwen-Image, FLUX.2, SDXL in GGUF quantisations | Has an embedded web UI and an HTTP server, same shape as `llama-server` |
+| Video (make) | stable-diffusion.cpp as well | Wan 2.1/2.2, LTX-2.3 | Heavy: needs a GPU with 8 GB+ VRAM; the recommender must say so plainly |
+
+Plan:
+- [ ] `datas/runtime/engines.py`: generalise the llama.cpp release fetcher (tag pin, platform asset, HEAD-probe fallback) so whisper.cpp and stable-diffusion.cpp reuse it
+- [ ] Catalog entries get a `media` field (`text`, `vision`, `speech-to-text`, `text-to-speech`, `image`, `video`) and the recommender uses the same RAM/VRAM budget per engine
+- [ ] Home chips "Voice & sound" and "Video" become real; the chat gets a microphone button (whisper.cpp) and a speaker toggle (Kokoro)
+- [ ] An "Images" tab fronting stable-diffusion.cpp's server, with the same privacy rules (Forget = nothing saved)
+- [ ] The user can always pick the engine per media in Settings → Advanced, same as the AI model
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server

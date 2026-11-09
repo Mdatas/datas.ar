@@ -69,6 +69,11 @@ Filename: "taskkill"; Parameters: "/F /IM Datas.exe"; Flags: runhidden; RunOnceI
 Filename: "taskkill"; Parameters: "/F /IM datas-cli.exe"; Flags: runhidden; RunOnceId: "killcli"
 
 [Code]
+var
+  FoundModels, FoundChats: Integer;
+  FoundNotes: Boolean;
+  PrevRemoved: String;
+
 function NeedsAddPath(Param: string): boolean;
 var
   OrigPath: string;
@@ -81,6 +86,144 @@ begin
   Result := Pos(';' + Uppercase(Param) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
 end;
 
+function CountFiles(Dir, Mask: String): Integer;
+var
+  FR: TFindRec;
+begin
+  Result := 0;
+  if FindFirst(AddBackslash(Dir) + Mask, FR) then
+  begin
+    try
+      repeat
+        if (FR.Attributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then Result := Result + 1;
+      until not FindNext(FR);
+    finally
+      FindClose(FR);
+    end;
+  end;
+end;
+
+function CountModels(Dir: String): Integer;
+var
+  FR: TFindRec;
+begin
+  Result := CountFiles(Dir, '*.gguf');
+  if FindFirst(AddBackslash(Dir) + '*', FR) then
+  begin
+    try
+      repeat
+        if ((FR.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0) and (FR.Name <> '.') and (FR.Name <> '..') then
+          Result := Result + CountFiles(AddBackslash(Dir) + FR.Name, '*.gguf');
+      until not FindNext(FR);
+    finally
+      FindClose(FR);
+    end;
+  end;
+end;
+
+procedure KillDatas;
+var
+  R: Integer;
+begin
+  Exec('taskkill', '/F /IM Datas.exe /IM datas-cli.exe /IM llama-server.exe /IM ggml-rpc-server.exe /IM rpc-server.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
+end;
+
+{ Remove the PowerShell/venv-based install (Install-Datas.ps1) if present: app files only. }
+procedure RemoveScriptInstall;
+var
+  AppDir: String;
+begin
+  AppDir := ExpandConstant('{localappdata}\Datas\app');
+  if DirExists(AppDir) then
+  begin
+    DelTree(AppDir, True, True, True);
+    PrevRemoved := PrevRemoved + 'script install (' + AppDir + ')' + #13#10;
+  end;
+  RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Datas.ar');
+  DeleteFile(ExpandConstant('{userdesktop}\Datas.ar.lnk'));
+  DeleteFile(ExpandConstant('{userprograms}\Datas.ar.lnk'));
+end;
+
+{ Remove an earlier Setup.exe install that lives somewhere else (per-user vs all-users). }
+procedure RemoveOtherSetupInstall;
+var
+  Key, Loc, Uninst: String;
+  R: Integer;
+  Roots: array[0..1] of Integer;
+  i: Integer;
+begin
+  Roots[0] := HKEY_LOCAL_MACHINE;
+  Roots[1] := HKEY_CURRENT_USER;
+  Key := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{C1B98555-CA0F-5131-A621-E87D2BBF05F6}_is1';
+  for i := 0 to 1 do
+  begin
+    if RegQueryStringValue(Roots[i], Key, 'InstallLocation', Loc) and
+       (CompareText(RemoveBackslash(Loc), RemoveBackslash(ExpandConstant('{app}'))) <> 0) and
+       RegQueryStringValue(Roots[i], Key, 'UninstallString', Uninst) then
+    begin
+      Uninst := RemoveQuotes(Uninst);
+      if FileExists(Uninst) then
+      begin
+        Exec(Uninst, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /KEEPDATA', '', SW_HIDE, ewWaitUntilTerminated, R);
+        PrevRemoved := PrevRemoved + 'previous Datas in ' + Loc + #13#10;
+      end;
+    end;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  DataDir, Msg: String;
+begin
+  if CurStep = ssInstall then
+  begin
+    KillDatas;
+    RemoveScriptInstall;
+    RemoveOtherSetupInstall;
+    DataDir := ExpandConstant('{localappdata}\Datas');
+    FoundModels := CountModels(DataDir + '\models');
+    FoundChats := CountFiles(DataDir + '\chats', '*.json');
+    FoundNotes := FileExists(DataDir + '\memory.md');
+  end;
+  if (CurStep = ssPostInstall) and ((FoundModels > 0) or (FoundChats > 0) or FoundNotes or (PrevRemoved <> '')) then
+  begin
+    if ActiveLanguage = 'spanish' then
+    begin
+      Msg := 'Instalación limpia lista.' + #13#10#13#10;
+      if PrevRemoved <> '' then Msg := Msg + 'Se quitó la copia anterior del programa:' + #13#10 + PrevRemoved + #13#10;
+      Msg := Msg + 'Tus datos se conservaron y ya están conectados a esta instalación:' + #13#10 +
+             '  • ' + IntToStr(FoundModels) + ' IA(s) descargadas' + #13#10 +
+             '  • ' + IntToStr(FoundChats) + ' chat(s) guardados' + #13#10;
+      if FoundNotes then Msg := Msg + '  • tus notas (memory.md)' + #13#10;
+      Msg := Msg + #13#10 + 'Vos decidís qué hacer con ellos desde "Mis IAs" y Ajustes.';
+    end
+    else
+    begin
+      Msg := 'Clean install done.' + #13#10#13#10;
+      if PrevRemoved <> '' then Msg := Msg + 'The earlier copy of the program was removed:' + #13#10 + PrevRemoved + #13#10;
+      Msg := Msg + 'Your data was kept and is already connected to this install:' + #13#10 +
+             '  • ' + IntToStr(FoundModels) + ' downloaded AI(s)' + #13#10 +
+             '  • ' + IntToStr(FoundChats) + ' saved chat(s)' + #13#10;
+      if FoundNotes then Msg := Msg + '  • your notes (memory.md)' + #13#10;
+      Msg := Msg + #13#10 + 'You decide what to do with them from "My AIs" and Settings.';
+    end;
+    MsgBox(Msg, mbInformation, MB_OK);
+  end;
+end;
+
+function CmdLineParamExists(const Value: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+    if CompareText(ParamStr(I), Value) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: string;
@@ -88,6 +231,8 @@ var
 begin
   if CurUninstallStep = usPostUninstall then
   begin
+    { /KEEPDATA is passed by a newer installer replacing this one: never ask, never delete. }
+    if CmdLineParamExists('/KEEPDATA') then Exit;
     DataDir := ExpandConstant('{localappdata}\Datas');
     if DirExists(DataDir) then
     begin

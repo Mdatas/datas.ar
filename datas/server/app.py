@@ -328,6 +328,27 @@ def pool_nodes(refresh: bool = True, seconds: float = 2.5) -> dict:
 # ---------------------------------------------------------------------------
 
 
+@app.get("/api/hello")
+def hello() -> dict:
+    """Called once per app start by the UI: says what was found from an earlier install."""
+    from datas import __version__ as ver
+
+    prev = core.cfg.last_version
+    first_run_of_version = prev != ver
+    if first_run_of_version:
+        core.cfg.last_version = ver
+        core.cfg.save()
+    models = library.installed()
+    return {
+        "version": ver,
+        "upgraded_from": prev if (first_run_of_version and prev) else None,
+        "reinstalled": first_run_of_version and (bool(models) or core.cfg.onboarded),
+        "models": len(models),
+        "chats": 0 if core.cfg.forget else len(chats.list_chats()),
+        "notes": bool(chats.read_memory().strip()) and not core.cfg.forget,
+    }
+
+
 @app.get("/api/sources")
 def sources() -> dict:
     return json.loads(

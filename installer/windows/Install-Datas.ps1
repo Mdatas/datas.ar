@@ -9,7 +9,9 @@
   3. Writes a launcher (Datas.cmd), Desktop + Start Menu shortcuts and an "Apps & features" entry.
   4. Starts Datas in its own window (no browser, no terminal).
 
-  Run it again to upgrade.  -Uninstall removes the app (downloaded models are kept unless -Purge).
+  Running it again does a CLEAN install: any earlier copy of the program (this script's or the
+  Setup.exe's) is removed first; downloaded AIs, chats, notes and settings are always kept and
+  picked up by the new install.  -Uninstall removes the app (data kept unless -Purge).
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\Install-Datas.ps1
@@ -121,6 +123,45 @@ Write-Host "  Datas.ar - local AI for everyone" -ForegroundColor White
 Write-Host "  Installing for $env:USERNAME into $AppRoot" -ForegroundColor DarkGray
 Write-Host ""
 
+# ---------------------------------------------------------------------------
+# Clean install: stop Datas, remove ANY earlier copy of the program (never the data)
+# ---------------------------------------------------------------------------
+Get-Process -Name 'Datas', 'datas', 'datas-cli', 'llama-server', 'ggml-rpc-server', 'rpc-server' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*-m datas*' -or $_.CommandLine -like '*\Datas\app\venv*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+
+# a) an earlier Setup.exe (Inno Setup) install, per-user or all-users
+$innoKeys = @(
+    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C1B98555-CA0F-5131-A621-E87D2BBF05F6}_is1',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{C1B98555-CA0F-5131-A621-E87D2BBF05F6}_is1',
+    'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C1B98555-CA0F-5131-A621-E87D2BBF05F6}_is1'
+)
+foreach ($k in $innoKeys) {
+    if (Test-Path $k) {
+        $u = (Get-ItemProperty $k).UninstallString -replace '"', ''
+        if ($u -and (Test-Path $u)) {
+            Step "Removing the earlier Datas program install found at $((Get-ItemProperty $k).InstallLocation) (your data is kept)"
+            $needsAdmin = $k -like 'HKLM:*'
+            if ($needsAdmin) { Start-Process -FilePath $u -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /KEEPDATA' -Verb RunAs -Wait }
+            else { Start-Process -FilePath $u -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /KEEPDATA' -Wait }
+        }
+    }
+}
+# b) an earlier copy of this script install: rebuild the environment from scratch
+if (Test-Path $Venv) { Step "Removing the earlier program files (clean install; data untouched)"; Remove-Item -Recurse -Force $Venv }
+Remove-Item -Force (Join-Path $AppRoot 'Datas.cmd'), (Join-Path $AppRoot 'Datas-Serve.cmd') -ErrorAction SilentlyContinue
+
+# c) inventory of data left behind on purpose - it stays, and the new install uses it as-is
+$kept = @()
+$modelsDir = Join-Path $DataRoot 'models'
+if (Test-Path $modelsDir) { $n = (Get-ChildItem -Path $modelsDir -Recurse -Filter '*.gguf' -ErrorAction SilentlyContinue | Measure-Object).Count; if ($n -gt 0) { $kept += "$n downloaded AI model file(s)" } }
+$chatsDir = Join-Path $DataRoot 'chats'
+if (Test-Path $chatsDir) { $n = (Get-ChildItem -Path $chatsDir -Filter '*.json' -ErrorAction SilentlyContinue | Measure-Object).Count; if ($n -gt 0) { $kept += "$n saved chat(s)" } }
+if (Test-Path (Join-Path $DataRoot 'memory.md')) { $kept += 'your notes (memory.md)' }
+if (Test-Path (Join-Path $DataRoot 'llamacpp')) { $kept += 'the AI engine (llama.cpp)' }
+if (Test-Path (Join-Path $DataRoot 'config.json')) { $kept += 'your settings' }
+
 $py = Find-Python
 if (-not $py) { Install-Python; $py = Find-Python }
 if (-not $py) { throw "Python 3.10+ still not found. Open a NEW terminal window (PATH refresh) and run the installer again." }
@@ -216,6 +257,11 @@ if ($userPath -notlike "*$scripts*") {
 
 Write-Host ""
 Ok "Done. Shortcut 'Datas.ar' is on your Desktop and Start Menu."
+if ($kept.Count -gt 0) {
+    Ok "Kept from your earlier install and connected to this one:"
+    foreach ($item in $kept) { Write-Host "      - $item" -ForegroundColor Green }
+    Write-Host "    You decide what to do with them from 'My AIs' and Settings." -ForegroundColor DarkGray
+}
 Write-Host "    Models, config and llama.cpp go to $DataRoot" -ForegroundColor DarkGray
 Write-Host "    Uninstall: Settings > Apps > Datas.ar, or run this script with -Uninstall" -ForegroundColor DarkGray
 Write-Host ""
