@@ -222,6 +222,34 @@
       "by": "Matthias Geier / PortAudio community",
       "license": "MIT / PortAudio (MIT-style)",
       "url": "https://python-sounddevice.readthedocs.io"
+    },
+    {
+      "name": "stable-diffusion.cpp",
+      "role": "Making images (and, later, video): the engine behind the Images screen (sd-server).",
+      "by": "leejet and contributors",
+      "license": "MIT",
+      "url": "https://github.com/leejet/stable-diffusion.cpp"
+    },
+    {
+      "name": "Z-Image-Turbo",
+      "role": "The picture model Datas downloads for making images (6 B parameters, 8 steps).",
+      "by": "Tongyi-MAI (Alibaba); GGUF conversions by leejet",
+      "license": "Apache-2.0 (as stated on the model card)",
+      "url": "https://huggingface.co/Tongyi-MAI/Z-Image-Turbo"
+    },
+    {
+      "name": "Qwen3-4B-Instruct-2507 (text encoder)",
+      "role": "Reads your description for the picture model.",
+      "by": "Qwen (Alibaba); GGUF by Unsloth",
+      "license": "Apache-2.0",
+      "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF"
+    },
+    {
+      "name": "FLUX.1 autoencoder (ae.safetensors)",
+      "role": "Turns the picture model's output into pixels (VAE).",
+      "by": "Black Forest Labs",
+      "license": "Apache-2.0",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
     }
   ]
 }

@@ -48,7 +48,9 @@ prebuilt for Windows/Linux/macOS, MIT licensed:
 Status:
 - [x] **Voice shipped** (`datas/engines/voice.py`): whisper.cpp runs in-process through `pywhispercpp` (prebuilt wheels, no release binaries needed — ggml-org ships source only), Kokoro through `kokoro-onnx` + ONNX Runtime, microphone through PortAudio on the server side (works in every window toolkit, no browser permission prompts). Catalog `datas/catalog/media.json` with exact sizes/hashes. Home chip "Voice & sound" is live; the hearing model is chosen by processor/memory (tiny → base → small → large-v3-turbo); chat gets **Talk** and **Read answers aloud**; Settings lets you pick model and voice. Audio is never written to disk.
 - [ ] Android: the same through whisper.cpp's and Kokoro's Android builds (not yet)
-- [ ] Images & video: stable-diffusion.cpp prebuilt releases exist for Windows (CPU/CUDA/Vulkan/ROCm), Linux (CPU/Vulkan/ROCm) and macOS arm64; next step is `datas/engines/images.py` (download `sd-server`, pick Z-Image / Qwen-Image / FLUX.2 by VRAM, an "Images" tab) and then video (Wan 2.2, LTX-2.3 — needs a GPU with 8 GB+)
+- [x] **Images shipped** (`datas/engines/images.py`): stable-diffusion.cpp pinned release (Vulkan on any GPU, Metal on Mac, CPU fallback; CUDA/ROCm optional in Settings), recipe Z-Image-Turbo (GGUF Q3_K/Q4_K/Q8_0 by memory + Qwen3-4B text encoder + FLUX VAE, exact sizes in `media.json`), `sd-server` managed like `llama-server` (native async API, offload to CPU on small cards), Images screen with gallery, Forget mode keeps nothing on disk. Verdict "Making images" comes from the engine's own fit check.
+- [ ] Images: more recipes by device (Qwen-Image for big cards, FLUX.2 klein), image editing (Qwen-Image-Edit), upscaling
+- [ ] Video: Wan 2.2 / LTX-2.3 through the same engine — needs a GPU with 12 GB+; `docs/wan.md` upstream
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server

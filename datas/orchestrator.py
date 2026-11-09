@@ -7,6 +7,7 @@ the weights, starts the server with safe flags, and keeps the handles.
 
 from __future__ import annotations
 
+import base64
 import subprocess
 import sys
 import threading
@@ -20,6 +21,7 @@ from datas import __version__
 from datas.catalog import Catalog, CatalogModel, ModelFile
 from datas.catalog import load as load_catalog
 from datas.config import Config, home, models_dir
+from datas.engines import images as image_engine
 from datas.engines import voice as voice_engine
 from datas.hardware.detect import DeviceSpec, detect
 from datas.pool.discovery import Node, discover, parse_manual
@@ -94,6 +96,7 @@ class Datas:
         self.server = LlamaServer(self.cfg)
         self.jobs: dict[str, Job] = {}
         self.recorder = voice_engine.Recorder()
+        self.sd = image_engine.SdServer(self.cfg)
         self.granted_folders: list[str] = []  # agent folders allowed for this session
         self.scheduler = None  # started by the server (datas.server.app)
         self.approvals: dict[str, dict] = {}  # pending "may I?" questions from a running agent
@@ -456,7 +459,13 @@ class Datas:
         """Blocks the agent until the window answers (or 15 min pass → denied)."""
         aid = uuid.uuid4().hex[:8]
         ev = threading.Event()
-        self.approvals[aid] = {"id": aid, "text": text, "event": ev, "answer": None, "asked": time.time()}
+        self.approvals[aid] = {
+            "id": aid,
+            "text": text,
+            "event": ev,
+            "answer": None,
+            "asked": time.time(),
+        }
         try:
             ev.wait(timeout)
             return bool(self.approvals[aid]["answer"])
@@ -511,6 +520,96 @@ class Datas:
             encoding="utf-8",
         )
         return state, final, str(out)
+
+    # ---- images (stable-diffusion.cpp) ------------------------------------------
+    def image_choice(self) -> image_engine.ImageChoice:
+        return image_engine.choose(self.spec(), self.cfg)
+
+    def image_status(self) -> dict:
+        ch = self.image_choice()
+        files = image_engine.installed_files(ch)
+        return {
+            "engine_installed": image_engine.installed_dir() is not None,
+            "models": files,
+            "ready": files["ready"] and image_engine.installed_dir() is not None,
+            "server": self.sd.state.to_dict() | {"running": self.sd.running()},
+            "choice": {
+                "recipe": ch.recipe,
+                "backend": ch.backend,
+                "device": ch.device,
+                "offload": ch.offload,
+                "quant": ch.diffusion["quant"],
+                "total_bytes": ch.total_bytes,
+                "need_gib": ch.need_gib,
+                "speed": ch.speed,
+                "fits": ch.fits,
+                "reasons": ch.reasons,
+                "plain": ch.plain(self.cfg.lang),
+                "files": [
+                    {"file": f["file"], "bytes": f["bytes"], "repo": f["repo"]} for f in ch.files()
+                ],
+            },
+        }
+
+    def start_images_job(self) -> Job:
+        """Download the engine and the model files if needed, then start sd-server."""
+        job = self._job("images", "Set up making images (Z-Image-Turbo)")
+
+        def body(j: Job) -> dict:
+            ch = self.image_choice()
+            if not ch.fits:
+                raise RuntimeError(
+                    "This device does not have enough memory to make images: "
+                    + " ".join(ch.reasons)
+                )
+            exe = image_engine.ensure_runtime(self.spec(), self.cfg, j)
+            image_engine.ensure_models(ch, j)
+            j.phase = "starting"
+            j.say("Starting the image engine (loading ~%.1f GB)…" % (ch.total_bytes / GiB))
+            st = self.sd.start(exe, ch, self.spec(), self.cfg.sd_port)
+            return {"server": st.to_dict()}
+
+        return self._run_job(job, body)
+
+    def stop_images(self) -> None:
+        self.sd.stop()
+
+    def start_generate_job(
+        self, prompt: str, negative: str, width: int, height: int, steps: int | None, seed: int
+    ) -> Job:
+        job = self._job("image", prompt[:60])
+
+        def body(j: Job) -> dict:
+            if not self.sd.running():
+                raise RuntimeError(
+                    "The image engine is not running. Set it up from Home → Images first."
+                )
+            ch = self.image_choice()
+            recipe = image_engine.catalog()["recipes"][ch.recipe]
+            j.phase = "generating"
+            pngs = self.sd.generate(
+                prompt,
+                negative,
+                width,
+                height,
+                steps or recipe["steps"],
+                recipe["cfg_scale"],
+                seed,
+                progress=j.progress,
+            )
+            out: dict = {"count": len(pngs)}
+            if self.cfg.forget:
+                out["b64"] = [base64.b64encode(p).decode() for p in pngs]
+            else:
+                names = []
+                for p in pngs:
+                    name = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{uuid.uuid4().hex[:6]}.png"
+                    (image_engine.images_dir() / name).write_bytes(p)
+                    names.append(name)
+                out["files"] = names
+            return out
+
+        return self._run_job(job, body)
 
     # ---- voice (hearing + speaking) -----------------------------------------
     def voice_choice(self) -> voice_engine.VoiceChoice:
@@ -610,6 +709,7 @@ class Datas:
 
     def shutdown(self) -> None:
         self.stop()
+        self.sd.stop()
         if self.worker_running():
             self.set_pool_offer(False)
         for p in self._agent_windows:
@@ -649,5 +749,9 @@ class Datas:
                 "available": voice_engine.available(),
                 "installed": voice_engine.installed(self.cfg),
                 "speak_answers": self.cfg.voice_speak_answers,
+            },
+            "images": {
+                "engine_installed": image_engine.installed_dir() is not None,
+                "running": self.sd.running(),
             },
         }

@@ -244,47 +244,51 @@ def assess(spec: DeviceSpec, rec: Recommendation, voice_available: bool = True) 
             )
         )
 
-    # ---- making images (stable-diffusion.cpp, not wired yet) ---------------
-    if vram >= 6 or uni >= 16:
-        how_en = (
-            f"graphics card with {vram:.0f} GB" if vram >= 6 else f"shared memory of {uni:.0f} GB"
-        )
-        how_es = (
-            f"placa de video de {vram:.0f} GB"
-            if vram >= 6
-            else f"memoria compartida de {uni:.0f} GB"
-        )
-        img = (
-            "not_yet",
-            f"This device can make images ({how_en}); Datas adds the image engine in the next version.",
-            f"Este equipo puede crear imágenes ({how_es}); Datas suma el motor de imágenes en la próxima versión.",
-        )
-        needs = ("", "")
-    elif ram >= 16 and not phone:
-        img = (
-            "not_yet",
-            "Possible on the processor alone but slow (minutes per image); the engine comes in the next version.",
-            "Posible solo con el procesador pero lento (minutos por imagen); el motor llega en la próxima versión.",
-        )
-        needs = (
-            "a graphics card with 6 GB+ for comfortable use",
-            "una placa de video de 6 GB+ para usarlo cómodo",
+    # ---- making images (stable-diffusion.cpp, Z-Image-Turbo) ----------------
+    from datas.engines import images as image_engine
+
+    ch = image_engine.choose(spec)
+    if not ch.fits:
+        out.append(
+            Ability(
+                "image_gen",
+                "no",
+                f"Making images needs about {ch.need_gib:.0f} GB of memory for the picture model; "
+                "this device cannot spare it.",
+                f"Crear imágenes necesita unos {ch.need_gib:.0f} GB de memoria para el modelo de imagen; "
+                "este equipo no los puede ceder.",
+                needs="a graphics card with 4 GB+ and 8 GB of RAM, or 12 GB+ of RAM for slow CPU use",
+                needs_es="una placa de video de 4 GB+ y 8 GB de RAM, o 12 GB+ de RAM para uso lento en CPU",
+                engine="stable-diffusion.cpp",
+            )
         )
     else:
-        img = (
-            "no",
-            "Making images needs a graphics card with 6 GB+ or 16 GB of memory; this device has neither.",
-            "Crear imágenes necesita una placa de video de 6 GB+ o 16 GB de memoria; este equipo no tiene ninguna de las dos.",
+        slow = ch.speed in ("slow", "crawl")
+        where = {
+            "gpu": ("on the graphics card", "en la placa de video"),
+            "unified": ("on the shared-memory chip", "en el chip de memoria compartida"),
+            "cpu": ("on the processor alone", "solo con el procesador"),
+        }[ch.device]
+        extra_en = (
+            " Expect minutes per picture."
+            if ch.speed == "crawl"
+            else (" A picture takes a while." if slow else "")
         )
-        needs = (
-            "graphics card with 6 GB+ (or 16 GB RAM for slow CPU use)",
-            "placa de video de 6 GB+ (o 16 GB de RAM para uso lento en CPU)",
+        extra_es = (
+            " Contá minutos por imagen."
+            if ch.speed == "crawl"
+            else (" Cada imagen tarda un rato." if slow else "")
         )
-    out.append(
-        Ability(
-            "image_gen", img[0], img[1], img[2], needs[0], needs[1], engine="stable-diffusion.cpp"
+        out.append(
+            Ability(
+                "image_gen",
+                "slow" if slow else "yes",
+                f"Z-Image-Turbo ({ch.total_bytes / GiB:.1f} GB download) makes 1024-px pictures {where[0]}.{extra_en}",
+                f"Z-Image-Turbo ({ch.total_bytes / GiB:.1f} GB de descarga) crea imágenes de 1024 px {where[1]}.{extra_es}",
+                engine="stable-diffusion.cpp",
+                extra={"download_bytes": ch.total_bytes, "quant": ch.diffusion["quant"]},
+            )
         )
-    )
 
     # ---- making video --------------------------------------------------------
     if vram >= 12 or uni >= 32:

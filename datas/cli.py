@@ -36,8 +36,10 @@ provider_app = typer.Typer(help="Remote OpenAI-compatible providers (API keys)."
 runtime_app = typer.Typer(help="llama.cpp runtime management.")
 catalog_app = typer.Typer(help="Model catalog.")
 voice_app = typer.Typer(help="Hearing (whisper.cpp) and speaking (Kokoro).")
+images_app = typer.Typer(help="Making images (stable-diffusion.cpp, Z-Image-Turbo).")
 app.add_typer(pool_app, name="pool")
 app.add_typer(voice_app, name="voice")
+app.add_typer(images_app, name="images")
 app.add_typer(provider_app, name="provider")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(catalog_app, name="catalog")
@@ -386,7 +388,9 @@ def agent(
     base_url: str | None = None,
     model: str = "datas",
     max_steps: int = 40,
-    folder: list[Path] = typer.Option([], "--folder", help="a folder of yours the agent may use (repeatable)"),
+    folder: list[Path] = typer.Option(
+        [], "--folder", help="a folder of yours the agent may use (repeatable)"
+    ),
     ask: str = typer.Option("risky", help="approve actions: all | risky | none"),
     yes: bool = typer.Option(False, "--yes", "-y", help="same as --ask none"),
 ):
@@ -752,6 +756,79 @@ def voice_hear(
     core = _core()
     text = core.hear(ve.pcm_from_wav(wav.read_bytes()), lang)
     con.print(text or "[dim](nothing heard)[/dim]")
+
+
+# ---- images --------------------------------------------------------------------
+
+
+@images_app.command("status")
+def images_status():
+    """Engine/model state and what this device would get."""
+    con.print_json(json.dumps(_core().image_status()))
+
+
+@images_app.command("engine")
+def images_engine():
+    """Download only the image engine (stable-diffusion.cpp) for this device — no model files."""
+    from datas.engines import images as ie
+
+    core = _core()
+    exe = ie.ensure_runtime(core.spec(), core.cfg)
+    con.print(f"[green]{exe}[/green]")
+
+
+def _wait(job) -> None:  # noqa: ANN001
+    last = None
+    while job.state in ("queued", "running"):
+        if job.log and job.log[-1] != last:
+            last = job.log[-1]
+            con.print(last)
+        time.sleep(0.5)
+    if job.state == "error":
+        con.print(f"[red]{job.error}[/red]")
+        raise typer.Exit(1)
+
+
+@images_app.command("setup")
+def images_setup():
+    """Download the engine and Z-Image-Turbo files for this device and start the server."""
+    core = _core()
+    _wait(core.start_images_job())
+    con.print("[green]image engine running[/green]")
+
+
+@images_app.command("make")
+def images_make(
+    prompt: str,
+    out: Path = typer.Option(Path("datas-image.png")),
+    width: int = 1024,
+    height: int = 1024,
+    steps: int | None = None,
+    seed: int = -1,
+):
+    """Make one picture (starts the engine if everything is downloaded)."""
+    core = _core()
+    if not core.sd.running():
+        _wait(core.start_images_job())
+    job = core.start_generate_job(prompt, "", width, height, steps, seed)
+    _wait(job)
+    res = job.result or {}
+    if res.get("files"):
+        from datas.engines import images as ie
+
+        data = (ie.images_dir() / res["files"][0]).read_bytes()
+    else:
+        import base64 as _b
+
+        data = _b.b64decode(res["b64"][0])
+    out.write_bytes(data)
+    con.print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
+
+
+@images_app.command("stop")
+def images_stop():
+    _core().stop_images()
+    con.print("stopped")
 
 
 if __name__ == "__main__":

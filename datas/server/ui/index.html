@@ -45,6 +45,7 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:8} .modal.on{display:flex} .modal .card{width:min(680px,92vw);max-height:86vh;overflow:auto}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:14px}
   .abilities{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px;margin-top:6px} .ab{display:flex;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)} .ab.picked{border-color:var(--accent)} .ab-icon{font-size:16px;line-height:1.3} .ab.no{opacity:.85}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px} .gallery figure{margin:0;position:relative} .gallery img{width:100%;border-radius:10px;border:1px solid var(--line);display:block} .gallery button{position:absolute;top:6px;right:6px} #imgResult img{max-width:100%;border-radius:12px;border:1px solid var(--line);margin-top:10px}
 </style>
 </head>
 <body>
@@ -54,6 +55,7 @@
     <button data-go="home" class="on" data-t="nav_home">Home</button>
     <button data-go="library" data-t="nav_library">My AIs</button>
     <button data-go="chat" data-t="nav_chat">Chat</button>
+    <button data-go="images" class="hidden" id="navImages" data-t="nav_images">Images</button>
     <button data-go="settings" data-t="nav_settings">Settings</button>
     <button data-go="about" data-t="nav_about">About</button>
   </nav>
@@ -192,6 +194,11 @@
     </div>
   </div>
   <div class="card">
+    <h2>🖼 <span data-t="i_title">Make images</span></h2>
+    <p class="fine" data-t="i_set_d">The image engine (stable-diffusion.cpp) normally uses Vulkan on any graphics card and Metal on a Mac — small download, standard drivers. NVIDIA owners can switch to CUDA (faster, +850 MB) — takes effect at the next setup.</p>
+    <div class="row"><label><span data-t="i_backend">Image engine build</span> <select id="imgBackend"><option value="auto">Automatic</option><option value="vulkan">Vulkan (any graphics card)</option><option value="cuda">CUDA (NVIDIA)</option><option value="rocm">ROCm (AMD)</option><option value="cpu">Processor only</option></select></label></div>
+  </div>
+  <div class="card">
     <h2 data-t="s_misc">Other</h2>
     <div class="row"><button id="deskBtn" data-t="s_desk">Put Datas on my Desktop</button><button id="benchBtn" data-t="s_bench">Measure speed</button><button id="stopBtn" data-t="s_stop">Stop the running AI</button></div>
     <p class="fine" id="techInfo"></p>
@@ -199,6 +206,25 @@
 </section>
 
 <!-- ================= ABOUT ================= -->
+<section class="screen" id="s-images">
+  <h1 data-t="i_title">Make images</h1>
+  <p class="fine" id="imgStatus"></p>
+  <div class="card">
+    <textarea id="imgPrompt" style="width:100%;height:80px" data-tp="i_ph" placeholder="Describe the picture. English works best, e.g.: a watercolor of a lighthouse at dawn, soft light, mist"></textarea>
+    <div class="row" style="margin-top:8px">
+      <select id="imgSize"><option value="1024x1024">1024 × 1024 (square)</option><option value="768x1024">768 × 1024 (portrait)</option><option value="1024x768">1024 × 768 (landscape)</option><option value="640x640">640 × 640 (quick)</option></select>
+      <input type="text" id="imgNeg" style="flex:1;min-width:160px" data-tp="i_neg" placeholder="Avoid (optional): blurry, text, watermark">
+      <button class="primary" id="imgGo" data-t="i_go">Make the picture</button>
+      <button class="small" id="imgStart" data-t="i_start">Start the image engine</button>
+      <button class="small" id="imgStop" data-t="i_stop">Stop the image engine</button>
+    </div>
+    <div class="fine" id="imgProg" style="margin-top:6px"></div>
+  </div>
+  <div id="imgResult"></div>
+  <h2 data-t="i_gallery">Your pictures</h2>
+  <p class="fine" data-t="i_gallery_d">Saved on this computer only (in Forget mode nothing is saved; the picture shows once).</p>
+  <div class="gallery" id="imgGallery"></div>
+</section>
 <section class="screen" id="s-about">
   <h1 data-t="a_title">About this app &amp; its sources</h1>
   <div class="row" style="margin:8px 0"><button class="small" id="aboutGuideBtn">🧭 <span data-t="g_ask">Ask the guide about this computer</span></button></div>
@@ -232,6 +258,7 @@ es:{
  h_title:"¿Para qué vas a usar tu IA?",h_lead:"Elegí una o más opciones. Después apretá Correr: Datas revisa tu computadora y elige la mejor IA que puede cargar sin trabar todo lo demás.",
  u_text:"Chat y escritura",u_text_d:"Preguntas, emails, resúmenes, ideas, traducciones.",u_images:"Entender imágenes",u_images_d:"Describir o leer una foto, una captura, un documento.",u_coding:"Programar",u_coding_d:"Escribir y corregir código.",
  u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Datas revisa si este equipo podría hacerlo (necesita una placa de video de verdad). El motor para esto viene después.",
+ nav_images:"Imágenes",i_title:"Crear imágenes",i_ph:"Describí la imagen. En inglés funciona mejor, p. ej.: a watercolor of a lighthouse at dawn, soft light, mist",i_neg:"Evitar (opcional): blurry, text, watermark",i_go:"Crear la imagen",i_start:"Iniciar el motor de imágenes",i_stop:"Parar el motor de imágenes",i_gallery:"Tus imágenes",i_gallery_d:"Guardadas solo en esta computadora (en modo Olvidar no se guarda nada; la imagen se muestra una vez).",i_setup:"Descargar e iniciar el motor de imágenes",i_ready_stopped:"Ya está todo descargado; iniciá el motor para crear imágenes.",i_not_setup:"Todavía no está listo: andá a Inicio, marcá \"Imágenes y video\", apretá Correr y elegí \"Descargar e iniciar el motor de imágenes\".",i_starting:"Iniciando el motor de imágenes… (cargar unos GB tarda uno o dos minutos)",i_working:"Creando la imagen…",i_set_d:"El motor de imágenes (stable-diffusion.cpp) usa Vulkan en cualquier placa de video y Metal en Mac — descarga chica, drivers normales. Con NVIDIA podés pasar a CUDA (más rápido, +850 MB) — aplica en la próxima instalación.",i_backend:"Versión del motor de imágenes",ph_img_engine:"Descargando el motor de imágenes (stable-diffusion.cpp)…",ph_img_models:"Descargando el modelo de imágenes (unos GB)…",engine:"motor",
  g_ask:"Preguntale a la guía sobre esta computadora",g_ask_d:"Un chat que conoce este equipo, los modelos y cómo usarlos bien. Necesita una IA corriendo.",g_title:"Guía de Datas",g_lead:"Preguntame qué puede hacer esta computadora, qué IA usar para qué, o cómo preguntar mejor. Probá una:",
  ab_title:"En esta computadora",ab_text:"Chat y escritura",ab_images:"Entender imágenes",ab_coding:"Programar",ab_agents:"Tareas por mí (agente)",ab_sound:"Voz y sonido",ab_image_gen:"Crear imágenes",ab_video:"Crear video",ab_pool:"Dispositivos en conjunto",ab_yes:"Sí",ab_slow:"Sí, lento",ab_no:"No",ab_not_yet:"Todavía no",ab_needs:"Necesita:",
  v_title:"Voz",v_hear:"Oído",v_speak:"Voz",v_extra:"se suma a la descarga",v_mem:"de memoria extra",v_install:"Instalar la voz (oído + habla)",v_installed:"Voz instalada",v_notavail:"Esta copia de Datas vino sin los paquetes de voz; reinstalá con el instalador más nuevo.",v_mic:"Hablar",v_listening:"Escuchando… tocá para terminar",v_working:"Entendiendo…",v_read:"Leer las respuestas en voz alta",v_nomic:"No se encontró micrófono en esta computadora.",v_model:"Modelo de oído",v_voice:"Voz",v_auto:"Automático (según la computadora)",ph_voice:"Descargando el oído y la voz…",
@@ -282,7 +309,7 @@ const $ = id => document.getElementById(id);
 const api = async (path, opts={}) => { const r = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, opts)); if(!r.ok){ let t = await r.text(); try{ t = JSON.parse(t).message || JSON.parse(t).detail || t }catch(e){} throw new Error(t.slice(0,300)); } return r.json(); };
 const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(msg, ms=3500){ const t=$("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", ms); }
-function go(name){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $("s-"+name).classList.add("on"); document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===name)); window.scrollTo(0,0); if(name==="library") loadLibrary(); if(name==="settings") loadSettings(); if(name==="about") loadAbout(); if(name==="chat") enterChat(); }
+function go(name){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $("s-"+name).classList.add("on"); document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===name)); window.scrollTo(0,0); if(name==="library") loadLibrary(); if(name==="settings") loadSettings(); if(name==="about") loadAbout(); if(name==="chat") enterChat(); if(name==="images") enterImages(); }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.go));
 function dots(n){ return `<span class="dots" title="${tr('quality','Quality')} ${n}/5">${"●".repeat(n)}${"○".repeat(5-n)}</span>`; }
 function sw(el, on){ el.classList.toggle("on", !!on); }
@@ -342,7 +369,8 @@ function renderResult(){
   $("deviceCard").innerHTML += abilitiesCard() + `<div class="row" style="margin-top:10px"><button class="small" id="askGuideBtn">🧭 ${tr("g_ask","Ask the guide about this computer")}</button><span class="fine">${tr("g_ask_d","A chat that knows this device, the models and how to use them well. Needs an AI running.")}</span></div>`;
   $("askGuideBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
   if(!d){ $("hero").innerHTML = `<b>${tr("none_fit","No model fits with these settings. Try Heavy or lower the margin in Advanced options.")}</b>`; $("others").innerHTML=""; renderNofit(); return; }
-  $("hero").innerHTML = heroCard(d, true) + voiceCard();
+  $("hero").innerHTML = heroCard(d, true) + voiceCard() + imagesCard();
+  const ib = $("hero").querySelector("#imgSetupBtn"); if(ib) ib.onclick = async ()=>{ const j = await api("/api/images/setup",{method:"POST"}); watchJob(j.id, "Z-Image-Turbo"); };
   $("hero").querySelector("[data-run]").onclick = ()=>startRun(d.model_id, d.quant);
   const others = REC.fits.filter(c=>c.model_id!==d.model_id);
   $("others").innerHTML = others.length ? others.map(c=>`<div class="card">${heroCard(c,false)}</div>`).join("") : `<p class="fine">—</p>`;
@@ -370,6 +398,19 @@ function abilitiesCard(){
   const picked = uses();
   return `<div style="margin-top:10px"><b>${tr("ab_title","On this computer")}</b><div class="abilities">${A.map(a=>`<div class="ab ${a.verdict} ${picked.includes(a.id)?"picked":""}"><span class="ab-icon">${AB_ICON[a.verdict]||""}</span><div><b>${tr("ab_"+a.id, AB_NAMES[a.id]||a.id)}</b> — ${tr("ab_"+a.verdict, {yes:"Yes",slow:"Yes, slowly",no:"No",not_yet:"Not yet"}[a.verdict])}<div class="fine">${esc(lang==="es"?a.why_es:a.why)}${(lang==="es"?a.needs_es:a.needs)?` <i>${tr("ab_needs","Needs:")} ${esc(lang==="es"?a.needs_es:a.needs)}</i>`:""}</div></div></div>`).join("")}</div></div>`;
 }
+function imagesCard(){
+  if(!uses().includes("video")) return "";
+  const c = REC.images; if(!c) return "";
+  const p = c.plain, ab = (REC.abilities||[]).find(a=>a.id==="image_gen")||{};
+  if(!c.fits) return `<div class="card" style="margin-top:10px"><h3>🖼 ${tr("i_title","Make images")}</h3><p class="fine" style="color:var(--warn)">${esc(lang==="es"?ab.why_es:ab.why)} ${(lang==="es"?ab.needs_es:ab.needs)?`<i>${tr("ab_needs","Needs:")} ${esc(lang==="es"?ab.needs_es:ab.needs)}</i>`:""}</p></div>`;
+  return `<div class="card" style="margin-top:10px"><h3>🖼 ${tr("i_title","Make images")}: ${esc(p.name)}</h3>
+    <div class="fine">${tr("maker","Made by")} ${esc(p.maker)} · <a href="${esc(p.page)}" target="_blank" rel="noopener">${tr("model_page","model page")}</a> · ${tr("license","license")}: ${esc(p.license)} · ${tr("engine","engine")}: stable-diffusion.cpp</div>
+    <p style="margin:6px 0">${esc(p.what)}</p>
+    <ul class="plain">${c.reasons.map(r=>`<li class="fine">${esc(r)}</li>`).join("")}</ul>
+    <div class="chips"><span class="chip ${c.speed==="fast"||c.speed==="ok"?"good":"warn"}">${tr(c.speed)}</span><span class="chip">+${esc(p.download)}</span><span class="chip">${esc(p.memory)} ${tr("v_mem","extra memory")}</span></div>
+    <p class="fine"><b>${tr("limits","Limits")}:</b> ${esc(p.limits)}</p>
+    <div class="row" style="margin-top:8px"><button class="primary" id="imgSetupBtn">${tr("i_setup","Download and start the image engine")}</button></div></div>`;
+}
 function voiceCard(){
   if(!uses().includes("sound")) return "";
   if(REC.voice_missing) return `<div class="card" style="margin-top:10px"><h3>${tr("v_title","Voice")}</h3><p class="fine" style="color:var(--warn)">${tr("v_notavail","This copy of Datas came without the voice packages; reinstall with the newest installer.")}</p></div>`;
@@ -391,11 +432,11 @@ function watchJob(id, label){
   $("progress").scrollIntoView({behavior:"smooth", block:"center"});
   POLL = setInterval(async ()=>{
     const j = await api("/api/jobs/"+id);
-    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)"), voice:tr("ph_voice","Downloading the hearing model and the voice…")}[j.phase] || "";
+    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)"), voice:tr("ph_voice","Downloading the hearing model and the voice…"), "image-engine":tr("ph_img_engine","Downloading the image engine (stable-diffusion.cpp)…"), "image-models":tr("ph_img_models","Downloading the picture model (a few GB)…")}[j.phase] || "";
     $("pPhase").textContent = " · "+ph; $("pPct").textContent = j.percent!=null?`${j.percent}% · ${(j.done/2**30).toFixed(1)} / ${(j.total/2**30).toFixed(1)} GB`:""; $("pBar").style.width=(j.percent||0)+"%"; $("pLog").textContent=j.log.join("\n");
     $("pHint").textContent = j.phase==="model" ? (lang==="es"?"Podés seguir usando la computadora. La descarga se reanuda sola si se corta.":"You can keep using the computer. The download resumes by itself if it drops.") : "";
     if(j.state==="done"||j.state==="error"){ clearInterval(POLL);
-      if(j.state==="done"){ $("pBar").style.width="100%"; $("pPhase").textContent=" · "+tr("ph_done","Ready! You can chat now."); await refreshStatus(); if(j.kind==="run") { setTimeout(()=>go("chat"), 600); } if(j.kind==="bench"&&j.result){ toast(tr("bench_result","Measured speed: %g words/s writing (%p reading).").replace("%g", j.result.gen_tps).replace("%p", j.result.prompt_tps), 8000); } }
+      if(j.state==="done"){ $("pBar").style.width="100%"; $("pPhase").textContent=" · "+tr("ph_done","Ready! You can chat now."); await refreshStatus(); if(j.kind==="run") { setTimeout(()=>go("chat"), 600); } if(j.kind==="images") { setTimeout(()=>go("images"), 600); } if(j.kind==="bench"&&j.result){ toast(tr("bench_result","Measured speed: %g words/s writing (%p reading).").replace("%g", j.result.gen_tps).replace("%p", j.result.prompt_tps), 8000); } }
       else { $("pPhase").textContent=" · "+tr("ph_error","Something failed:")+" "+(j.error||""); }
     }
   }, 800);
@@ -404,6 +445,7 @@ function watchJob(id, label){
 // ---------- status ----------
 async function refreshStatus(){
   STATUS = await api("/api/status"); $("ver").textContent = STATUS.version;
+  if(STATUS.images) $("navImages").classList.toggle("hidden", !(STATUS.images.engine_installed||STATUS.images.running));
   const s = STATUS.server, pill = $("statusPill");
   if(s.running){ const name = libName(s.model_id) || s.model_id; pill.textContent = "● "+tr("status_running","Running")+": "+name; pill.classList.add("on"); $("chatTitle").textContent = name; }
   else { pill.textContent = "○ "+tr("stopped","No AI running"); pill.classList.remove("on"); $("chatTitle").textContent = tr("c_title","Chat"); }
@@ -467,6 +509,27 @@ async function send(){
   }catch(e){ body.textContent="Error: "+e.message; }
   $("send").disabled=false;
 }
+// ---- images ----
+let IMG=null, imgPoll=null;
+async function enterImages(){
+  try{ IMG = await api("/api/images"); }catch(e){ return; }
+  const run = IMG.server.running;
+  $("imgStatus").textContent = run ? (lang==="es"?`Motor de imágenes corriendo: ${IMG.choice.plain.name} (${IMG.choice.plain.where}).`:`Image engine running: ${IMG.choice.plain.name} (${IMG.choice.plain.where}).`) : (IMG.ready ? tr("i_ready_stopped","Everything is downloaded; start the engine to make pictures.") : tr("i_not_setup","Not set up yet: go to Home, tick \"Images & video\", press Run and choose \"Download and start the image engine\"."));
+  $("imgGo").disabled = !run; $("imgStart").classList.toggle("hidden", run || !IMG.ready); $("imgStop").classList.toggle("hidden", !run);
+  loadGallery();
+}
+async function loadGallery(){ try{ const g = await api("/api/images/list"); $("imgGallery").innerHTML = g.images.map(x=>`<figure><img src="/api/images/file/${encodeURIComponent(x.name)}" loading="lazy" alt=""><button class="small danger" data-del="${esc(x.name)}">✕</button></figure>`).join("") || `<p class="fine">—</p>`; $("imgGallery").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ await fetch("/api/images/file/"+encodeURIComponent(b.dataset.del),{method:"DELETE"}); loadGallery(); }); }catch(e){} }
+$("imgStart").onclick = async()=>{ const j = await api("/api/images/setup",{method:"POST"}); $("imgProg").textContent = tr("i_starting","Starting the image engine… (loading a few GB takes a minute or two)"); imgPoll=setInterval(async()=>{ const x = await api("/api/jobs/"+j.id); if(x.state==="done"||x.state==="error"){ clearInterval(imgPoll); $("imgProg").textContent = x.state==="error" ? "⚠ "+x.error : ""; enterImages(); } }, 1500); };
+$("imgStop").onclick = async()=>{ await api("/api/images/stop",{method:"POST"}); enterImages(); };
+$("imgGo").onclick = async()=>{
+  const prompt=$("imgPrompt").value.trim(); if(!prompt) return; const [w,h]=$("imgSize").value.split("x").map(Number);
+  $("imgGo").disabled=true; $("imgProg").textContent = tr("i_working","Making the picture…"); $("imgResult").innerHTML="";
+  try{
+    const j = await api("/api/images/generate",{method:"POST",body:JSON.stringify({prompt, negative:$("imgNeg").value.trim(), width:w, height:h})});
+    await new Promise(res=>{ imgPoll=setInterval(async()=>{ const x = await api("/api/jobs/"+j.id); if(x.total) $("imgProg").textContent = `${tr("i_working","Making the picture…")} ${x.done}/${x.total}`; if(x.state==="done"){ clearInterval(imgPoll); $("imgProg").textContent=""; const r=x.result||{}; if(r.files) $("imgResult").innerHTML = r.files.map(f=>`<img src="/api/images/file/${encodeURIComponent(f)}" alt="">`).join(""); else if(r.b64) $("imgResult").innerHTML = r.b64.map(b=>`<img src="data:image/png;base64,${b}" alt="">`).join(""); loadGallery(); res(); } else if(x.state==="error"){ clearInterval(imgPoll); $("imgProg").textContent="⚠ "+x.error; res(); } }, 1000); });
+  }catch(e){ $("imgProg").textContent="⚠ "+e.message; }
+  $("imgGo").disabled=false;
+};
 // ---- voice: server-side microphone (works in every window toolkit) + read aloud ----
 let listening=false, levelPoll=null, player=null;
 $("micBtn").onclick = async ()=>{
@@ -507,7 +570,7 @@ async function loadSettings(){
   await refreshStatus(); if(PRIV) renderPriv();
   try{
     const v = await api("/api/voice"), st = await api("/api/settings");
-    $("vModel").value = st.voice_stt_model||"auto"; $("vVoice").value = st.voice_tts_voice||"auto";
+    $("vModel").value = st.voice_stt_model||"auto"; $("vVoice").value = st.voice_tts_voice||"auto"; $("imgBackend").value = st.image_backend||"auto";
     const ok = v.available.stt && v.available.tts;
     $("voiceInfo").textContent = !ok ? tr("v_notavail","This copy of Datas came without the voice packages; reinstall with the newest installer.")
       : (v.installed.ready ? `${tr("v_installed","Voice installed")} · ${tr("v_hear","Hearing")}: whisper ${v.installed.stt_models.join(", ")} · ${tr("v_speak","Speaking")}: Kokoro` + (v.available.mic?"":" · "+tr("v_nomic","No microphone found on this computer."))
@@ -523,6 +586,7 @@ async function loadSettings(){
   $("techInfo").textContent = `${lang==="es"?"Motor":"Engine"}: ${STATUS.runtime.version||"—"} · ${lang==="es"?"carpeta":"folder"}: ${STATUS.home}`;
 }
 $("pSave").onclick=async()=>{ try{ await api("/api/providers",{method:"POST",body:JSON.stringify({name:$("pName").value.trim(), base_url:$("pUrl").value.trim(), api_key:$("pKey").value, model:$("pModel").value.trim()})}); $("pKey").value=""; loadSettings(); }catch(e){ toast("Error: "+e.message); } };
+$("imgBackend").onchange = async()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({image_backend:$("imgBackend").value})}); };
 $("vModel").onchange = async()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_stt_model:$("vModel").value})}); loadSettings(); };
 $("vVoice").onchange = async()=>{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_tts_voice:$("vVoice").value})}); };
 $("vInstall").onclick = async()=>{ try{ const j = await api("/api/voice/install",{method:"POST"}); go("home"); watchJob(j.id, tr("v_title","Voice")); }catch(e){ toast("Error: "+e.message, 6000); } };

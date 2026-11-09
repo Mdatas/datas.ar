@@ -118,6 +118,11 @@ def recommend(
     out["abilities"] = [
         a.to_dict() for a in assess(core.spec(), rec, voice_available=va["stt"] and va["tts"])
     ]
+    if "video" in uses:
+        try:
+            out["images"] = core.image_status()["choice"]
+        except Exception as e:  # noqa: BLE001
+            out["images_error"] = str(e)
     if "sound" in uses:
         vs = core.voice_status()
         out["voice"] = vs.get("choice")
@@ -125,6 +130,79 @@ def recommend(
             out["unsupported_use_cases"] = unsupported + ["sound"]
             out["voice_missing"] = vs["available"]["missing"]
     return out
+
+
+# ---- images: making pictures with stable-diffusion.cpp -------------------------
+
+
+class GenerateBody(BaseModel):
+    prompt: str
+    negative: str = ""
+    width: int = 1024
+    height: int = 1024
+    steps: int | None = None
+    seed: int = -1
+
+
+@app.get("/api/images")
+def images_status() -> dict:
+    return core.image_status()
+
+
+@app.post("/api/images/setup")
+def images_setup() -> dict:
+    return core.start_images_job().to_dict()
+
+
+@app.post("/api/images/stop")
+def images_stop() -> dict:
+    core.stop_images()
+    return {"ok": True}
+
+
+@app.post("/api/images/generate")
+def images_generate(body: GenerateBody) -> dict:
+    w = max(256, min(2048, body.width - body.width % 64))
+    h = max(256, min(2048, body.height - body.height % 64))
+    steps = None if body.steps is None else max(1, min(50, body.steps))
+    return core.start_generate_job(
+        body.prompt.strip(), body.negative.strip(), w, h, steps, body.seed
+    ).to_dict()
+
+
+@app.get("/api/images/list")
+def images_list() -> dict:
+    from datas.engines import images as image_engine
+
+    d = image_engine.images_dir()
+    files = sorted(d.glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)[:60]
+    return {
+        "images": [
+            {"name": f.name, "when": f.stat().st_mtime, "bytes": f.stat().st_size} for f in files
+        ]
+    }
+
+
+@app.get("/api/images/file/{name}")
+def images_file(name: str):
+    from fastapi.responses import FileResponse
+
+    from datas.engines import images as image_engine
+
+    p = (image_engine.images_dir() / Path(name).name).resolve()
+    if not p.exists() or p.parent != image_engine.images_dir().resolve():
+        raise HTTPException(404, "no such image")
+    return FileResponse(str(p), media_type="image/png")
+
+
+@app.delete("/api/images/file/{name}")
+def images_delete(name: str) -> dict:
+    from datas.engines import images as image_engine
+
+    p = image_engine.images_dir() / Path(name).name
+    existed = p.exists()
+    p.unlink(missing_ok=True)
+    return {"removed": existed}
 
 
 # ---- voice: hearing (microphone → text) and speaking (text → audio) ----------
@@ -245,6 +323,7 @@ class Settings(BaseModel):
     voice_stt_model: str | None = None
     voice_tts_voice: str | None = None
     voice_speak_answers: bool | None = None
+    image_backend: str | None = None
 
 
 @app.get("/api/settings")
@@ -264,6 +343,7 @@ def settings_get() -> dict:
         "voice_stt_model": c.voice_stt_model,
         "voice_tts_voice": c.voice_tts_voice,
         "voice_speak_answers": c.voice_speak_answers,
+        "image_backend": c.image_backend,
     }
 
 
@@ -286,6 +366,15 @@ def settings_set(body: Settings) -> dict:
         c.voice_tts_voice = body.voice_tts_voice
     if body.voice_speak_answers is not None:
         c.voice_speak_answers = body.voice_speak_answers
+    if body.image_backend is not None and body.image_backend in (
+        "auto",
+        "cpu",
+        "vulkan",
+        "cuda",
+        "rocm",
+        "metal",
+    ):
+        c.image_backend = body.image_backend
     c.save()
     return settings_get()
 
@@ -675,7 +764,10 @@ def guide_info(lang: str | None = None) -> dict:
     from datas import guide
 
     lg = lang or core.cfg.lang
-    return {"starters": guide.STARTERS.get(lg, guide.STARTERS["en"]), "briefing": guide.build(core, lg)}
+    return {
+        "starters": guide.STARTERS.get(lg, guide.STARTERS["en"]),
+        "briefing": guide.build(core, lg),
+    }
 
 
 @app.get("/api/skills")
@@ -751,7 +843,11 @@ def window_agent() -> dict:
 
 @app.get("/api/agent/approvals")
 def agent_approvals() -> dict:
-    return {"pending": [{"id": a["id"], "text": a["text"], "asked": a["asked"]} for a in core.approvals.values()]}
+    return {
+        "pending": [
+            {"id": a["id"], "text": a["text"], "asked": a["asked"]} for a in core.approvals.values()
+        ]
+    }
 
 
 class ApprovalBody(BaseModel):
@@ -882,7 +978,12 @@ def agent_results() -> dict:
     files = sorted(results_dir().glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[:50]
     return {
         "results": [
-            {"name": f.name, "path": str(f), "when": f.stat().st_mtime, "text": f.read_text(encoding="utf-8")[:4000]}
+            {
+                "name": f.name,
+                "path": str(f),
+                "when": f.stat().st_mtime,
+                "text": f.read_text(encoding="utf-8")[:4000],
+            }
             for f in files
         ]
     }

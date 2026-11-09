@@ -8,18 +8,42 @@
     "license": "MIT",
     "languages": "99 languages including English and Spanish (the .en variants are English-only and are not used)",
     "models": [
-      {"id": "tiny", "file": "ggml-tiny.bin", "bytes": 77691713, "ram_gib": 0.5, "quality": 1,
-       "plain_en": "Tiny — fast on any device, makes mistakes with names and accents.",
-       "plain_es": "Tiny — rápido en cualquier equipo, se equivoca con nombres y acentos."},
-      {"id": "base", "file": "ggml-base.bin", "bytes": 147951465, "ram_gib": 0.7, "quality": 2,
-       "plain_en": "Base — good for dictation on a normal laptop.",
-       "plain_es": "Base — bien para dictar en una notebook normal."},
-      {"id": "small", "file": "ggml-small.bin", "bytes": 487601967, "ram_gib": 1.2, "quality": 3,
-       "plain_en": "Small — clearly better with accents and Spanish; needs a 4-core processor to keep up.",
-       "plain_es": "Small — claramente mejor con acentos y castellano; necesita 4 núcleos para seguir el ritmo."},
-      {"id": "large-v3-turbo-q5_0", "file": "ggml-large-v3-turbo-q5_0.bin", "bytes": 574041195, "ram_gib": 1.5, "quality": 4,
-       "plain_en": "Large v3 Turbo (compressed) — best quality; comfortable on 8+ cores or Apple Silicon.",
-       "plain_es": "Large v3 Turbo (comprimido) — la mejor calidad; cómodo con 8+ núcleos o Apple Silicon."}
+      {
+        "id": "tiny",
+        "file": "ggml-tiny.bin",
+        "bytes": 77691713,
+        "ram_gib": 0.5,
+        "quality": 1,
+        "plain_en": "Tiny — fast on any device, makes mistakes with names and accents.",
+        "plain_es": "Tiny — rápido en cualquier equipo, se equivoca con nombres y acentos."
+      },
+      {
+        "id": "base",
+        "file": "ggml-base.bin",
+        "bytes": 147951465,
+        "ram_gib": 0.7,
+        "quality": 2,
+        "plain_en": "Base — good for dictation on a normal laptop.",
+        "plain_es": "Base — bien para dictar en una notebook normal."
+      },
+      {
+        "id": "small",
+        "file": "ggml-small.bin",
+        "bytes": 487601967,
+        "ram_gib": 1.2,
+        "quality": 3,
+        "plain_en": "Small — clearly better with accents and Spanish; needs a 4-core processor to keep up.",
+        "plain_es": "Small — claramente mejor con acentos y castellano; necesita 4 núcleos para seguir el ritmo."
+      },
+      {
+        "id": "large-v3-turbo-q5_0",
+        "file": "ggml-large-v3-turbo-q5_0.bin",
+        "bytes": 574041195,
+        "ram_gib": 1.5,
+        "quality": 4,
+        "plain_en": "Large v3 Turbo (compressed) — best quality; comfortable on 8+ cores or Apple Silicon.",
+        "plain_es": "Large v3 Turbo (comprimido) — la mejor calidad; cómodo con 8+ núcleos o Apple Silicon."
+      }
     ]
   },
   "text_to_speech": {
@@ -29,13 +53,113 @@
     "license": "Apache-2.0",
     "release": "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0",
     "files": [
-      {"name": "kokoro-v1.0.int8.onnx", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx", "bytes": 92361271, "sha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb"},
-      {"name": "voices-v1.0.bin", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin", "bytes": 28214398, "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"}
+      {
+        "name": "kokoro-v1.0.int8.onnx",
+        "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx",
+        "bytes": 92361271,
+        "sha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb"
+      },
+      {
+        "name": "voices-v1.0.bin",
+        "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin",
+        "bytes": 28214398,
+        "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
+      }
     ],
     "ram_gib": 0.6,
-    "voices": {"en": ["af_heart", "am_michael", "af_bella", "bf_emma"], "es": ["ef_dora", "em_alex", "em_santa"]},
-    "langs": {"en": "en-us", "es": "es"},
+    "voices": {
+      "en": [
+        "af_heart",
+        "am_michael",
+        "af_bella",
+        "bf_emma"
+      ],
+      "es": [
+        "ef_dora",
+        "em_alex",
+        "em_santa"
+      ]
+    },
+    "langs": {
+      "en": "en-us",
+      "es": "es"
+    },
     "plain_en": "Kokoro — a small, natural-sounding voice that runs on the processor; English and Spanish voices.",
     "plain_es": "Kokoro — una voz chica y natural que corre en el procesador; voces en inglés y castellano."
+  },
+  "image": {
+    "engine": "stable-diffusion.cpp",
+    "engine_repo": "leejet/stable-diffusion.cpp",
+    "engine_tag": "master-920-2f88688",
+    "engine_license": "MIT",
+    "recipes": {
+      "z-image-turbo": {
+        "name": "Z-Image-Turbo",
+        "maker": "Tongyi-MAI (Alibaba)",
+        "page": "https://huggingface.co/Tongyi-MAI/Z-Image-Turbo",
+        "license": "Apache-2.0",
+        "license_source": "model card of Tongyi-MAI/Z-Image-Turbo (stated there; re-check before redistribution)",
+        "params_b": 6,
+        "steps": 8,
+        "cfg_scale": 1.0,
+        "plain_en": "Makes detailed 1024-pixel pictures from a description in 8 quick steps; good with text in images and realistic scenes.",
+        "plain_es": "Crea imágenes detalladas de 1024 píxeles a partir de una descripción en 8 pasos rápidos; buena con texto en la imagen y escenas realistas.",
+        "limits_en": "One style per model; no video; hands and small faces can come out wrong; prompts in English work best.",
+        "limits_es": "Un estilo por modelo; sin video; manos y caras chicas pueden salir mal; los pedidos en inglés funcionan mejor.",
+        "diffusion": {
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "page": "https://huggingface.co/leejet/Z-Image-Turbo-GGUF",
+          "files": [
+            {
+              "quant": "Q3_K",
+              "file": "z_image_turbo-Q3_K.gguf",
+              "bytes": 3143559104
+            },
+            {
+              "quant": "Q4_K",
+              "file": "z_image_turbo-Q4_K.gguf",
+              "bytes": 3864250304
+            },
+            {
+              "quant": "Q8_0",
+              "file": "z_image_turbo-Q8_0.gguf",
+              "bytes": 6577440704
+            }
+          ]
+        },
+        "text_encoder": {
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "page": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "maker": "Qwen (Alibaba), GGUF by Unsloth",
+          "license": "Apache-2.0",
+          "files": [
+            {
+              "quant": "Q4_K_M",
+              "file": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+              "bytes": 2497281120
+            },
+            {
+              "quant": "Q8_0",
+              "file": "Qwen3-4B-Instruct-2507-Q8_0.gguf",
+              "bytes": 4280405600
+            }
+          ]
+        },
+        "vae": {
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "page": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+          "maker": "Black Forest Labs",
+          "license": "Apache-2.0",
+          "files": [
+            {
+              "quant": "f16",
+              "file": "ae.safetensors",
+              "bytes": 335304388
+            }
+          ]
+        }
+      }
+    },
+    "_sizes": "bytes from the Hugging Face API tree listings on 2026-11-09"
   }
 }

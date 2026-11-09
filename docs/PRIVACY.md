@@ -61,3 +61,9 @@ memory while it is being understood and is dropped afterwards; the spoken answer
 the window and never written to disk. Nothing about voice changes between Remember and Forget
 modes — there is nothing to store either way. The only downloads are the model files, from
 Hugging Face (whisper) and GitHub (Kokoro), with exact sizes and checksums in `datas/catalog/media.json`.
+
+## Images
+
+Pictures are made on this computer by stable-diffusion.cpp. In Remember mode the result is saved
+to `<data>/images/` (and can be deleted from the Images screen); in Forget mode it is shown once in
+the window and never written to disk, and the engine's log is off. Prompts are not stored anywhere.

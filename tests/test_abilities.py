@@ -35,13 +35,15 @@ def test_plain_laptop_no_gpu():
     v = verdicts(spec(ram=8, cores=4, form="laptop", gpus=[]))
     assert v["text"] in {"yes", "slow"} and v["sound"] == "yes"
     assert v["image_gen"] == "no" and v["video"] == "no"
+    # 16 GB and no GPU: possible on the processor, slowly
+    assert verdicts(spec(ram=16, cores=8, gpus=[]))["image_gen"] == "slow"
 
 
 def test_gaming_laptop_can_make_images_but_not_video_yet():
     v = verdicts(
         spec(ram=16, cores=8, gpus=[GPU("nvidia", "RTX 4060 Laptop", 8 * G, 7 * G, False, "cuda")])
     )
-    assert v["image_gen"] == "not_yet" and v["video"] == "not_yet"  # 8 GB: borderline video
+    assert v["image_gen"] == "yes" and v["video"] == "not_yet"  # 8 GB: borderline video
     assert v["agents"] in {"yes", "slow"}
 
 
@@ -55,7 +57,7 @@ def test_workstation_everything_possible():
         and v["coding"] == "yes"
         and v["agents"] == "yes"
     )
-    assert v["sound"] == "yes" and v["image_gen"] == "not_yet" and v["video"] == "not_yet"
+    assert v["sound"] == "yes" and v["image_gen"] == "yes" and v["video"] == "not_yet"
 
 
 def test_apple_silicon_unified_memory_counts():
@@ -67,7 +69,7 @@ def test_apple_silicon_unified_memory_counts():
             gpus=[GPU("apple", "M3 Pro", None, None, True, "metal")],
         )
     )
-    assert v["image_gen"] == "not_yet" and v["video"] == "not_yet"
+    assert v["image_gen"] == "yes" and v["video"] == "not_yet"
 
 
 def test_voice_packages_missing_is_reported_not_hidden():

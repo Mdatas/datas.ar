@@ -104,6 +104,10 @@ class Config:
     voice_stt_model: str = "auto"
     voice_tts_voice: str = "auto"
     voice_speak_answers: bool = False
+    # Images (stable-diffusion.cpp): engine build ("auto" = Vulkan on any GPU, Metal on Mac, else CPU;
+    # or cuda / rocm / vulkan / cpu) and the port of its local server
+    image_backend: str = "auto"
+    sd_port: int = 8422
 
     @property
     def forget(self) -> bool:

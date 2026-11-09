@@ -28,6 +28,15 @@ or `rm -rf ~/.local/share/Datas`.
   in `~/.local/share/Datas/config.json`.
 - **No GPU**: CPU build.
 
+## Making images on Linux
+
+The image engine (stable-diffusion.cpp) is downloaded from its upstream releases, which are built on
+Ubuntu 24.04 (glibc 2.39). On older distros (Ubuntu 22.04, Debian 12) that binary may refuse to start
+("GLIBC_2.38 not found" in `~/.local/share/Datas/logs/sd-server.log`); the fix is a newer distro
+release or building stable-diffusion.cpp locally. Vulkan needs the distro's Vulkan driver
+(`mesa-vulkan-drivers` / `vulkan-radeon` / `vulkan-intel`); without one, set the image engine to
+"Processor only" in Settings.
+
 ## Window toolkit
 
 The Linux build ships its own Qt WebEngine (that is why it is bigger than the Windows one): it does not depend
