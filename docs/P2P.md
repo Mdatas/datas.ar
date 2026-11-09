@@ -1,7 +1,11 @@
-# Sharing compute with strangers (P2P) — is it possible?
+# Sharing compute with strangers (P2P) — an idea, not an option
 
-Short answer: **possible, and done before — but not private**, and that is the part that
-matters for Datas. Here is the honest picture.
+**Decision (Nov 2026): Datas does not offer pooling with strangers' devices, because it
+cannot be made private with today's technology. If it is not private, it is not an option.**
+This page keeps the idea and the reasoning so it can be revisited when the facts change.
+
+Short answer to "is it possible?": **yes, and done before — but not private**, and that is
+the part that matters for Datas. Here is the honest picture.
 
 ## What exists
 
@@ -32,21 +36,23 @@ provider side (which consumer devices don't have), plus attestation so you can v
 node is really running the code it claims. That is a cloud-provider product, not a
 "friends' laptops" product.
 
-## What *is* reasonable for Datas
+## What Datas does instead
 
-1. **Trusted circles** (v0.3): pools over a VPN mesh (Tailscale/WireGuard) with family and
-   friends you'd lend a laptop to anyway. Same RPC, authenticated by the VPN, encrypted on
-   the wire, and the trust model is explicit: *these people could, in principle, read what I
-   ask*. The UI should say exactly that.
-2. **Public model-file sharing**: a torrent/IPFS mirror of the catalog so downloads don't
-   depend on one host. No privacy issue.
-3. **Strangers' compute without privacy**: possible, as Petals showed, for *non-sensitive*
-   prompts, labelled loudly as such. Worth it only if the quality jump is big (120B+
-   models); the latency makes dense models painful and MoE models tolerable.
-4. **Strangers' compute with privacy**: wait for consumer TEE GPUs or a practical FHE
-   breakthrough. Not on the roadmap as a promise; tracked as research.
+1. **Your own devices** (today): pooling on your home network — see POOLING.md.
+2. **Devices you own elsewhere** (planned): the same pool over your own VPN (Tailscale /
+   WireGuard). Still only machines that are yours.
+3. **Public model-file sharing** (idea): a torrent/IPFS mirror of the catalog so downloads
+   don't depend on one host. The files are public; no privacy issue.
 
-## If you want to experiment now
+## What Datas does not do
 
-`docs/POOLING.md` + a Tailscale network between your devices gives you item 1 today with
-no code changes (`datas pool nodes --set <tailscale-ip>:50052`).
+- **Strangers' compute without privacy** — technically possible (Petals), explicitly ruled
+  out: the person running a layer could reconstruct what you asked.
+- **Strangers' compute with privacy** — would require consumer devices with trusted
+  execution hardware and remote attestation, or a practical homomorphic-encryption
+  breakthrough. Neither exists in 2026. Revisit when one does.
+
+## If you want to experiment now (your own devices only)
+
+`docs/POOLING.md` + a Tailscale network between your own devices works today with no code
+changes (`datas pool nodes --set <tailscale-ip>:50052`).

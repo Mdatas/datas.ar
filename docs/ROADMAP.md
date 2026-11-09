@@ -45,4 +45,5 @@
 ## Later
 - [ ] Speculative decoding presets (ggml-org ships draft/mtp/dflash files next to many models)
 - [ ] Community catalog signing (sigstore) and a curated "tested on" matrix per device class
-- [ ] Shared pools beyond the LAN (WireGuard mesh setup helper)
+- [ ] Pools between your *own* devices beyond the LAN (WireGuard/Tailscale setup helper)
+- [~] Pooling with strangers' devices: **ruled out** while it cannot be made private — see docs/P2P.md

@@ -80,7 +80,7 @@ you can read in [`datas/recommend/engine.py`](datas/recommend/engine.py).
 | [RUNTIME.md](docs/RUNTIME.md) | llama.cpp asset selection, pinning, flags |
 | [PRIVACY.md](docs/PRIVACY.md) | remember/forget, what is stored where |
 | [PROVIDERS.md](docs/PROVIDERS.md) | local / pool / API keys, the `/v1` proxy |
-| [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | your own devices today; strangers' devices — why not yet |
+| [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | your own devices today; strangers' devices — ruled out until it can be private, and why |
 | [AGENTS.md](docs/AGENTS.md) | the agent runner, permissions |
 | [MOBILE.md](docs/MOBILE.md) · [android/](android/README.md) | phones |
 | [API.md](docs/API.md) | the local HTTP API |
