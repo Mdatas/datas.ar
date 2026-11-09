@@ -7,6 +7,8 @@ the weights, starts the server with safe flags, and keeps the handles.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -93,6 +95,8 @@ class Datas:
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
+        self._worker: subprocess.Popen | None = None
+        self._agent_windows: list[subprocess.Popen] = []
         self._lock = threading.Lock()
 
     # ---- device -----------------------------------------------------------
@@ -306,6 +310,12 @@ class Datas:
         self.cfg.model_id, self.cfg.quant = model_id, quant
         self.cfg.provider = "pool" if rpc else "local"
         self.cfg.save()
+        try:
+            from datas import library
+
+            library.touch(model_id, quant)
+        except Exception:
+            pass
         say(f"Ready at {self.server.base_url()}/v1 (OpenAI-compatible).")
         return {"server": state.to_dict(), "candidate": c.to_dict(), "notes": notes}
 
@@ -439,6 +449,50 @@ class Datas:
             self._pool_nodes = found
         return self._pool_nodes
 
+    # ---- background helpers ---------------------------------------------------
+    def _self_cmd(self) -> list[str]:
+        """How to start another Datas process (frozen exe or python -m datas)."""
+        if getattr(sys, "frozen", False):
+            return [sys.executable]
+        return [sys.executable, "-m", "datas"]
+
+    def worker_running(self) -> bool:
+        return bool(self._worker and self._worker.poll() is None)
+
+    def set_pool_offer(self, on: bool) -> dict:
+        """Offer this device's memory to the user's other devices (background worker)."""
+        if on and not self.worker_running():
+            self.ensure_runtime()
+            self._worker = subprocess.Popen(
+                self._self_cmd() + ["pool", "worker"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        elif not on and self.worker_running():
+            self._worker.terminate()
+            try:
+                self._worker.wait(5)
+            except Exception:
+                self._worker.kill()
+            self._worker = None
+        self.cfg.pool_offer = on
+        self.cfg.save()
+        return {"offering": self.worker_running()}
+
+    def open_agent_window(self) -> dict:
+        """The agent runs in its own window *and* its own process, as requested."""
+        p = subprocess.Popen(self._self_cmd() + ["agent-window"])
+        self._agent_windows.append(p)
+        return {"pid": p.pid}
+
+    def shutdown(self) -> None:
+        self.stop()
+        if self.worker_running():
+            self.set_pool_offer(False)
+        for p in self._agent_windows:
+            if p.poll() is None:
+                p.terminate()
+
     # ---- status -------------------------------------------------------------
     def status(self) -> dict:
         return {
@@ -458,4 +512,14 @@ class Datas:
             "context": self.cfg.context,
             "installed_models": downloader.installed_models(),
             "pool_nodes": [n.to_dict() for n in self._pool_nodes],
+            "pool_offering": self.worker_running(),
+            "privacy": {
+                "memory_mode": self.cfg.memory_mode,
+                "keep_logs": self.cfg.keep_logs,
+                "internet_default": self.cfg.internet_default,
+                "onboarded": self.cfg.onboarded,
+            },
+            "lang": self.cfg.lang,
+            "use_cases": self.cfg.use_cases,
+            "resource_mode": self.cfg.resource_mode,
         }

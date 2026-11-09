@@ -7,7 +7,8 @@
     "quality_tier (1-5) is the curator's judgment used only to rank candidates that already fit; it is not a benchmark score.",
     "kv (layers / kv_heads / head_dim) is included only where the curator is confident; otherwise the recommender estimates and then reads the exact values from the GGUF header after download.",
     "license_source = 'model-card' means the curator checked the upstream card; 'unverified' means the string is the commonly reported license and must be confirmed before you rely on it.",
-    "Run `datas catalog refresh` (scripts/refresh_catalog.py) to re-read sizes and add new repos."
+    "Run `datas catalog refresh` (scripts/refresh_catalog.py) to re-read sizes and add new repos.",
+    "'limits' and the 'comparable_to' tiers (datas/catalog/compare.py) are plain-language curator judgments for non-technical users, not benchmark results."
   ],
   "models": [
     {
@@ -20,14 +21,37 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "unverified",
-      "modalities": ["text"],
-      "capabilities": ["chat"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat"
+      ],
       "quality_tier": 1,
-      "tags": ["phone", "tiny", "fallback"],
+      "tags": [
+        "phone",
+        "tiny",
+        "fallback"
+      ],
       "hf_repo": "ggml-org/Qwen3.5-0.8B-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "Qwen3.5-0.8B-Q4_0.gguf", "bytes": 563036064, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3.5-0.8B-Q8_0.gguf", "bytes": 833592096, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "Qwen3.5-0.8B-Q4_0.gguf",
+          "bytes": 563036064,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3.5-0.8B-Q8_0.gguf",
+          "bytes": 833592096,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Very small: fine for short answers, rewording and simple questions; makes mistakes on facts and anything long.",
+      "use_cases": [
+        "text"
       ]
     },
     {
@@ -40,15 +64,43 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "reasoning"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "reasoning"
+      ],
       "quality_tier": 1,
-      "tags": ["phone", "tiny", "fallback"],
+      "tags": [
+        "phone",
+        "tiny",
+        "fallback"
+      ],
       "hf_repo": "ggml-org/Qwen3-0.6B-GGUF",
-      "kv": {"layers": 28, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 28,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_0", "path": "Qwen3-0.6B-Q4_0.gguf", "bytes": 428970080, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3-0.6B-Q8_0.gguf", "bytes": 804753632, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "Qwen3-0.6B-Q4_0.gguf",
+          "bytes": 428970080,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3-0.6B-Q8_0.gguf",
+          "bytes": 804753632,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Very small: fine for short answers and simple rewording; weak on facts, math and long texts.",
+      "use_cases": [
+        "text"
       ]
     },
     {
@@ -62,16 +114,48 @@
       "license": "gemma",
       "license_url": "https://ai.google.dev/gemma/terms",
       "license_source": "model-card",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "vision"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision"
+      ],
       "quality_tier": 2,
-      "tags": ["phone", "small"],
+      "tags": [
+        "phone",
+        "small"
+      ],
       "hf_repo": "ggml-org/gemma-4-E2B-it-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "gemma-4-E2B-it-Q4_0.gguf", "bytes": 2841481184, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "gemma-4-E2B-it-Q8_0.gguf", "bytes": 4967497152, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "gemma-4-E2B-it-Q4_0.gguf",
+          "bytes": 2841481184,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "gemma-4-E2B-it-Q8_0.gguf",
+          "bytes": 4967497152,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-gemma-4-E2B-it-Q8_0.gguf", "bytes": 557368064}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-gemma-4-E2B-it-Q8_0.gguf",
+          "bytes": 557368064
+        }
+      },
+      "vendor_url": "https://ai.google.dev/gemma",
+      "limits": "Small: good everyday chat and can look at pictures; keep tasks short and double-check facts.",
+      "use_cases": [
+        "text",
+        "images",
+        "agents"
+      ]
     },
     {
       "id": "qwen3-1.7b",
@@ -83,15 +167,44 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning"
+      ],
       "quality_tier": 2,
-      "tags": ["phone", "small"],
+      "tags": [
+        "phone",
+        "small"
+      ],
       "hf_repo": "ggml-org/Qwen3-1.7B-GGUF",
-      "kv": {"layers": 28, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 28,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3-1.7B-Q4_K_M.gguf", "bytes": 1282439264, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3-1.7B-Q8_0.gguf", "bytes": 2165039200, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3-1.7B-Q4_K_M.gguf",
+          "bytes": 1282439264,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3-1.7B-Q8_0.gguf",
+          "bytes": 2165039200,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Small: good for short texts and simple step-by-step thinking; not reliable on facts or long documents.",
+      "use_cases": [
+        "text",
+        "agents"
       ]
     },
     {
@@ -104,15 +217,44 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning"
+      ],
       "quality_tier": 2,
-      "tags": ["phone", "small"],
+      "tags": [
+        "phone",
+        "small"
+      ],
       "hf_repo": "ggml-org/SmolLM3-3B-GGUF",
-      "kv": {"layers": 36, "kv_heads": 4, "head_dim": 128},
+      "kv": {
+        "layers": 36,
+        "kv_heads": 4,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "SmolLM3-Q4_K_M.gguf", "bytes": 1915305312, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "SmolLM3-Q8_0.gguf", "bytes": 3275574624, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "SmolLM3-Q4_K_M.gguf",
+          "bytes": 1915305312,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "SmolLM3-Q8_0.gguf",
+          "bytes": 3275574624,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://huggingface.co/HuggingFaceTB",
+      "limits": "Small: decent writing help and simple tool use; limited knowledge, keep documents short.",
+      "use_cases": [
+        "text",
+        "agents"
       ]
     },
     {
@@ -125,15 +267,46 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding"
+      ],
       "quality_tier": 3,
-      "tags": ["laptop", "small"],
+      "tags": [
+        "laptop",
+        "small"
+      ],
       "hf_repo": "ggml-org/Qwen3-4B-GGUF",
-      "kv": {"layers": 36, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 36,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3-4B-Q4_K_M.gguf", "bytes": 2497280640, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3-4B-Q8_0.gguf", "bytes": 4280405120, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "bytes": 2497280640,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3-4B-Q8_0.gguf",
+          "bytes": 4280405120,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Capable for its size: writing, summaries, basic code and step-by-step reasoning; still invents facts sometimes.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -147,16 +320,49 @@
       "license": "gemma",
       "license_url": "https://ai.google.dev/gemma/terms",
       "license_source": "model-card",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "vision"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision"
+      ],
       "quality_tier": 3,
-      "tags": ["phone-flagship", "laptop", "small"],
+      "tags": [
+        "phone-flagship",
+        "laptop",
+        "small"
+      ],
       "hf_repo": "ggml-org/gemma-4-E4B-it-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "gemma-4-E4B-it-Q4_0.gguf", "bytes": 4590807392, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "gemma-4-E4B-it-Q8_0.gguf", "bytes": 8031242688, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "gemma-4-E4B-it-Q4_0.gguf",
+          "bytes": 4590807392,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "gemma-4-E4B-it-Q8_0.gguf",
+          "bytes": 8031242688,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-gemma-4-E4B-it-Q8_0.gguf", "bytes": 559874816}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-gemma-4-E4B-it-Q8_0.gguf",
+          "bytes": 559874816
+        }
+      },
+      "vendor_url": "https://ai.google.dev/gemma",
+      "limits": "Good everyday assistant that also understands pictures; slower on long documents; verify facts.",
+      "use_cases": [
+        "text",
+        "images",
+        "agents"
+      ]
     },
     {
       "id": "phi-4-mini",
@@ -168,16 +374,51 @@
       "arch": "dense",
       "license": "mit",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "coding"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "coding"
+      ],
       "quality_tier": 3,
-      "tags": ["laptop", "small"],
+      "tags": [
+        "laptop",
+        "small"
+      ],
       "hf_repo": "unsloth/Phi-4-mini-instruct-GGUF",
-      "kv": {"layers": 32, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 32,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "Phi-4-mini-instruct-Q4_K_M.gguf", "bytes": 2491874272, "verified": "2026-11-08"},
-        {"quant": "Q6_K", "path": "Phi-4-mini-instruct-Q6_K.gguf", "bytes": 3155622880, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Phi-4-mini-instruct.Q8_0.gguf", "bytes": 4084611040, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Phi-4-mini-instruct-Q4_K_M.gguf",
+          "bytes": 2491874272,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q6_K",
+          "path": "Phi-4-mini-instruct-Q6_K.gguf",
+          "bytes": 3155622880,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Phi-4-mini-instruct.Q8_0.gguf",
+          "bytes": 4084611040,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://azure.microsoft.com/en-us/products/phi",
+      "limits": "Strong at reasoning and short code for its size; smaller general knowledge, English-centric.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -190,16 +431,52 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding"
+      ],
       "quality_tier": 3,
-      "tags": ["laptop", "medium"],
+      "tags": [
+        "laptop",
+        "medium"
+      ],
       "hf_repo": "Qwen/Qwen3-8B-GGUF",
-      "kv": {"layers": 36, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 36,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3-8B-Q4_K_M.gguf", "bytes": 5027783488, "verified": "2026-11-08"},
-        {"quant": "Q6_K", "path": "Qwen3-8B-Q6_K.gguf", "bytes": 6725899040, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3-8B-Q8_0.gguf", "bytes": 8709518112, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3-8B-Q4_K_M.gguf",
+          "bytes": 5027783488,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q6_K",
+          "path": "Qwen3-8B-Q6_K.gguf",
+          "bytes": 6725899040,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3-8B-Q8_0.gguf",
+          "bytes": 8709518112,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Solid all-rounder: writing, summaries, code, reasoning; occasional factual slips on niche topics.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -212,15 +489,41 @@
       "arch": "dense",
       "license": "mit",
       "license_source": "unverified",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "reasoning", "vision"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "vision"
+      ],
       "quality_tier": 4,
-      "tags": ["laptop", "medium"],
+      "tags": [
+        "laptop",
+        "medium"
+      ],
       "hf_repo": "ggml-org/MiMo-V2.6-Distill-Qwen-9B-GGUF",
       "files": [
-        {"quant": "Q8_0", "path": "MiMo-V2.6-Distill-Qwen-9B-Q8_0.gguf", "bytes": 9527498048, "verified": "2026-11-08"}
+        {
+          "quant": "Q8_0",
+          "path": "MiMo-V2.6-Distill-Qwen-9B-Q8_0.gguf",
+          "bytes": 9527498048,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-MiMo-V2.6-Distill-Qwen-9B-Q8_0.gguf", "bytes": 624229728}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-MiMo-V2.6-Distill-Qwen-9B-Q8_0.gguf",
+          "bytes": 624229728
+        }
+      },
+      "vendor_url": "https://github.com/XiaomiMiMo",
+      "limits": "Reasoning-focused with image understanding; answers can be long and slow; verify facts.",
+      "use_cases": [
+        "text",
+        "images"
+      ]
     },
     {
       "id": "gemma-4-12b",
@@ -233,16 +536,50 @@
       "license": "gemma",
       "license_url": "https://ai.google.dev/gemma/terms",
       "license_source": "model-card",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "vision", "coding"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "coding"
+      ],
       "quality_tier": 4,
-      "tags": ["laptop", "medium"],
+      "tags": [
+        "laptop",
+        "medium"
+      ],
       "hf_repo": "ggml-org/gemma-4-12B-it-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "gemma-4-12B-it-Q4_0.gguf", "bytes": 7219673216, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "gemma-4-12B-it-Q8_0.gguf", "bytes": 12669641920, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "gemma-4-12B-it-Q4_0.gguf",
+          "bytes": 7219673216,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "gemma-4-12B-it-Q8_0.gguf",
+          "bytes": 12669641920,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-gemma-4-12B-it-Q8_0.gguf", "bytes": 158987648}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-gemma-4-12B-it-Q8_0.gguf",
+          "bytes": 158987648
+        }
+      },
+      "vendor_url": "https://ai.google.dev/gemma",
+      "limits": "Strong assistant with image understanding; needs a mid-range computer; good multilingual quality.",
+      "use_cases": [
+        "text",
+        "images",
+        "coding",
+        "agents"
+      ]
     },
     {
       "id": "gpt-oss-20b",
@@ -254,14 +591,42 @@
       "arch": "moe",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding", "agents"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding",
+        "agents"
+      ],
       "quality_tier": 4,
-      "tags": ["laptop", "medium", "agents"],
+      "tags": [
+        "laptop",
+        "medium",
+        "agents"
+      ],
       "hf_repo": "ggml-org/gpt-oss-20b-GGUF",
-      "kv": {"layers": 24, "kv_heads": 8, "head_dim": 64},
+      "kv": {
+        "layers": 24,
+        "kv_heads": 8,
+        "head_dim": 64
+      },
       "files": [
-        {"quant": "MXFP4", "path": "gpt-oss-20b-MXFP4.gguf", "bytes": 12109566624, "verified": "2026-11-08"}
+        {
+          "quant": "MXFP4",
+          "path": "gpt-oss-20b-MXFP4.gguf",
+          "bytes": 12109566624,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://openai.com/open-models",
+      "limits": "Strong reasoning, tool use and code; text only (no pictures); fast for its size because it is a Mixture of Experts (MoE).",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -274,15 +639,46 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding"
+      ],
       "quality_tier": 4,
-      "tags": ["desktop", "medium"],
+      "tags": [
+        "desktop",
+        "medium"
+      ],
       "hf_repo": "ggml-org/Qwen3-14B-GGUF",
-      "kv": {"layers": 40, "kv_heads": 8, "head_dim": 128},
+      "kv": {
+        "layers": 40,
+        "kv_heads": 8,
+        "head_dim": 128
+      },
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3-14B-Q4_K_M.gguf", "bytes": 9001753376, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3-14B-Q8_0.gguf", "bytes": 15698534112, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3-14B-Q4_K_M.gguf",
+          "bytes": 9001753376,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3-14B-Q8_0.gguf",
+          "bytes": 15698534112,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Strong writing, code and reasoning; text only; needs 10+ GB of memory.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -296,16 +692,52 @@
       "license": "gemma",
       "license_url": "https://ai.google.dev/gemma/terms",
       "license_source": "model-card",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "vision", "coding", "agents"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "coding",
+        "agents"
+      ],
       "quality_tier": 4,
-      "tags": ["desktop", "large", "fast-moe"],
+      "tags": [
+        "desktop",
+        "large",
+        "fast-moe"
+      ],
       "hf_repo": "ggml-org/gemma-4-26B-A4B-it-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "gemma-4-26B-A4B-it-Q4_0.gguf", "bytes": 14618145824, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "gemma-4-26B-A4B-it-Q8_0.gguf", "bytes": 26859860992, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "gemma-4-26B-A4B-it-Q4_0.gguf",
+          "bytes": 14618145824,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "gemma-4-26B-A4B-it-Q8_0.gguf",
+          "bytes": 26859860992,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-gemma-4-26B-A4B-it-Q8_0.gguf", "bytes": 806408320}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-gemma-4-26B-A4B-it-Q8_0.gguf",
+          "bytes": 806408320
+        }
+      },
+      "vendor_url": "https://ai.google.dev/gemma",
+      "limits": "Near-frontier quality with pictures; MoE design keeps it fast; needs 16+ GB of memory.",
+      "use_cases": [
+        "text",
+        "images",
+        "coding",
+        "agents"
+      ]
     },
     {
       "id": "qwen3.8-27b",
@@ -317,16 +749,52 @@
       "arch": "dense",
       "license": "apache-2.0",
       "license_source": "unverified",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "reasoning", "coding", "vision", "agents"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding",
+        "vision",
+        "agents"
+      ],
       "quality_tier": 5,
-      "tags": ["desktop", "large"],
+      "tags": [
+        "desktop",
+        "large"
+      ],
       "hf_repo": "ggml-org/Qwen3.8-27B-GGUF",
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3.8-27B-Q4_K_M.gguf", "bytes": 18973870528, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3.8-27B-Q8_0.gguf", "bytes": 28595763648, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3.8-27B-Q4_K_M.gguf",
+          "bytes": 18973870528,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3.8-27B-Q8_0.gguf",
+          "bytes": 28595763648,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-Qwen3.8-27B-Q8_0.gguf", "bytes": 629247008}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+          "bytes": 629247008
+        }
+      },
+      "vendor_url": "https://qwen.ai",
+      "limits": "Top-tier open model with pictures, tools and reasoning; needs 20+ GB of memory and a good GPU for speed.",
+      "use_cases": [
+        "text",
+        "images",
+        "coding",
+        "agents"
+      ]
     },
     {
       "id": "qwen3.6-35b-a3b",
@@ -338,16 +806,53 @@
       "arch": "moe",
       "license": "apache-2.0",
       "license_source": "unverified",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "reasoning", "coding", "vision", "agents"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding",
+        "vision",
+        "agents"
+      ],
       "quality_tier": 5,
-      "tags": ["desktop", "large", "fast-moe"],
+      "tags": [
+        "desktop",
+        "large",
+        "fast-moe"
+      ],
       "hf_repo": "ggml-org/Qwen3.6-35B-A3B-GGUF",
       "files": [
-        {"quant": "Q4_K_M", "path": "Qwen3.6-35B-A3B-Q4_K_M.gguf", "bytes": 20419565568, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "Qwen3.6-35B-A3B-Q8_0.gguf", "bytes": 36903139328, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3.6-35B-A3B-Q4_K_M.gguf",
+          "bytes": 20419565568,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "Qwen3.6-35B-A3B-Q8_0.gguf",
+          "bytes": 36903139328,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-Qwen3.6-35B-A3B-Q8_0.gguf", "bytes": 614194304}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-Qwen3.6-35B-A3B-Q8_0.gguf",
+          "bytes": 614194304
+        }
+      },
+      "vendor_url": "https://qwen.ai",
+      "limits": "Top-tier quality, fast thanks to MoE; pictures and tools; needs 22+ GB of memory.",
+      "use_cases": [
+        "text",
+        "images",
+        "coding",
+        "agents"
+      ]
     },
     {
       "id": "nemotron-3.5-lightning-30b-a3b",
@@ -359,14 +864,43 @@
       "arch": "moe",
       "license": "nvidia-open-model-license",
       "license_source": "unverified",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding", "agents"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding",
+        "agents"
+      ],
       "quality_tier": 5,
-      "tags": ["desktop", "large", "fast-moe"],
+      "tags": [
+        "desktop",
+        "large",
+        "fast-moe"
+      ],
       "hf_repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf", "bytes": 18898091584, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf", "bytes": 33585495616, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+          "bytes": 18898091584,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf",
+          "bytes": 33585495616,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/",
+      "limits": "Top-tier reasoning and agent work, fast (MoE); text only; needs 20+ GB of memory.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -380,16 +914,51 @@
       "license": "gemma",
       "license_url": "https://ai.google.dev/gemma/terms",
       "license_source": "model-card",
-      "modalities": ["text", "vision"],
-      "capabilities": ["chat", "tools", "vision", "coding", "agents"],
+      "modalities": [
+        "text",
+        "vision"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "coding",
+        "agents"
+      ],
       "quality_tier": 5,
-      "tags": ["desktop", "large"],
+      "tags": [
+        "desktop",
+        "large"
+      ],
       "hf_repo": "ggml-org/gemma-4-31B-it-GGUF",
       "files": [
-        {"quant": "Q4_0", "path": "gemma-4-31B-it-Q4_0.gguf", "bytes": 17992313088, "verified": "2026-11-08"},
-        {"quant": "Q8_0", "path": "gemma-4-31B-it-Q8_0.gguf", "bytes": 32635676896, "verified": "2026-11-08"}
+        {
+          "quant": "Q4_0",
+          "path": "gemma-4-31B-it-Q4_0.gguf",
+          "bytes": 17992313088,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q8_0",
+          "path": "gemma-4-31B-it-Q8_0.gguf",
+          "bytes": 32635676896,
+          "verified": "2026-11-08"
+        }
       ],
-      "extras": {"mmproj": {"path": "mmproj-gemma-4-31B-it-Q8_0.gguf", "bytes": 809541728}}
+      "extras": {
+        "mmproj": {
+          "path": "mmproj-gemma-4-31B-it-Q8_0.gguf",
+          "bytes": 809541728
+        }
+      },
+      "vendor_url": "https://ai.google.dev/gemma",
+      "limits": "Top-tier dense model with pictures; slower than MoE models of the same quality; needs 20+ GB and a GPU.",
+      "use_cases": [
+        "text",
+        "images",
+        "coding",
+        "agents"
+      ]
     },
     {
       "id": "qwen3-coder-next",
@@ -402,14 +971,43 @@
       "arch": "moe",
       "license": "apache-2.0",
       "license_source": "unverified",
-      "modalities": ["text"],
-      "capabilities": ["coding", "tools", "agents", "chat"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "coding",
+        "tools",
+        "agents",
+        "chat"
+      ],
       "quality_tier": 5,
-      "tags": ["workstation", "xl", "coding", "pool"],
+      "tags": [
+        "workstation",
+        "xl",
+        "coding",
+        "pool"
+      ],
       "hf_repo": "unsloth/Qwen3-Coder-Next-GGUF",
       "files": [
-        {"quant": "UD-Q2_K_XL", "path": "Qwen3-Coder-Next-UD-Q2_K_XL.gguf", "bytes": 26760515584, "verified": "2026-11-08"},
-        {"quant": "Q4_K_M", "path": "Qwen3-Coder-Next-Q4_K_M.gguf", "bytes": 48528320544, "verified": "2026-11-08"}
+        {
+          "quant": "UD-Q2_K_XL",
+          "path": "Qwen3-Coder-Next-UD-Q2_K_XL.gguf",
+          "bytes": 26760515584,
+          "verified": "2026-11-08"
+        },
+        {
+          "quant": "Q4_K_M",
+          "path": "Qwen3-Coder-Next-Q4_K_M.gguf",
+          "bytes": 48528320544,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://qwen.ai",
+      "limits": "Built for programming and coding agents; not meant for general chat; needs 30–50 GB of memory.",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     },
     {
@@ -422,13 +1020,38 @@
       "arch": "moe",
       "license": "apache-2.0",
       "license_source": "model-card",
-      "modalities": ["text"],
-      "capabilities": ["chat", "tools", "reasoning", "coding", "agents"],
+      "modalities": [
+        "text"
+      ],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding",
+        "agents"
+      ],
       "quality_tier": 5,
-      "tags": ["workstation", "xl", "agents", "pool"],
+      "tags": [
+        "workstation",
+        "xl",
+        "agents",
+        "pool"
+      ],
       "hf_repo": "ggml-org/gpt-oss-120b-GGUF",
       "files": [
-        {"quant": "MXFP4", "path": "gpt-oss-120b-MXFP4.gguf", "bytes": 63387346208, "verified": "2026-11-08"}
+        {
+          "quant": "MXFP4",
+          "path": "gpt-oss-120b-MXFP4.gguf",
+          "bytes": 63387346208,
+          "verified": "2026-11-08"
+        }
+      ],
+      "vendor_url": "https://openai.com/open-models",
+      "limits": "Frontier-class reasoning and agents; text only; needs 64+ GB of memory (a workstation or a pool of devices).",
+      "use_cases": [
+        "text",
+        "coding",
+        "agents"
       ]
     }
   ]

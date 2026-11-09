@@ -84,6 +84,24 @@ class Config:
     pool_nodes: str = ""
     # UI language: "en" | "es"
     lang: str = "en"
+    # ---- privacy switches (set during the first-run welcome; changeable any time) ----
+    # "remember": chats and a short notes file are kept on this device so the AI can learn
+    #             your preferences over time.
+    # "forget":   nothing is written to disk — no chats, no notes, no engine logs.
+    memory_mode: str = ""  # "" = not chosen yet
+    keep_logs: bool = True  # technical logs (never your messages); forced off in "forget"
+    internet_default: bool = False  # the AI may browse only when you switch it on for a session
+    onboarded: bool = False
+    # Last use-case / resource-mode choices (so the Home screen remembers them)
+    use_cases: str = "text"
+    resource_mode: str = "balanced"
+    # Pool: offer this device to my other devices (runs a worker in the background)
+    pool_offer: bool = False
+
+    @property
+    def forget(self) -> bool:
+        return self.memory_mode == "forget"
+
     # Remote OpenAI-compatible providers (API keys live here, on disk, never uploaded)
     remotes: list[RemoteProviderConfig] = field(default_factory=list)
     # Telemetry: none. This flag exists so it can never be flipped on silently.

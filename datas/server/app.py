@@ -23,12 +23,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-from datas import __version__
+from datas import __version__, chat_engine, chats, library, shortcuts
 from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
 from datas.orchestrator import Datas
 from datas.providers import PRESETS, active_provider, all_providers, remove_remote, set_remote
-from datas.recommend.engine import default_headroom
+from datas.recommend.engine import default_headroom, headroom_for_mode, wants_for
 
 app = FastAPI(title="Datas.ar", version=__version__, docs_url="/api/docs", redoc_url=None)
 core = Datas()
@@ -74,13 +74,38 @@ def recommend(
     want: str = "",
     role: str = "general",
     pool: bool = False,
+    use: str = "",
+    mode: str = "",
 ) -> dict:
-    wants = [w for w in want.split(",") if w] or None
+    """Simple UI sends `use=text,images,coding,agents` + `mode=light|balanced|heavy`;
+    the advanced UI/CLI may pass `want`, `headroom`, `role` directly."""
+    uses = [u for u in use.split(",") if u]
+    unsupported: list[str] = []
+    wants = [w for w in want.split(",") if w]
+    if uses:
+        auto_want, unsupported = wants_for(uses)
+        wants = sorted(set(wants) | set(auto_want))
+        if "coding" in uses and role == "general":
+            role = "coding"
+        core.cfg.use_cases = ",".join(uses)
+    if mode:
+        headroom = headroom_for_mode(core.spec(), mode)
+        core.cfg.resource_mode = mode
+    if uses or mode:
+        core.cfg.save()
     nodes = core.pool_nodes() if pool else None
     rec = core.recommendation(
-        headroom=headroom, context=context, kv_bits=kv_bits, want=wants, role=role, pool_nodes=nodes
+        headroom=headroom,
+        context=context,
+        kv_bits=kv_bits,
+        want=wants or None,
+        role=role,
+        pool_nodes=nodes,
     )
-    return rec.to_dict()
+    out = rec.to_dict()
+    out["unsupported_use_cases"] = unsupported
+    out["headroom"] = headroom if headroom is not None else core.cfg.headroom
+    return out
 
 
 @app.get("/api/catalog")
@@ -296,6 +321,284 @@ def pool_nodes(refresh: bool = True, seconds: float = 2.5) -> dict:
         "local_tag": core.cfg.llamacpp_tag,
         "worker_command": f"datas pool worker  # on each other device (port {core.cfg.rpc_port})",
     }
+
+
+# ---------------------------------------------------------------------------
+# Simple-UI extras: sources, privacy, library, chats, memory, context, skills, agent, window
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/sources")
+def sources() -> dict:
+    return json.loads(
+        Path(str(resources.files("datas").joinpath("sources.json"))).read_text(encoding="utf-8")
+    )
+
+
+class PrivacyBody(BaseModel):
+    memory_mode: str | None = None  # remember | forget
+    keep_logs: bool | None = None
+    internet_default: bool | None = None
+    onboarded: bool | None = None
+    lang: str | None = None
+
+
+@app.get("/api/privacy")
+def privacy_get() -> dict:
+    c = core.cfg
+    return {
+        "memory_mode": c.memory_mode,
+        "keep_logs": c.keep_logs,
+        "internet_default": c.internet_default,
+        "onboarded": c.onboarded,
+        "lang": c.lang,
+        "chats": len(chats.list_chats()) if not c.forget else 0,
+        "memory_chars": len(chats.read_memory()),
+    }
+
+
+@app.post("/api/privacy")
+def privacy_set(body: PrivacyBody) -> dict:
+    c = core.cfg
+    if body.memory_mode in ("remember", "forget"):
+        c.memory_mode = body.memory_mode
+        if body.memory_mode == "forget":
+            c.keep_logs = False
+    if body.keep_logs is not None and not c.forget:
+        c.keep_logs = body.keep_logs
+    if body.internet_default is not None:
+        c.internet_default = body.internet_default
+    if body.onboarded is not None:
+        c.onboarded = body.onboarded
+    if body.lang in ("en", "es"):
+        c.lang = body.lang
+    c.save()
+    return privacy_get()
+
+
+@app.post("/api/privacy/wipe")
+def privacy_wipe() -> dict:
+    """Delete chats, notes and context files. Models stay (remove them from the library)."""
+    return chats.wipe_everything()
+
+
+@app.get("/api/library")
+def library_list() -> dict:
+    return {"installed": library.installed(), "running": core.server.state.to_dict()}
+
+
+class ModelIdBody(BaseModel):
+    model_id: str
+
+
+@app.post("/api/library/shortcut")
+def library_shortcut(body: ModelIdBody) -> dict:
+    items = {i["model_id"]: i for i in library.installed()}
+    it = items.get(body.model_id)
+    if not it:
+        raise HTTPException(404, "not installed")
+    p = shortcuts.create_model_shortcut(body.model_id, it["name"])
+    library.set_shortcut(body.model_id, str(p))
+    return {"shortcut": str(p)}
+
+
+@app.post("/api/shortcut/app")
+def app_shortcut() -> dict:
+    return {"shortcut": str(shortcuts.create_app_shortcut())}
+
+
+@app.delete("/api/library/{model_id:path}")
+def library_remove(model_id: str) -> dict:
+    if core.server.running() and core.server.state.model_id == model_id:
+        core.stop()
+    return library.remove(model_id)
+
+
+class ChatBody(BaseModel):
+    messages: list[dict[str, Any]]
+    internet: bool = False
+    skill: str | None = None
+    lang: str | None = None
+    chat_id: str | None = None
+
+
+@app.post("/api/chat")
+async def chat(body: ChatBody):
+    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    if prov.kind in ("local", "pool") and not core.server.running():
+        return JSONResponse(
+            {"error": "no_model", "message": "No AI is running yet."}, status_code=503
+        )
+    req = chat_engine.ChatRequest(
+        messages=body.messages,
+        internet=body.internet,
+        skill=body.skill,
+        lang=body.lang or core.cfg.lang,
+    )
+    return StreamingResponse(
+        chat_engine.stream_chat(core.cfg, prov, req),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+class SaveChatBody(BaseModel):
+    chat_id: str | None = None
+    messages: list[dict[str, Any]]
+    model: str = ""
+
+
+@app.get("/api/chats")
+def chats_list() -> dict:
+    return {"chats": [] if core.cfg.forget else chats.list_chats(), "forget": core.cfg.forget}
+
+
+@app.post("/api/chats")
+def chats_save(body: SaveChatBody) -> dict:
+    cid = chats.save_chat(core.cfg, body.chat_id, body.messages, body.model or core.cfg.model_id)
+    return {"chat_id": cid, "saved": cid is not None}
+
+
+@app.get("/api/chats/{chat_id}")
+def chats_get(chat_id: str) -> dict:
+    d = chats.load_chat(chat_id)
+    if not d:
+        raise HTTPException(404, "no such chat")
+    return d
+
+
+@app.delete("/api/chats/{chat_id}")
+def chats_del(chat_id: str) -> dict:
+    return {"deleted": chats.delete_chat(chat_id)}
+
+
+@app.post("/api/chat/learn")
+async def chat_learn(body: SaveChatBody) -> dict:
+    """End of session in 'remember' mode: distil durable facts into the notes file."""
+    if core.cfg.forget:
+        return {"learned": 0, "forget": True}
+    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    if prov.kind in ("local", "pool") and not core.server.running():
+        return {"learned": 0}
+    facts = await chat_engine.learn(prov, body.messages)
+    return {"learned": chats.append_memory(core.cfg, facts), "facts": facts}
+
+
+class MemoryBody(BaseModel):
+    text: str
+
+
+@app.get("/api/memory")
+def memory_get() -> dict:
+    return {"text": chats.read_memory(), "forget": core.cfg.forget}
+
+
+@app.put("/api/memory")
+def memory_put(body: MemoryBody) -> dict:
+    if core.cfg.forget:
+        raise HTTPException(400, "memory is off (forget mode)")
+    chats.write_memory(body.text)
+    return {"ok": True}
+
+
+class ContextBody(BaseModel):
+    name: str
+    content_base64: str
+
+
+@app.get("/api/context")
+def context_list() -> dict:
+    return {"files": chats.list_context()}
+
+
+@app.post("/api/context")
+def context_add(body: ContextBody) -> dict:
+    import base64
+
+    return chats.add_context(body.name, base64.b64decode(body.content_base64))
+
+
+@app.delete("/api/context/{name}")
+def context_del(name: str) -> dict:
+    return {"deleted": chats.delete_context(name)}
+
+
+@app.get("/api/skills")
+def skills() -> dict:
+    return {"skills": [{"id": s["id"], "en": s["en"], "es": s["es"]} for s in chats.SKILLS]}
+
+
+@app.get("/agent", response_class=HTMLResponse)
+def agent_page() -> str:
+    return Path(str(resources.files("datas.server").joinpath("ui/agent.html"))).read_text(
+        encoding="utf-8"
+    )
+
+
+class AgentBody(BaseModel):
+    task: str
+    allow_shell: bool = False
+    internet: bool = True
+    max_steps: int = 20
+
+
+@app.post("/api/agent/run")
+def agent_run(body: AgentBody):
+    from datas.agents import AgentConfig, run_agent
+
+    acfg = AgentConfig(
+        base_url=f"http://127.0.0.1:{core.cfg.ui_port}/v1",
+        allow_shell=body.allow_shell,
+        allow_network=body.internet,
+        max_steps=body.max_steps,
+        confirm=None,
+    )
+
+    def gen():
+        for ev in run_agent(body.task, acfg):
+            yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
+    )
+
+
+@app.get("/api/agent/workspace")
+def agent_workspace_list() -> dict:
+    from datas.config import agent_workspace
+
+    ws = agent_workspace()
+    files = [
+        {"name": str(p.relative_to(ws)), "bytes": p.stat().st_size}
+        for p in sorted(ws.rglob("*"))
+        if p.is_file()
+    ]
+    return {"path": str(ws), "files": files[:200]}
+
+
+@app.post("/api/window/agent")
+def window_agent() -> dict:
+    return core.open_agent_window()
+
+
+class OfferBody(BaseModel):
+    on: bool
+
+
+@app.post("/api/pool/offer")
+def pool_offer(body: OfferBody) -> dict:
+    return core.set_pool_offer(body.on)
+
+
+@app.post("/api/shutdown")
+def shutdown() -> dict:
+    """Called when the desktop window closes: stop the engine and exit."""
+    import os
+    import threading
+
+    core.shutdown()
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

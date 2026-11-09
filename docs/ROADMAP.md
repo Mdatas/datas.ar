@@ -13,7 +13,14 @@
 - [x] Built-in agent runner with sandboxed tools
 - [x] Tests incl. a real llama-server integration test on a synthetic GGUF
 
-## 0.2 — polish the loop
+## 0.2 — for non-technical users (this release)
+- [x] One window (pywebview), no browser/terminal; `Datas.exe` + `datas-cli.exe`; Program Files installer with Desktop icon and keep/delete-data uninstall
+- [x] Home: Run → what for (text / images / coding / agents; sound & video marked "later") → light / balanced / heavy → recommendation in plain words with paid-model comparison, limits, maker links, "see the other recommendations", advanced options
+- [x] My AIs library with per-AI Desktop icons; Remember/Forget privacy switch; chats, notes, "End & learn", documents, skills
+- [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; pool switches in Settings; About & sources page
+- [x] Spanish/English; acronyms spelled out
+
+## 0.2.x — polish the loop
 - [ ] Installer scripts: `curl … | sh` (Linux/macOS), `.ps1` (Windows), pipx fallback
 - [ ] Multi-file (sharded) GGUF entries in the catalog (Qwen3.8-Flash-Next, DeepSeek V4)
 - [ ] Vision in the UI (image attach → `--mmproj`)

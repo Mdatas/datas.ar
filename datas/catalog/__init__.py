@@ -103,6 +103,11 @@ class CatalogModel(BaseModel):
         "general"  # general | coding | vision | embedding — specialists are never the default pick
     )
     tags: list[str] = Field(default_factory=list)
+    vendor_url: str | None = None
+    limits: str | None = None  # plain-language limits for non-technical users
+    use_cases: list[str] = Field(
+        default_factory=lambda: ["text"]
+    )  # text | images | coding | agents
     hf_repo: str
     kv: KVHint | None = None
     files: list[ModelFile]

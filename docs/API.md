@@ -69,3 +69,21 @@ d.run(rec.default.model_id, rec.default.quant)  # blocks until healthy
 # http://127.0.0.1:8421/v1 is now live
 d.stop()
 ```
+
+## v0.2 additions (simple UI)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/recommend?use=text,images&mode=light|balanced|heavy` | plain-language recommendation; adds `plain`, `unsupported_use_cases`, `headroom` |
+| GET/POST | `/api/privacy` | `memory_mode` remember/forget, `keep_logs`, `internet_default`, `onboarded`, `lang` |
+| POST | `/api/privacy/wipe` | delete chats, notes, documents |
+| GET | `/api/library` · POST `/api/library/shortcut` · DELETE `/api/library/{id}` | installed AIs, Desktop icon per AI, remove |
+| POST | `/api/shortcut/app` | Desktop icon for Datas |
+| POST | `/api/chat` (SSE) | server-side chat with memory/documents/skill and optional internet tools |
+| GET/POST/DELETE | `/api/chats[/{id}]` · POST `/api/chat/learn` | saved chats; distil notes |
+| GET/PUT | `/api/memory` | the notes file |
+| GET/POST/DELETE | `/api/context[/{name}]` | documents (JSON with base64 content) |
+| GET | `/api/skills` · `/api/sources` | skills list; project + every dependency with links |
+| GET | `/agent` · POST `/api/agent/run` (SSE) · GET `/api/agent/workspace` · POST `/api/window/agent` | agent page, run, files, open in a separate window/process |
+| POST | `/api/pool/offer` `{on}` | run/stop the background worker |
+| POST | `/api/shutdown` | window closed → stop everything |

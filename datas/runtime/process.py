@@ -61,7 +61,10 @@ class LlamaServer:
         exe = llamacpp.binary(self.cfg, "llama-server")
         port = port or self.cfg.llama_port
         log_path = logs_dir() / "llama-server.log"
-        self._log_fh = log_path.open("ab")
+        quiet = getattr(self.cfg, "forget", False) or not getattr(self.cfg, "keep_logs", True)
+        self._log_fh = open(os.devnull, "ab") if quiet else log_path.open("ab")
+        if quiet and "--log-disable" not in args:
+            args = [*args, "--log-disable"]
         env = os.environ.copy()
         # make sure sibling shared libs are found (linux tarballs ship them next to the binary)
         libdir = str(exe.parent)

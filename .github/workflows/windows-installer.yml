@@ -27,9 +27,10 @@ jobs:
         run: pyinstaller --noconfirm installer/windows/datas.spec
       - name: smoke test the frozen app
         run: |
-          dist\Datas\datas.exe --version
-          dist\Datas\datas.exe scan
-          dist\Datas\datas.exe recommend --context 4096
+          dist\Datas\datas-cli.exe --version
+          dist\Datas\datas-cli.exe scan
+          dist\Datas\datas-cli.exe recommend --context 4096
+          dist\Datas\datas-cli.exe catalog list
       - name: inno setup
         run: |
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.v.outputs.version }} installer\windows\datas.iss

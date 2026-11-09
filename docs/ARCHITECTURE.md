@@ -115,8 +115,16 @@ datas/
   pool/worker.py       run ggml-rpc-server as a worker
   agents/tools.py      sandboxed tools
   agents/runner.py     tool-calling loop
+  chat_engine.py       server-side chat: system prompt (memory, documents, skill) + internet tools, SSE
+  chats.py             chats, memory notes, documents, skills (no-ops in forget mode)
+  library.py           installed AIs, per-AI metadata, removal
+  shortcuts.py         Desktop icons (Win .lnk / Linux .desktop / mac .command)
+  desktop.py           the native window (pywebview) + embedded server
+  catalog/compare.py   paid-model class equivalents (plain language)
+  sources.json         everything credited on the About page
   server/app.py        FastAPI app + /v1 proxy
-  server/ui/index.html the UI
+  server/ui/index.html the UI (EN/ES)
+  server/ui/agent.html the agent window
 tests/                 unit + integration (synthetic GGUF)
 docs/                  this folder
 ```

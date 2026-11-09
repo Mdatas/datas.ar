@@ -80,6 +80,44 @@ def default_headroom(spec: DeviceSpec) -> float:
     return DEFAULT_HEADROOM.get(spec.form_factor, 0.25)
 
 
+# "How much of my computer may the AI use?" — the one choice a non-technical user makes.
+#   light    : the computer stays snappy for everything else (video calls, browser, games)
+#   balanced : the default; leaves a comfortable margin
+#   heavy    : give the AI almost everything (close other apps first)
+RESOURCE_MODES = {"light": 0.20, "balanced": 0.0, "heavy": -0.13}
+
+
+def headroom_for_mode(spec: DeviceSpec, mode: str) -> float:
+    base = default_headroom(spec)
+    return max(0.08, min(0.70, base + RESOURCE_MODES.get(mode, 0.0)))
+
+
+# What the user wants to do → catalog capabilities that must be present
+USE_CASE_CAPS: dict[str, list[str]] = {
+    "text": [],  # every model chats
+    "images": ["vision"],  # understanding pictures (generating pictures is a different engine)
+    "coding": ["coding"],
+    "agents": ["tools"],
+    "sound": None,  # not supported by this engine yet (whisper.cpp / TTS planned)
+    "video": None,  # not supported yet
+}
+
+
+def wants_for(use_cases: list[str]) -> tuple[list[str], list[str]]:
+    """→ (required capabilities, unsupported use-cases the UI must explain)."""
+    want: list[str] = []
+    unsupported: list[str] = []
+    for u in use_cases:
+        caps = USE_CASE_CAPS.get(u, [])
+        if caps is None:
+            unsupported.append(u)
+        else:
+            for c in caps:
+                if c not in want:
+                    want.append(c)
+    return want, unsupported
+
+
 def budget_for(
     spec: DeviceSpec, headroom: float | None = None, headroom_min_gib: float = 2.0
 ) -> Budget:
@@ -229,10 +267,65 @@ class Candidate:
     reasons: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     fallbacks: list[str] = field(default_factory=list)
+    # plain-language context for the simple UI
+    vendor: str = ""
+    vendor_url: str | None = None
+    license: str = ""
+    license_source: str = ""
+    limits: str | None = None
+    use_cases: list[str] = field(default_factory=list)
+    arch: str = "dense"
+
+    def plain(self) -> dict:
+        """Sentences a non-technical person can read. Acronyms are spelled out."""
+        from datas.catalog.compare import comparable
+
+        speed = {
+            "fast": "Fast — answers appear quickly, like a paid chat service.",
+            "ok": "Comfortable — a readable pace, a few words per second.",
+            "slow": "Slow — expect to wait; fine for short questions.",
+            "crawl": "Very slow — only if nothing else fits.",
+        }[self.speed_class]
+        where = {
+            "gpu": "Runs on your graphics card (GPU, the chip that normally draws games and video).",
+            "split": "Runs partly on your graphics card (GPU) and partly in main memory (RAM).",
+            "cpu": "Runs on your processor (CPU) using main memory (RAM).",
+            "unified": "Runs in your device's shared memory (used by both the processor and graphics).",
+            "pool": "Runs spread across your devices on the home network.",
+            "none": "Does not fit in this device's memory.",
+        }[self.placement]
+        return {
+            "speed": speed,
+            "where": where,
+            "download": f"{self.need.weights / GiB:.1f} GB to download once; then it works offline.",
+            "memory": f"Uses about {self.need.total / GiB:.1f} GB of memory while running.",
+            "comparable": comparable(self.quality_tier),
+            "limits": self.limits or "",
+            "maker": self.vendor,
+            "maker_url": self.vendor_url,
+            "model_page": f"https://huggingface.co/{self.hf_repo}",
+            "license": self.license
+            + (
+                " (license not yet verified by Datas)"
+                if self.license_source == "unverified"
+                else ""
+            ),
+            "kind": "Mixture of Experts (MoE): only a slice of the model works on each word, so it is faster than its size suggests."
+            if self.arch == "moe"
+            else "Dense model: the whole model works on every word.",
+        }
 
     def to_dict(self) -> dict:
         return {
             "model_id": self.model_id,
+            "vendor": self.vendor,
+            "vendor_url": self.vendor_url,
+            "license": self.license,
+            "license_source": self.license_source,
+            "limits": self.limits,
+            "use_cases": self.use_cases,
+            "arch": self.arch,
+            "plain": self.plain(),
             "name": self.name,
             "quant": self.quant,
             "path": self.path,
@@ -433,6 +526,13 @@ def evaluate(
         reasons=reasons,
         warnings=warnings,
         fallbacks=fallbacks,
+        vendor=model.vendor,
+        vendor_url=model.vendor_url,
+        license=model.license,
+        license_source=model.license_source,
+        limits=model.limits,
+        use_cases=model.use_cases,
+        arch=model.arch,
     )
 
 

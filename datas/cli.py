@@ -54,7 +54,46 @@ def _default(ctx: typer.Context, version: bool = typer.Option(False, "--version"
         con.print(f"datas {__version__}")
         raise typer.Exit()
     if ctx.invoked_subcommand is None:
-        serve()
+        open_window()
+
+
+@app.command("open")
+def open_window(
+    model: str | None = typer.Option(None, "--model", help="start this installed AI right away"),
+):
+    """Open the Datas window (the default when you double-click the app)."""
+    from datas.desktop import open_window as _open
+
+    _open(model_id=model)
+
+
+@app.command("agent-window")
+def agent_window():
+    """Open the agent in its own window (separate process)."""
+    from datas.desktop import open_window as _open
+
+    _open(path="/agent", title="Datas.ar — Agent", width=980, height=760)
+
+
+@app.command()
+def shortcut(
+    model: str | None = typer.Option(
+        None, "--model", help="installed AI id; omit for the app itself"
+    ),
+):
+    """Create a Desktop shortcut for Datas or for an installed AI."""
+    from datas import library, shortcuts
+
+    if model:
+        items = {i["model_id"]: i for i in library.installed()}
+        if model not in items:
+            con.print(f"[red]{model} is not installed[/]")
+            raise typer.Exit(1)
+        p = shortcuts.create_model_shortcut(model, items[model]["name"])
+        library.set_shortcut(model, str(p))
+    else:
+        p = shortcuts.create_app_shortcut()
+    con.print(f"created {p}")
 
 
 # ---------------------------------------------------------------------------

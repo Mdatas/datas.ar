@@ -1,153 +1,100 @@
 # Datas.ar
 
-**Local AI for everyone. Download, hit run.**
+**Your own AI, on your own computer. One install, one icon, one button.**
 
-Datas reads your device — CPU, RAM, every GPU and its VRAM, disk, power — picks the best
-open-weight model it can carry *without freezing the machine*, downloads it, and runs it.
-Phones, laptops, desktops, servers. One click, no accounts, no telemetry, nothing leaves
-your device unless you plug in an API key on purpose.
+Datas puts an AI (Artificial Intelligence) assistant — the kind you know from ChatGPT —
+on your own computer or phone. It runs there, offline, for free. Nothing you type leaves
+your device unless *you* switch the internet on for a session or decide to plug in a
+paid service.
 
-Then it gets out of your way:
+It is made for people who have never heard the words "model", "GPU" or "quantization":
+install, double-click the icon, press **Run**, pick what you'll use it for, and Datas
+chooses the best open AI your machine can carry **without slowing everything else down**,
+downloads it, and opens a chat.
 
-- **Switch models** from a curated, verified catalog, or run any GGUF you already have.
-- **Plug in an API key** (OpenAI, Anthropic, Groq, Mistral, OpenRouter, …) and use the
-  same chat and the same local `/v1` endpoint — your apps never notice the difference.
-- **Pool several devices**: your laptop + desktop + an old PC become one bigger machine
-  (llama.cpp RPC over your LAN).
-- **Run agents** that read, write, fetch and — only if you allow it — execute, inside a
-  sandboxed workspace.
+## How it works, in three steps
 
-Datas is glue, on purpose. The engine is [llama.cpp](https://github.com/ggml-org/llama.cpp)
-(MIT), the models are the open-weight community's, the hardware math is deterministic
-arithmetic you can read in [`datas/recommend/engine.py`](datas/recommend/engine.py).
-See [docs/CREDITS.md](docs/CREDITS.md) for everything we stand on.
+1. **Run — check my computer.** Datas reads your working memory (RAM), graphics card (GPU)
+   and disk, and asks two simple questions: *what will you use it for?* (chat & writing,
+   understanding pictures, programming, doing tasks) and *how much of the computer may
+   it use?* (light / balanced / heavy).
+2. **The recommendation**, in plain words: why this one, what it can't do, who made it
+   (with a link), how big the download is, and **how it compares to the paid AIs you know**
+   (OpenAI, Google, Anthropic/Claude — approximate, by class). "See the other
+   recommendations" shows every alternative that fits.
+3. **Install and start.** The AI is downloaded once and opens in the chat. From then on it
+   appears under **My AIs**, with its own Desktop icon if you want one.
 
----
+## Your choice: remember or forget
 
-## Quick start
+On first start Datas asks one question:
 
-```bash
-pipx install datas-ar        # or: pip install datas-ar
-datas                        # opens http://127.0.0.1:8420
-```
+- **Remember me** — your chats and a short notes file stay on this computer so the AI gets
+  to know you. You can read, edit or delete the notes at any time.
+- **Forget everything** — nothing is saved, not even technical logs. Every conversation
+  starts from zero. Fully anonymous.
 
-In the browser: **1. Your device** (scanned) → **2. Recommended** → *Install & run* →
-**3. Chat**. That's the whole flow.
+Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md)
 
-From the terminal:
+## What else it does
 
-```bash
-datas scan                   # what Datas sees
-datas recommend              # ranked models for this device, with the memory math
-datas run                    # install llama.cpp + the recommended model, start serving
-datas chat                   # talk to it
-datas agent "summarize every .md file in my workspace into INDEX.md"
-```
+- **Internet, per session.** A switch in the chat lets the AI search and open web pages;
+  it tells you which links it used. Off by default.
+- **Skills and documents.** One-tap skills (summarize, translate, fix my writing, teach me…)
+  and "My documents": text files you add so the AI can answer about them.
+- **The agent.** Opens in its own window and works step by step in its own folder: read and
+  write files, look things up, and — only if you allow it — run commands. Everything it
+  does is shown.
+- **Paid AIs, optionally.** Paste an API key (a password-like code from OpenAI, Google,
+  Anthropic, Groq…) and use the same chat with their model. The key stays on your computer.
+- **My devices working together.** Two or more computers at home can pool their memory so
+  a bigger AI fits (own network only). → [docs/POOLING.md](docs/POOLING.md)
+- **Everything used is credited.** *About* lists GitHub and every project, model and library
+  Datas is built on, with links.
 
-Anything that speaks the OpenAI API can now use your local model at
-`http://127.0.0.1:8420/v1` (model name: anything; Datas routes to the active provider).
+## Install
 
-> **Requirements:** Python 3.10+. Linux, macOS (Apple Silicon or Intel), Windows 10/11.
-> **Android:** native app in [`android/`](android/README.md) (APK built by GitHub Actions or
-> Android Studio), or the Python version via [Termux](https://termux.dev) — see [docs/MOBILE.md](docs/MOBILE.md).
-> No admin rights, no drivers to install for CPU/Metal; NVIDIA/AMD need their normal
-> driver only (the CUDA/ROCm runtimes ship inside the llama.cpp download).
-
----
-
-## How the recommendation works (no AI involved)
-
-```
-needed  = weights (exact, verified on Hugging Face)
-        + KV cache (exact from the GGUF header once downloaded; conservative estimate before)
-        + runtime overhead (8% of weights + 512 MiB)
-
-budget  = RAM − headroom  (+ VRAM − 10% per GPU)
-headroom = max(2 GiB, 25% of RAM)   # 40% on phones; one slider in the UI
-fits    = needed ≤ budget,  "comfortable" if ≥10% of the budget is still spare
-```
-
-Every catalog file that fits is placed (all-GPU / split / CPU / unified / pooled) and given
-a speed class from the bytes it touches per token. The default pick is the highest-quality
-*general* model that fits comfortably at a usable speed. Specialists (coding) are only
-picked when you ask. Low-bit quants (≤ Q3) are ranked a tier lower. Details and the reasoning
-behind the thresholds: [docs/RECOMMENDER.md](docs/RECOMMENDER.md).
-
-When llama-server starts, a second safety net applies: `--fit on --fit-target <headroom>`
-makes llama.cpp itself place layers so that your headroom stays free.
-
-## What you get on typical hardware
-
-| Device | Default pick (Nov 2026 catalog) |
+| Platform | How |
 |---|---|
-| Phone, 8 GB | Phi-4 mini Q6 / Qwen3 4B Q4 |
-| Phone, 12 GB | Gemma 4 E4B Q4 |
-| Laptop, 16 GB, no GPU | Gemma 4 E4B Q4 |
-| Laptop, 16 GB + 8 GB VRAM | Gemma 4 26B-A4B Q4 (split, fast) |
-| Mac, 36 GB unified | Qwen3.6 35B-A3B Q4 |
-| Desktop, 64 GB + RTX 4090 | Qwen3.6 35B-A3B Q4 (94% on GPU) |
-| Workstation, 128 GB + 32 GB VRAM | Qwen3.6 35B-A3B Q4 all-GPU; gpt-oss 120B and Qwen3-Coder-Next fit as options |
+| **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page. One installer, one Desktop icon, uninstall from *Settings → Apps* (asks whether to keep or delete your AIs and notes). Until a release exists: the `windows-installer` GitHub Action builds it on every push; or unzip `Datas-Setup-Windows.zip` and double-click `Install-Datas.cmd`. |
+| **macOS / Linux** | `pipx install datas-ar` then `datas` (opens the window; `datas shortcut` puts it on your Desktop). |
+| **Android** | Native app in [`android/`](android/README.md) — APK built by the `android-apk` Action. |
+| **Anything with Python** | `pip install datas-ar && datas` |
 
-(From `tests/test_recommender.py` scenarios — run `datas recommend` for yours.)
+Needs an arm64 phone or a 64-bit computer. No account. No admin rights for the per-user
+install. First start downloads the engine (llama.cpp, 30–200 MB depending on your graphics
+card); the AI itself is a one-time download of 0.5–20 GB depending on what fits.
 
-## The catalog
+## For developers
 
-20 models, 5 tiers, from 0.4 GB to 63 GB — Qwen3 / 3.5 / 3.6 / 3.8, Gemma 4 (E2B → 31B),
-gpt-oss 20B/120B, Phi-4 mini, SmolLM3, Nemotron 3.5 Lightning, MiMo V2.6, Qwen3-Coder-Next.
-Official `ggml-org` conversions wherever they exist. Every byte count was read from the
-Hugging Face API; nothing is estimated or pattern-guessed. Add your own with
-`datas catalog add <repo> <file>`. → [docs/CATALOG.md](docs/CATALOG.md)
-
-## Pooling devices
-
-```bash
-# on each extra device
-datas pool worker
-# on the device you chat from
-datas recommend --pool && datas run --pool
-```
-
-Workers are discovered over mDNS; memory adds up, speed does not (every token crosses the
-network). Works best with MoE models. Unauthenticated by design of the RPC protocol — LAN
-or VPN only. → [docs/POOLING.md](docs/POOLING.md)
-
-## Agents
-
-```bash
-datas agent "download the README of https://github.com/ggml-org/llama.cpp and write a 10-line summary to llama.md"
-datas agent --allow-shell "clone … and run the tests"      # asks before each command
-```
-
-Tools: `list_dir`, `read_file`, `write_file`, `fetch_url`, `run_command` (off by default).
-Sandboxed to `~/.local/share/datas/agent-workspace`. Any external agent framework can use
-the same `/v1` endpoint. → [docs/AGENTS.md](docs/AGENTS.md)
-
-## Documentation
+Datas is deliberately a thin layer: the engine is [llama.cpp](https://github.com/ggml-org/llama.cpp),
+the models are the open-weight community's, the hardware math is deterministic arithmetic
+you can read in [`datas/recommend/engine.py`](datas/recommend/engine.py).
 
 | | |
 |---|---|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, data flow, where every file lives |
-| [RECOMMENDER.md](docs/RECOMMENDER.md) | the memory math, thresholds, ranking rules |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, data flow, code map |
+| [RECOMMENDER.md](docs/RECOMMENDER.md) | the memory math, thresholds, ranking |
 | [HARDWARE_DETECTION.md](docs/HARDWARE_DETECTION.md) | what is read, from where, per OS |
-| [CATALOG.md](docs/CATALOG.md) | schema, curation rules, how to add/refresh models |
-| [RUNTIME.md](docs/RUNTIME.md) | llama.cpp asset selection, pinning, flags we pass |
-| [PROVIDERS.md](docs/PROVIDERS.md) | local / pool / API keys and the `/v1` proxy |
-| [POOLING.md](docs/POOLING.md) | multi-device inference |
-| [AGENTS.md](docs/AGENTS.md) | the agent runner, permissions, external frameworks |
-| [MOBILE.md](docs/MOBILE.md) | Android today, iOS/Android native apps plan |
+| [CATALOG.md](docs/CATALOG.md) | 20 verified models, schema, how to add |
+| [RUNTIME.md](docs/RUNTIME.md) | llama.cpp asset selection, pinning, flags |
+| [PRIVACY.md](docs/PRIVACY.md) | remember/forget, what is stored where |
+| [PROVIDERS.md](docs/PROVIDERS.md) | local / pool / API keys, the `/v1` proxy |
+| [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | your own devices today; strangers' devices — why not yet |
+| [AGENTS.md](docs/AGENTS.md) | the agent runner, permissions |
+| [MOBILE.md](docs/MOBILE.md) · [android/](android/README.md) | phones |
 | [API.md](docs/API.md) | the local HTTP API |
-| [ROADMAP.md](docs/ROADMAP.md) | what's next |
-| [CREDITS.md](docs/CREDITS.md) | every project we reuse and how |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | dev setup, tests, style |
+| [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | |
 
-## Privacy & security, in one paragraph
+```bash
+git clone https://github.com/Mdatas/datas.ar && cd datas.ar
+pip install -e ".[dev]" && pytest        # 38 tests, ~3 s; one runs a real llama-server on a synthetic model
+datas-cli --help  # or: datas scan | recommend | run | chat | agent | pool worker | provider | runtime | catalog
+```
 
-Everything runs on 127.0.0.1 by default. The only outbound connections are: GitHub (to
-fetch llama.cpp), Hugging Face (to fetch models and verify their hashes), and — only if
-you add one — the API base URL you typed. Keys live in `~/.local/share/datas/config.json`.
-There is no telemetry and no account. `datas serve --host 0.0.0.0` exposes the UI *and*
-the `/v1` proxy to your network; do that knowingly.
+Command line, local API (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatible endpoint
+(`http://127.0.0.1:8420/v1`) are all there for people who want them; the window never shows them.
 
 ## License
 
-Apache-2.0. Models keep their own licenses (shown in the catalog and the UI).
+Apache-2.0. Models keep their own licenses (shown on every card).

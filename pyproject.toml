@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datas-ar"
-version = "0.1.0"
+version = "0.2.0"
 description = "Datas.ar — download, hit run, get the best open AI your device can carry. Local-first, open source, pools your devices."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -35,6 +35,7 @@ dependencies = [
   "pydantic>=2.7",
   "zeroconf>=0.132",
   "platformdirs>=4.0",
+  "pywebview>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +55,11 @@ packages = ["datas"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "datas/catalog/models.json" = "datas/catalog/models.json"
+"datas/sources.json" = "datas/sources.json"
 "datas/server/ui/index.html" = "datas/server/ui/index.html"
+"datas/server/ui/agent.html" = "datas/server/ui/agent.html"
+"datas/server/ui/datas.ico" = "datas/server/ui/datas.ico"
+"datas/server/ui/datas.png" = "datas/server/ui/datas.png"
 
 [tool.ruff]
 line-length = 100

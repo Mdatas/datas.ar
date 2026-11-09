@@ -1,0 +1,34 @@
+{
+  "project": {
+    "name": "Datas.ar",
+    "repo": "https://github.com/Mdatas/datas.ar",
+    "license": "Apache-2.0",
+    "summary": "Open-source app that reads your device and runs the best open AI it can carry. Built on the projects below — Datas is the glue."
+  },
+  "sources": [
+    {"name": "llama.cpp", "role": "The engine that runs the AI models (llama-server, pooling over RPC, benchmarks).", "by": "ggml-org / Georgi Gerganov and contributors", "license": "MIT", "url": "https://github.com/ggml-org/llama.cpp"},
+    {"name": "Hugging Face Hub", "role": "Where the open models are downloaded from, with verified file sizes and checksums.", "by": "Hugging Face", "license": "Apache-2.0 (library)", "url": "https://huggingface.co"},
+    {"name": "Qwen (Qwen3, 3.5, 3.6, 3.8, Qwen3-Coder-Next)", "role": "Open-weight models in the catalog.", "by": "Alibaba Cloud Qwen team", "license": "Apache-2.0 (verify per model)", "url": "https://qwen.ai"},
+    {"name": "Gemma 4", "role": "Open-weight models in the catalog (E2B, E4B, 12B, 26B-A4B, 31B).", "by": "Google DeepMind", "license": "Gemma Terms of Use", "url": "https://ai.google.dev/gemma"},
+    {"name": "gpt-oss 20B / 120B", "role": "Open-weight models in the catalog.", "by": "OpenAI", "license": "Apache-2.0", "url": "https://openai.com/open-models"},
+    {"name": "Phi-4 mini", "role": "Open-weight model in the catalog.", "by": "Microsoft", "license": "MIT", "url": "https://azure.microsoft.com/en-us/products/phi"},
+    {"name": "SmolLM3", "role": "Open-weight model in the catalog.", "by": "Hugging Face", "license": "Apache-2.0", "url": "https://huggingface.co/HuggingFaceTB"},
+    {"name": "Nemotron 3.5 Lightning", "role": "Open-weight model in the catalog.", "by": "NVIDIA", "license": "NVIDIA Open Model License (verify)", "url": "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/"},
+    {"name": "MiMo V2.6 Distill", "role": "Open-weight model in the catalog.", "by": "Xiaomi", "license": "MIT (verify)", "url": "https://github.com/XiaomiMiMo"},
+    {"name": "Unsloth GGUF conversions", "role": "Ready-to-run model files where no official conversion exists.", "by": "Unsloth", "license": "per model", "url": "https://huggingface.co/unsloth"},
+    {"name": "psutil", "role": "Reads memory, CPU, disk and battery.", "by": "Giampaolo Rodola", "license": "BSD-3", "url": "https://github.com/giampaolo/psutil"},
+    {"name": "py-cpuinfo", "role": "Reads the processor name and features.", "by": "Matthew Brennan Jones", "license": "MIT", "url": "https://github.com/workhorsy/py-cpuinfo"},
+    {"name": "nvidia-ml-py", "role": "Reads NVIDIA graphics memory.", "by": "NVIDIA", "license": "BSD-3", "url": "https://pypi.org/project/nvidia-ml-py/"},
+    {"name": "FastAPI + Starlette + uvicorn", "role": "The local server behind the window.", "by": "Sebastián Ramírez, Encode", "license": "MIT / BSD", "url": "https://fastapi.tiangolo.com"},
+    {"name": "pywebview", "role": "Shows the app in its own window instead of a browser.", "by": "Roman Sirokov", "license": "BSD-3", "url": "https://pywebview.flowrl.com"},
+    {"name": "pydantic", "role": "Checks the catalog file is well-formed.", "by": "Samuel Colvin", "license": "MIT", "url": "https://docs.pydantic.dev"},
+    {"name": "httpx", "role": "Downloads and talks to AI services.", "by": "Encode", "license": "BSD-3", "url": "https://www.python-httpx.org"},
+    {"name": "python-zeroconf", "role": "Finds your other devices on the home network.", "by": "Jakub Stasiak and contributors", "license": "LGPL-2.1", "url": "https://github.com/python-zeroconf/python-zeroconf"},
+    {"name": "typer + rich", "role": "The command-line version for advanced users.", "by": "Sebastián Ramírez, Will McGugan", "license": "MIT", "url": "https://typer.tiangolo.com"},
+    {"name": "platformdirs", "role": "Finds the right folders on each operating system.", "by": "platformdirs contributors", "license": "MIT", "url": "https://github.com/platformdirs/platformdirs"},
+    {"name": "PyInstaller + Inno Setup", "role": "Package the Windows installer.", "by": "PyInstaller team, Jordan Russell", "license": "GPL (with exception) / Inno Setup License", "url": "https://jrsoftware.org/isinfo.php"},
+    {"name": "llmfit, canirunllm, llm-checker", "role": "Earlier tools whose idea — match models to hardware with plain arithmetic — Datas follows.", "by": "their authors", "license": "various", "url": "https://github.com/alexsjones/llmfit"},
+    {"name": "exo", "role": "Showed home devices can share one big model; inspiration for pooling.", "by": "exo labs", "license": "Apache-2.0", "url": "https://github.com/exo-explore/exo"},
+    {"name": "PocketPal AI, Google AI Edge Gallery", "role": "References for the Android app.", "by": "their authors", "license": "MIT / Apache-2.0", "url": "https://github.com/a-ghorbani/pocketpal-ai"}
+  ]
+}

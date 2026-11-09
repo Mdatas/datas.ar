@@ -7,7 +7,7 @@
   2. Creates a virtual environment in %LOCALAPPDATA%\Datas\app\venv and installs the datas-ar
      wheel found next to this script (or from PyPI).
   3. Writes a launcher (Datas.cmd), Desktop + Start Menu shortcuts and an "Apps & features" entry.
-  4. Starts Datas: a console window opens and your browser shows http://127.0.0.1:8420.
+  4. Starts Datas in its own window (no browser, no terminal).
 
   Run it again to upgrade.  -Uninstall removes the app (downloaded models are kept unless -Purge).
 
@@ -168,16 +168,9 @@ set "DATAS_HOME=%LOCALAPPDATA%\Datas"
 if errorlevel 1 pause
 "@
 Set-Content -Path $Launcher -Value $cmd -Encoding ASCII
-$serveCmd = @"
-@echo off
-title Datas.ar
-set "DATAS_HOME=%LOCALAPPDATA%\Datas"
-echo Datas.ar is starting. Your browser will open http://127.0.0.1:8420 - close this window to stop.
-"%LOCALAPPDATA%\Datas\app\venv\Scripts\datas.exe" serve
-if errorlevel 1 pause
-"@
-$ServeLauncher = Join-Path $AppRoot 'Datas-Serve.cmd'
-Set-Content -Path $ServeLauncher -Value $serveCmd -Encoding ASCII
+# Windowed launcher: pythonw.exe runs the app with no console window
+$PythonW = Join-Path $Venv 'Scripts\pythonw.exe'
+$OpenArgs = '-m datas open'
 
 # Icon + copy of this installer (for the uninstall entry)
 $srcIcon = Join-Path $Here 'datas.ico'
@@ -185,10 +178,11 @@ if (Test-Path $srcIcon) { Copy-Item -Force $srcIcon $IconPath }
 Copy-Item -Force $MyInvocation.MyCommand.Path (Join-Path $AppRoot 'Install-Datas.ps1')
 
 # Shortcuts
-function New-Shortcut([string]$path, [string]$target) {
+function New-Shortcut([string]$path, [string]$target, [string]$arguments = '') {
     $ws = New-Object -ComObject WScript.Shell
     $s = $ws.CreateShortcut($path)
     $s.TargetPath = $target
+    if ($arguments) { $s.Arguments = $arguments }
     $s.WorkingDirectory = Split-Path -Parent $target
     if (Test-Path $IconPath) { $s.IconLocation = "$IconPath,0" }
     $s.Description = 'Datas.ar - local AI for everyone'
@@ -196,9 +190,9 @@ function New-Shortcut([string]$path, [string]$target) {
 }
 if (-not $NoShortcuts) {
     Step "Creating shortcuts"
-    New-Shortcut (Join-Path $Desktop 'Datas.ar.lnk') $ServeLauncher
+    New-Shortcut (Join-Path $Desktop 'Datas.ar.lnk') $PythonW $OpenArgs
     New-Item -ItemType Directory -Force -Path $StartMenu | Out-Null
-    New-Shortcut (Join-Path $StartMenu 'Datas.ar.lnk') $ServeLauncher
+    New-Shortcut (Join-Path $StartMenu 'Datas.ar.lnk') $PythonW $OpenArgs
 }
 
 # Apps & features entry (per-user)
@@ -228,5 +222,6 @@ Write-Host ""
 
 if (-not $NoLaunch) {
     Step "Starting Datas.ar (first run downloads llama.cpp, ~30-200 MB depending on your GPU)"
-    Start-Process -FilePath $ServeLauncher
+    $env:DATAS_HOME = $DataRoot
+    Start-Process -FilePath $PythonW -ArgumentList $OpenArgs -WorkingDirectory $AppRoot
 }

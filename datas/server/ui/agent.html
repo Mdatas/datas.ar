@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datas.ar — Agent</title>
+<style>
+  :root{--bg:#0e1116;--panel:#151a21;--panel2:#1b212b;--line:#273040;--text:#e6e9ee;--muted:#9aa4b5;--accent:#74acdf;--ok:#5ad38a;--warn:#f2a93b;--bad:#ef6f6c;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;font-size:15px;line-height:1.5}
+  header{display:flex;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)} .brand{font-family:var(--mono);font-weight:700} .brand b{color:var(--accent)} .spacer{flex:1}
+  main{max-width:900px;margin:0 auto;padding:18px} .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+  textarea,button{font:inherit} textarea{width:100%;height:90px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+  button{color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer} button.primary{background:var(--accent);color:#0b1420;font-weight:700;border-color:var(--accent)} button:disabled{opacity:.5}
+  .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:14px} .switch i{width:34px;height:20px;border-radius:999px;background:#2a3444;position:relative} .switch i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s} .switch.on i{background:var(--ok)} .switch.on i::after{left:16px} .switch.danger.on i{background:var(--bad)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .fine{color:var(--muted);font-size:13px}
+  .steps{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding:4px}
+  .step{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);white-space:pre-wrap;word-break:break-word}
+  .step.tool{border-left:3px solid var(--accent)} .step.result{color:var(--muted);font-family:var(--mono);font-size:12px;max-height:140px;overflow:auto} .step.final{border-color:var(--ok)} .step.error{border-color:var(--bad)}
+  ul{margin:6px 0;padding-left:18px}
+</style>
+</head>
+<body>
+<header><div class="brand">Datas<b>.ar</b> · <span id="t_agent">Agent</span></div><div class="spacer"></div><button id="langBtn" style="padding:4px 10px;font-size:13px">ES</button></header>
+<main>
+  <div class="card">
+    <p id="t_lead" style="margin:0 0 8px">An agent is an AI that works step by step on a task, using tools: it can read and write files in its own folder and, if you allow it, look things up on the internet or run commands. Everything it does is shown below.</p>
+    <p class="fine" id="t_folder"></p>
+    <textarea id="task" placeholder="Example: read all the text files in my folder and write a one-page summary called SUMMARY.md"></textarea>
+    <div class="row" style="margin-top:10px">
+      <label class="switch on" id="netSw"><i></i><span id="t_net">May use the internet</span></label>
+      <label class="switch danger" id="shellSw"><i></i><span id="t_shell">May run commands on this computer (advanced — risky)</span></label>
+      <span class="spacer"></span>
+      <button class="primary" id="run" >▶ <span id="t_run">Start</span></button>
+    </div>
+  </div>
+  <div class="card"><b id="t_steps">What the agent is doing</b><div class="steps" id="steps"></div></div>
+  <div class="card"><b id="t_files">Files in the agent's folder</b><ul id="files"></ul></div>
+</main>
+<script>
+const $=id=>document.getElementById(id); let lang="en";
+const ES={t_agent:"Agente",t_lead:"Un agente es una IA que trabaja paso a paso en una tarea usando herramientas: puede leer y escribir archivos en su propia carpeta y, si lo permitís, buscar en internet o ejecutar comandos. Todo lo que hace se muestra abajo.",t_net:"Puede usar internet",t_shell:"Puede ejecutar comandos en esta computadora (avanzado — riesgoso)",t_run:"Iniciar",t_steps:"Qué está haciendo el agente",t_files:"Archivos en la carpeta del agente",ph:"Ejemplo: leé todos los archivos de texto de mi carpeta y escribí un resumen de una página llamado RESUMEN.md",folder:"Carpeta del agente: "};
+const EN={}; for(const el of document.querySelectorAll("[id^=t_]")) EN[el.id]=el.textContent; EN.ph=$("task").placeholder; EN.folder="Agent folder: ";
+function applyLang(){ const D=lang==="es"?ES:EN; for(const k of Object.keys(EN)){ if(k==="ph") $("task").placeholder=D.ph; else if(k!=="folder" && $(k)) $(k).textContent=D[k]||EN[k]; } $("langBtn").textContent=lang==="en"?"ES":"EN"; loadFiles(); }
+$("langBtn").onclick=()=>{ lang=lang==="en"?"es":"en"; applyLang(); };
+const sw=(el)=>el.classList.toggle("on"); $("netSw").onclick=()=>sw($("netSw")); $("shellSw").onclick=()=>{ if(!$("shellSw").classList.contains("on") && !confirm(lang==="es"?"Con esto el agente puede ejecutar comandos reales en tu computadora, sin preguntar. ¿Continuar?":"This lets the agent run real commands on your computer without asking each time. Continue?")) return; sw($("shellSw")); };
+function step(cls, text){ const d=document.createElement("div"); d.className="step "+cls; d.textContent=text; $("steps").appendChild(d); $("steps").scrollTop=1e9; }
+async function loadFiles(){ try{ const r = await (await fetch("/api/agent/workspace")).json(); $("t_folder").textContent=(lang==="es"?ES.folder:EN.folder)+r.path; $("files").innerHTML = r.files.map(f=>`<li>${f.name} <span class="fine">(${(f.bytes/1024).toFixed(0)} KB)</span></li>`).join("") || `<li class="fine">—</li>`; }catch(e){} }
+$("run").onclick=async()=>{
+  const task=$("task").value.trim(); if(!task) return; $("run").disabled=true; $("steps").innerHTML="";
+  step("", (lang==="es"?"Tarea: ":"Task: ")+task);
+  try{
+    const r = await fetch("/api/agent/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task, internet:$("netSw").classList.contains("on"), allow_shell:$("shellSw").classList.contains("on")})});
+    const rd=r.body.getReader(), dec=new TextDecoder(); let buf="";
+    while(true){ const {value,done}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i; while((i=buf.indexOf("\n\n"))>=0){ const chunk=buf.slice(0,i); buf=buf.slice(i+2); const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue; let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
+      if(ev.type==="assistant") step("", ev.content); else if(ev.type==="tool_call") step("tool", `→ ${ev.name} ${ev.arguments}`); else if(ev.type==="tool_result") step("result", ev.result); else if(ev.type==="final") step("final", (lang==="es"?"Listo. ":"Done. ")+(ev.content||"")); else if(ev.type==="error") step("error", "⚠ "+ev.error); } }
+  }catch(e){ step("error","⚠ "+e.message); }
+  $("run").disabled=false; loadFiles();
+};
+applyLang();
+</script>
+</body>
+</html>
