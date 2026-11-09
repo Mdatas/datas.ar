@@ -82,6 +82,16 @@ def _serve(port: int) -> None:
         _log("server thread failed:\n" + _server_error)
 
 
+def _loading_page() -> str:
+    body = """<!doctype html><html><head><meta charset="utf-8"><title>Datas.ar</title>
+<style>body{background:#0e1116;color:#e6e9ee;font-family:Segoe UI,Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.b{text-align:center}.d{font-family:Consolas,monospace;font-size:28px;font-weight:700}.d b{color:#74acdf}p{color:#9aa4b5}
+.bar{width:220px;height:6px;background:#1b212b;border-radius:4px;margin:18px auto;overflow:hidden}.bar i{display:block;width:40%;height:100%;background:#74acdf;border-radius:4px;animation:m 1.2s infinite ease-in-out}
+@keyframes m{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}</style></head><body><div class="b">
+<div class="d">Datas<b>.ar</b></div><div class="bar"><i></i></div><p>Starting… / Iniciando…<br><small>The first start after installing can take a minute.</small></p></div></body></html>"""
+    return "data:text/html;charset=utf-8," + __import__("urllib.parse").parse.quote(body)
+
+
 def _error_page(port: int, cfg_home: Path) -> str:
     tail = ""
     try:
@@ -128,39 +138,49 @@ def open_window(
             _log(f"port {port} is busy but does not answer as Datas")
         threading.Thread(target=_serve, args=(port,), daemon=True, name="datas-server").start()
         started_here = True
-        deadline = time.time() + 25
-        while time.time() < deadline and not _already_running(port) and _server_error is None:
-            time.sleep(0.2)
-    ok = _already_running(port)
-    _log(f"server up={ok}")
-    target = url if ok else _error_page(port, logs_dir().parent)
+
+    def wait_for_server(limit: float) -> bool:
+        deadline = time.time() + limit
+        while time.time() < deadline and _server_error is None:
+            if _already_running(port):
+                return True
+            time.sleep(0.3)
+        return _already_running(port)
 
     try:
         import webview  # pywebview
 
+        # Open the window immediately with a "starting…" page; switch to the app when the
+        # server answers (a cold start on Windows can take a while: antivirus scans a fresh
+        # install file by file). Only after a long wait show the error page with the log.
         win = webview.create_window(
             title,
-            target,
+            _loading_page(),
             width=width,
             height=height,
             min_size=(760, 560),
             background_color="#0E1116",
             text_select=True,
         )
+        state = {"ok": False}
+
+        def switch_when_ready():
+            state["ok"] = wait_for_server(180)
+            _log(f"server up={state['ok']}")
+            win.load_url(url if state["ok"] else _error_page(port, logs_dir().parent))
 
         def on_closed():
-            if started_here and path == "/" and ok:
+            if started_here and path == "/" and state["ok"]:
                 try:
                     httpx.post(f"http://127.0.0.1:{port}/api/shutdown", timeout=5, trust_env=False)
                 except httpx.HTTPError:
                     pass
 
         win.events.closed += on_closed
-        webview.start(
-            private_mode=cfg.forget
-        )  # forget-mode: no cookies/storage persisted by the webview
+        webview.start(switch_when_ready, private_mode=cfg.forget)
     except Exception as e:  # pywebview unavailable → browser, keep serving until Ctrl-C
         _log(f"pywebview unavailable ({e}); opening the browser instead")
+        ok = wait_for_server(60)
         webbrowser.open(url if ok else _log_path().as_uri())
         if started_here and ok:
             try:
