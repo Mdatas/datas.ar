@@ -13,6 +13,7 @@ shows that log instead of a browser error page.
 from __future__ import annotations
 
 import html
+import os
 import socket
 import sys
 import threading
@@ -177,7 +178,18 @@ def open_window(
                     pass
 
         win.events.closed += on_closed
-        webview.start(switch_when_ready, private_mode=cfg.forget)
+        gui = None
+        if sys.platform.startswith("linux"):
+            try:  # the Linux build ships Qt WebEngine; use it rather than the distro's WebKitGTK
+                import qtpy  # noqa: F401
+
+                gui = "qt"
+                flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+                if hasattr(os, "geteuid") and os.geteuid() == 0 and "--no-sandbox" not in flags:
+                    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (flags + " --no-sandbox").strip()
+            except ImportError:
+                gui = None
+        webview.start(switch_when_ready, private_mode=cfg.forget, gui=gui)
     except Exception as e:  # pywebview unavailable → browser, keep serving until Ctrl-C
         _log(f"pywebview unavailable ({e}); opening the browser instead")
         ok = wait_for_server(60)

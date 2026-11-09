@@ -57,7 +57,8 @@ Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md
 | Platform | How |
 |---|---|
 | **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit** (and *Read me*). Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No wizard, no folder to pick, no administrator password. Until a release exists, the `windows-installer` GitHub Action builds the exe on every push. |
-| **macOS / Linux** | `pipx install datas-ar` then `datas` (opens the window; `datas shortcut` puts it on your Desktop). |
+| **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in `installer/linux/README.md`. |
+| **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; first time **right-click → Open** (the app is not Apple-signed yet). Apple Silicon runs the AI on the GPU (Metal). Uninstall: drag to the Trash; your data stays in `~/Library/Application Support/Datas`. |
 | **Android** | Native app in [`android/`](android/README.md) — APK built by the `android-apk` Action. |
 | **Anything with Python** | `pip install datas-ar && datas` |
 

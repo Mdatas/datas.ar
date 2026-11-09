@@ -1,0 +1,116 @@
+name: desktop-installers
+
+on:
+  push:
+    branches: [main]
+    paths: ["datas/**", "installer/**", "pyproject.toml", ".github/workflows/desktop-installers.yml"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    # ubuntu-22.04 = glibc 2.35 floor, so the bundle runs on Debian 12+, Ubuntu 22.04+, Arch, Fedora 36+
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: system deps (Qt WebEngine runtime for the smoke test, deb tools)
+        run: sudo apt-get update -q && sudo apt-get install -y -q dpkg-dev libgl1 libegl1 libxcb-cursor0 libxkbcommon-x11-0 libnss3 libasound2 libxcomposite1 libxdamage1 libxrandr2 libxtst6
+      - name: install package + pyinstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[qt]" pyinstaller
+      - name: version
+        id: v
+        run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: pyinstaller
+        run: pyinstaller --noconfirm installer/datas.spec
+      - name: smoke test the frozen app
+        run: |
+          set -e
+          dist/Datas/datas-cli --version
+          dist/Datas/datas-cli scan
+          dist/Datas/datas-cli recommend --context 4096
+          dist/Datas/datas-cli catalog list
+      - name: prune unused Qt libraries
+        run: python installer/linux/prune-qt.py dist/Datas
+      - name: deb
+        run: installer/linux/build-deb.sh ${{ steps.v.outputs.version }}
+      - name: tarball (generic + Arch source)
+        run: |
+          D=datas-${{ steps.v.outputs.version }}-linux-x64
+          mkdir -p dist/tar/$D
+          cp -a dist/Datas installer/linux/install.sh installer/linux/datas.desktop LICENSE dist/tar/$D/
+          cp installer/windows/datas-256.png dist/tar/$D/datas.png
+          tar -C dist/tar -czf dist/linux/$D.tar.gz $D
+      - name: test the deb on Debian 12
+        run: |
+          docker run --rm -v "$PWD/dist/linux:/pkg:ro" debian:bookworm bash -ec '
+            apt-get update -q >/dev/null && apt-get install -y -q /pkg/datas_${{ steps.v.outputs.version }}_amd64.deb >/dev/null
+            datas-cli --version && datas-cli scan && test -f /usr/share/applications/datas.desktop
+            apt-get remove -y -q datas >/dev/null && test ! -e /opt/datas'
+      - name: build + test the Arch package
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -v "$PWD/dist/linux:/out" archlinux:latest bash -ec '
+            pacman -Syu --noconfirm --needed base-devel >/dev/null
+            useradd -m build && mkdir -p /b && cp /src/installer/linux/arch/PKGBUILD /b/ && cd /b
+            cp /out/datas-${{ steps.v.outputs.version }}-linux-x64.tar.gz /b/
+            sed -i "s|^source=.*|source=(\"datas-${{ steps.v.outputs.version }}-linux-x64.tar.gz\")|" PKGBUILD
+            chown -R build /b && su build -c "cd /b && makepkg -f --noconfirm" >/dev/null
+            pacman -U --noconfirm /b/datas-bin-*.pkg.tar.zst >/dev/null
+            datas-cli --version && datas-cli scan
+            cp /b/datas-bin-*.pkg.tar.zst /out/'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Datas-linux
+          path: |
+            dist/linux/*.deb
+            dist/linux/*.pkg.tar.zst
+            dist/linux/*.tar.gz
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/linux/*.deb
+            dist/linux/*.pkg.tar.zst
+            dist/linux/*.tar.gz
+
+  macos:
+    runs-on: macos-latest   # Apple Silicon runner → arm64 build (Metal)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install package + pyinstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pyinstaller
+      - name: version
+        id: v
+        run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: icon
+        run: installer/macos/make-icns.sh
+      - name: pyinstaller
+        env:
+          DATAS_VERSION: ${{ steps.v.outputs.version }}
+        run: pyinstaller --noconfirm installer/datas.spec
+      - name: smoke test the frozen app
+        run: |
+          set -e
+          dist/Datas.app/Contents/MacOS/datas-cli --version
+          dist/Datas.app/Contents/MacOS/datas-cli scan
+          dist/Datas.app/Contents/MacOS/datas-cli recommend --context 4096
+          dist/Datas.app/Contents/MacOS/datas-cli catalog list
+      - name: dmg
+        run: installer/macos/build-dmg.sh ${{ steps.v.outputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Datas-macos
+          path: dist/macos/*.dmg
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/macos/*.dmg

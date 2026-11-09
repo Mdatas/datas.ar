@@ -22,7 +22,8 @@
 - [x] One installer file with a launcher window (Install · Repair · Uninstall · Exit · Read me); detects any earlier copy, removes it, installs clean, keeps every model/chat/note and says so (finish screen + first-start notice in the app)
 
 ## 0.2.x — polish the loop
-- [ ] Linux/macOS one-file installers with the same launcher window (AppImage / .dmg)
+- [x] macOS `.dmg`; Linux `.deb` (Debian family), Arch package + PKGBUILD, generic tarball with `install.sh` — all built and smoke-tested in CI (`desktop-installers`)
+- [ ] Code signing: Windows (SmartScreen) and macOS (Developer ID + notarization) — needs certificates
 - [ ] Multi-file (sharded) GGUF entries in the catalog (Qwen3.8-Flash-Next, DeepSeek V4)
 - [ ] Vision in the UI (image attach → `--mmproj`)
 - [ ] Download queue, pause/resume from the UI, disk cleanup of unused models
@@ -55,7 +56,7 @@ Plan:
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server
 - [~] Android native app (WebView + foreground service + bundled engine) — code in `android/`, first APK pending CI build
 - [ ] Android: file picker for existing GGUFs, vision, Snapdragon flavour
-- [ ] iOS app on the llama.cpp xcframework, recommender ported to Swift
+- [ ] iOS app on the llama.cpp xcframework, recommender ported to Swift — needs an Apple Developer account (US$99/yr) to run on a phone for more than 7 days / TestFlight; iOS cannot run a downloaded engine binary like Android does
 - [ ] exo backend for all-Apple-Silicon pools
 
 ## 0.4 — agents

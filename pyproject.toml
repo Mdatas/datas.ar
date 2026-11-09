@@ -40,6 +40,7 @@ dependencies = [
 
 [project.optional-dependencies]
 nvidia = ["nvidia-ml-py>=12.0"]
+qt = ["qtpy>=2.4", "PyQt6>=6.6", "PyQt6-WebEngine>=6.6"]  # Linux window toolkit (self-contained)
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.6", "mypy>=1.10"]
 
 [project.scripts]

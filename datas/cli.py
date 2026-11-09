@@ -54,7 +54,11 @@ def _default(ctx: typer.Context, version: bool = typer.Option(False, "--version"
         con.print(f"datas {__version__}")
         raise typer.Exit()
     if ctx.invoked_subcommand is None:
-        open_window()
+        # Double-click / Desktop icon: no sub-command. Call the implementation directly — calling the
+        # typer-decorated function would pass its OptionInfo default object as the model id.
+        from datas.desktop import open_window as _open
+
+        _open(model_id=None)
 
 
 @app.command("open")

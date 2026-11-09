@@ -3,7 +3,7 @@ name: windows-installer
 on:
   push:
     branches: [main]
-    paths: ["datas/**", "installer/windows/**", "pyproject.toml", ".github/workflows/windows-installer.yml"]
+    paths: ["datas/**", "installer/windows/**", "installer/datas.spec", "pyproject.toml", ".github/workflows/windows-installer.yml"]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
       - name: pyinstaller
-        run: pyinstaller --noconfirm installer/windows/datas.spec
+        run: pyinstaller --noconfirm installer/datas.spec
       - name: smoke test the frozen app
         shell: pwsh
         run: |

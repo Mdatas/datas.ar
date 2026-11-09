@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Datas.ar
+GenericName=Local AI
+Comment=Local AI for everyone — picks and runs the best open AI your device can handle
+Comment[es]=IA local para todos — elige y ejecuta la mejor IA abierta que tu equipo soporta
+Exec=/opt/datas/Datas
+Icon=datas
+Terminal=false
+Categories=Utility;Science;
+Keywords=AI;LLM;llama;chat;local;
+StartupWMClass=Datas

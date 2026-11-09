@@ -1,0 +1,27 @@
+# Maintainer: Datas.ar contributors <https://github.com/Mdatas/datas.ar/issues>
+# Builds the Arch package from the Linux tarball produced by CI (datas-<ver>-linux-x64.tar.gz).
+# Local build: `makepkg -si` (downloads the tarball from the GitHub release).
+pkgname=datas-bin
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Local AI for everyone — picks and runs the best open AI your device can handle"
+arch=('x86_64')
+url="https://github.com/Mdatas/datas.ar"
+license=('GPL-3.0-or-later')
+depends=('glibc' 'libglvnd' 'libxcb' 'xcb-util-cursor' 'libxkbcommon-x11' 'nss' 'alsa-lib' 'fontconfig' 'dbus' 'libxcomposite' 'libxdamage' 'libxrandr' 'libxtst')
+provides=('datas')
+conflicts=('datas')
+options=('!strip')
+source=("datas-${pkgver}-linux-x64.tar.gz::${url}/releases/download/v${pkgver}/datas-${pkgver}-linux-x64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir/datas-${pkgver}-linux-x64"
+  install -dm755 "$pkgdir/opt/datas" "$pkgdir/usr/bin"
+  cp -a Datas/. "$pkgdir/opt/datas/"
+  ln -s /opt/datas/datas-cli "$pkgdir/usr/bin/datas-cli"
+  ln -s /opt/datas/Datas "$pkgdir/usr/bin/datas"
+  install -Dm644 datas.desktop "$pkgdir/usr/share/applications/datas.desktop"
+  install -Dm644 datas.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/datas.png"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
