@@ -423,7 +423,10 @@ def detect(models_path: Path | None = None) -> DeviceSpec:
     os_name = _os_name()
     cpu_name, flags = _cpu_info()
     vm = psutil.virtual_memory()
-    sw = psutil.swap_memory()
+    try:
+        swap_total = int(psutil.swap_memory().total)
+    except Exception:  # noqa: BLE001 - Windows: "PdhAddEnglishCounterW failed" when perf counters are off
+        swap_total = 0
     phys = psutil.cpu_count(logical=False) or psutil.cpu_count() or 1
     logical = psutil.cpu_count() or phys
     if models_path is None:
@@ -459,7 +462,7 @@ def detect(models_path: Path | None = None) -> DeviceSpec:
         cpu_flags=flags,
         ram_total=int(vm.total),
         ram_available=int(vm.available),
-        swap_total=int(sw.total),
+        swap_total=swap_total,
         disk_free_models=int(disk_free),
         gpus=gpus,
         on_battery=on_batt,
