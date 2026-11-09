@@ -2,7 +2,7 @@
   "project": {
     "name": "Datas.ar",
     "repo": "https://github.com/Mdatas/datas.ar",
-    "license": "Apache-2.0",
+    "license": "GPL-3.0-or-later",
     "summary": "Open-source app that reads your device and runs the best open AI it can carry. Built on the projects below — Datas is the glue."
   },
   "sources": [

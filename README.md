@@ -97,4 +97,4 @@ Command line, local API (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatib
 
 ## License
 
-Apache-2.0. Models keep their own licenses (shown on every card).
+GPL-3.0-or-later (chosen when the repository was created; switchable). Models keep their own licenses (shown on every card).
