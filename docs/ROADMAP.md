@@ -62,6 +62,9 @@ Status:
 - [x] Scheduled tasks ("every Monday at 9…") with a results inbox — run while Datas is open; catch up after the computer was off
 - [x] The Run screen reports what *this* device can do, per ability (yes / slow / no + what it would need / not yet in Datas) — `datas/recommend/abilities.py`
 - [ ] The agent's own browser: Playwright Firefox, isolated, hardened, optional Tor (docs/AGENTS.md)
+- [ ] Script-driven app control without vision (open apps/files, write .docx/.xlsx/.pdf directly, AppleScript / PowerShell-COM / D-Bus hooks)
+- [ ] "Look at my screen and help" (screenshot → vision model explains; the user clicks)
+- [ ] Screen control, experimental and device-gated: one window, dry-run, confirm-before-click, Esc panic key; the abilities panel gives it a yes/slow/no verdict (docs/AGENTS.md)
 - [ ] MCP client: use any MCP tool server from Datas agents
 - [ ] Per-tool allowlists; audit log of every tool call
 - [ ] Agent templates (research → file, inbox triage via IMAP, local RAG over a folder)

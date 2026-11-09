@@ -56,9 +56,38 @@ inbox. They run while Datas is open — a tray/background service is roadmap 0.3
 
 Honest scope with the model sizes a normal laptop runs (4–14 B parameters): file and document
 work (sort, rename, summarise, convert text), web research saved to files, scripts when
-commands are allowed, and all of that on a schedule. Driving other programs by clicking around
-the screen is **not** offered: local models are not reliable enough at it yet, and a wrong click
-is not reversible the way a trashed file is.
+commands are allowed, and all of that on a schedule.
+
+### Driving other programs (screen control) — planned, device-gated
+
+Clicking around other programs is not ruled out; it is gated like everything else, by what the
+device can carry, and it comes after images. Why it is not in the first version:
+
+1. **Reliability.** Screen control means: screenshot → a vision model finds the button → click
+   at coordinates → screenshot again → verify → repeat. Every step can go wrong, and even the
+   best paid models fail a large share of such tasks; the small local models that fit a normal
+   laptop fail far more often.
+2. **Speed.** Each step pushes a screenshot through a vision model. On a CPU-only laptop that is
+   tens of seconds per step; a 20-step task becomes many minutes, and when it derails you only
+   find out at the end.
+3. **Reversibility.** A trashed file comes back; a click that sends an email, confirms a payment
+   or deletes something in another program does not. Datas cannot undo other programs.
+4. **Exposure.** The model sees the whole screen — other windows, passwords, banking — and text
+   on screen can carry instructions that hijack it (prompt injection).
+
+What will ship, in this order:
+
+- **Script-driven app control, no vision** (reliable today): open apps and files, fill documents
+  by writing the formats directly (.docx, .xlsx, .pdf), and drive programs through their own
+  automation hooks — AppleScript/Shortcuts on macOS, PowerShell/COM on Windows (Office, Explorer),
+  D-Bus/xdotool on Linux. Deterministic, loggable, undoable where the program allows.
+- **"Look at my screen and help"**: a screenshot goes to the vision model, which explains what is
+  on screen or what to click; the user clicks. Safe, useful, works on any device that runs a
+  vision model.
+- **Screen control, experimental, device-gated**: offered only where the Run screen's verdict is
+  "yes" (a capable vision model on a real GPU), limited to one chosen window, with a dry-run
+  mode, confirm-before-click, a visible cursor and a panic key (Esc) that stops it. Off by
+  default; the abilities panel reports "Screen control: yes / slow / no" like every other ability.
 
 ### Planned: the agent's own browser
 
