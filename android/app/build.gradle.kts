@@ -12,7 +12,7 @@ val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) load(FileInputStream(f))
 }
-fun prop(name: String): String? = keystoreProps.getProperty(name) ?: System.getenv(name)
+fun prop(name: String): String? = (keystoreProps.getProperty(name) ?: System.getenv(name))?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "ar.datas.app"
