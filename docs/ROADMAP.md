@@ -50,7 +50,7 @@ Status:
 - [ ] Android: the same through whisper.cpp's and Kokoro's Android builds (not yet)
 - [x] **Images shipped** (`datas/engines/images.py`): stable-diffusion.cpp pinned release (Vulkan on any GPU, Metal on Mac, CPU fallback; CUDA/ROCm optional in Settings), recipe Z-Image-Turbo (GGUF Q3_K/Q4_K/Q8_0 by memory + Qwen3-4B text encoder + FLUX VAE, exact sizes in `media.json`), `sd-server` managed like `llama-server` (native async API, offload to CPU on small cards), Images screen with gallery, Forget mode keeps nothing on disk. Verdict "Making images" comes from the engine's own fit check.
 - [ ] Images: more recipes by device (Qwen-Image for big cards, FLUX.2 klein), image editing (Qwen-Image-Edit), upscaling
-- [ ] Video: Wan 2.2 / LTX-2.3 through the same engine — needs a GPU with 12 GB+; `docs/wan.md` upstream
+- [ ] Video: making (Wan 2.2 / LTX-2.3 through the same engine, 12 GB+ card), then editing — label/object replacement (classical tracker first), "translate my video" (whisper → chat model → voice clone → lip-sync) with a consent gate and an AI-edited mark; no face swapping of other people — see docs/VIDEO.md
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server

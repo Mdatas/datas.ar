@@ -92,7 +92,7 @@ you can read in [`datas/recommend/engine.py`](datas/recommend/engine.py).
 | [AGENTS.md](docs/AGENTS.md) | the agent runner, permissions |
 | [MOBILE.md](docs/MOBILE.md) · [android/](android/README.md) | phones |
 | [API.md](docs/API.md) | the local HTTP API |
-| [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | |
+| [ROADMAP.md](docs/ROADMAP.md, docs/VIDEO.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | |
 
 ```bash
 git clone https://github.com/Mdatas/datas.ar && cd datas.ar
