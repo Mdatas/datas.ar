@@ -35,6 +35,8 @@ jobs:
           dist/Datas/datas-cli recommend --context 4096
           dist/Datas/datas-cli catalog list
           dist/Datas/datas-cli voice status
+          dist/Datas/datas-cli images status > /dev/null
+          dist/Datas/datas-cli apps list
           dist/Datas/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
       - name: prune unused Qt libraries
         run: python installer/linux/prune-qt.py dist/Datas
@@ -107,6 +109,7 @@ jobs:
           dist/Datas.app/Contents/MacOS/datas-cli recommend --context 4096
           dist/Datas.app/Contents/MacOS/datas-cli catalog list
           dist/Datas.app/Contents/MacOS/datas-cli voice status
+          dist/Datas.app/Contents/MacOS/datas-cli apps list
           dist/Datas.app/Contents/MacOS/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
       - name: dmg
         run: installer/macos/build-dmg.sh ${{ steps.v.outputs.version }}

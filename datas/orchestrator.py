@@ -46,6 +46,9 @@ GiB = 2**30
 # ---------------------------------------------------------------------------
 
 
+STARTER_ID, STARTER_QUANT = "qwen3-0.6b", "Q4_0"  # 409 MB: chat within a minute of the first Run
+
+
 @dataclass
 class Job:
     id: str
@@ -97,6 +100,12 @@ class Datas:
         self.jobs: dict[str, Job] = {}
         self.recorder = voice_engine.Recorder()
         self.sd = image_engine.SdServer(self.cfg)
+        from datas.apps import AppManager
+
+        self.apps = AppManager(self.cfg, self.spec)
+        self.starter_active = (
+            False  # the small helper AI is answering while the chosen one downloads
+        )
         self.granted_folders: list[str] = []  # agent folders allowed for this session
         self.scheduler = None  # started by the server (datas.server.app)
         self.approvals: dict[str, dict] = {}  # pending "may I?" questions from a running agent
@@ -437,9 +446,45 @@ class Datas:
         pool: bool = False,
         with_vision: bool = False,
         with_voice: bool = False,
+        starter: bool = True,
     ) -> Job:
         job = self._job("run", f"Run {model_id} {quant}")
         nodes = self.pool_nodes() if pool else None
+
+        def with_starter(j: Job) -> dict:
+            # Nothing running and a real download ahead → bring up the small helper first, so the
+            # user can already chat (and ask the guide) while the chosen AI downloads.
+            try:
+                m = self.catalog.get(model_id)
+                need_download = not downloader.is_downloaded(m, m.file(quant))
+                sm = self.catalog.get(STARTER_ID)
+                big = m.file(quant).bytes > 3 * sm.file(STARTER_QUANT).bytes
+                if need_download and big and not self.server.running() and model_id != STARTER_ID:
+                    j.say(
+                        "Starting a small helper AI first so you can chat while the big one downloads…"
+                    )
+                    self.run(STARTER_ID, STARTER_QUANT, 8192, 16, None, j)
+                    self.starter_active = True
+                    j.phase = "model"
+                    j.say("Helper ready — you can chat now. Downloading your AI…")
+            except Exception as e:  # noqa: BLE001 - the helper is a convenience, never a blocker
+                j.say(f"(helper AI skipped: {e})")
+            try:
+                return self.run(
+                    model_id,
+                    quant,
+                    context,
+                    kv_bits,
+                    nodes,
+                    j,
+                    with_vision=with_vision,
+                    with_voice=with_voice,
+                )
+            finally:
+                self.starter_active = False
+
+        if starter:
+            return self._run_job(job, with_starter)
         return self._run_job(
             job,
             lambda j: self.run(
@@ -521,18 +566,25 @@ class Datas:
         )
         return state, final, str(out)
 
-    # ---- images (stable-diffusion.cpp) ------------------------------------------
-    def image_choice(self) -> image_engine.ImageChoice:
+    # ---- images and video (stable-diffusion.cpp) ---------------------------------
+    def media_choice(self, kind: str = "image") -> image_engine.ImageChoice:
+        if kind == "video":
+            return image_engine.choose_video(self.spec(), self.cfg)
         return image_engine.choose(self.spec(), self.cfg)
 
-    def image_status(self) -> dict:
-        ch = self.image_choice()
+    def image_choice(self) -> image_engine.ImageChoice:
+        return self.media_choice("image")
+
+    def image_status(self, kind: str = "image") -> dict:
+        ch = self.media_choice(kind)
         files = image_engine.installed_files(ch)
+        running = self.sd.running() and self.sd.state.recipe == ch.recipe
         return {
+            "kind": kind,
             "engine_installed": image_engine.installed_dir() is not None,
             "models": files,
             "ready": files["ready"] and image_engine.installed_dir() is not None,
-            "server": self.sd.state.to_dict() | {"running": self.sd.running()},
+            "server": self.sd.state.to_dict() | {"running": running},
             "choice": {
                 "recipe": ch.recipe,
                 "backend": ch.backend,
@@ -551,28 +603,36 @@ class Datas:
             },
         }
 
-    def start_images_job(self) -> Job:
-        """Download the engine and the model files if needed, then start sd-server."""
-        job = self._job("images", "Set up making images (Z-Image-Turbo)")
+    def start_images_job(self, kind: str = "image") -> Job:
+        """Download the engine and the model files if needed, then (re)start sd-server with them.
+        Never refused: a device that is too small gets a warning in the log and tries anyway."""
+        job = self._job("images", f"Set up making {kind}s")
 
         def body(j: Job) -> dict:
-            ch = self.image_choice()
+            ch = self.media_choice(kind)
             if not ch.fits:
-                raise RuntimeError(
-                    "This device does not have enough memory to make images: "
+                j.say(
+                    "Warning: this device is below what this needs; trying anyway. "
                     + " ".join(ch.reasons)
                 )
             exe = image_engine.ensure_runtime(self.spec(), self.cfg, j)
             image_engine.ensure_models(ch, j)
             j.phase = "starting"
-            j.say("Starting the image engine (loading ~%.1f GB)…" % (ch.total_bytes / GiB))
+            j.say(f"Starting the engine (loading ~{ch.total_bytes / GiB:.1f} GB)…")
             st = self.sd.start(exe, ch, self.spec(), self.cfg.sd_port)
-            return {"server": st.to_dict()}
+            return {"server": st.to_dict(), "kind": kind}
 
         return self._run_job(job, body)
 
     def stop_images(self) -> None:
         self.sd.stop()
+
+    def _save_media(self, data: bytes, ext: str) -> dict:
+        if self.cfg.forget:
+            return {"b64": [base64.b64encode(data).decode()], "ext": ext}
+        name = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{uuid.uuid4().hex[:6]}.{ext}"
+        (image_engine.images_dir() / name).write_bytes(data)
+        return {"files": [name], "ext": ext}
 
     def start_generate_job(
         self, prompt: str, negative: str, width: int, height: int, steps: int | None, seed: int
@@ -580,34 +640,66 @@ class Datas:
         job = self._job("image", prompt[:60])
 
         def body(j: Job) -> dict:
-            if not self.sd.running():
+            ch = self.media_choice("image")
+            if not self.sd.running() or self.sd.state.recipe != ch.recipe:
                 raise RuntimeError(
-                    "The image engine is not running. Set it up from Home → Images first."
+                    "The image engine is not running. Start it from the Images screen."
                 )
-            ch = self.image_choice()
-            recipe = image_engine.catalog()["recipes"][ch.recipe]
+            r = image_engine.recipe_of(ch)
             j.phase = "generating"
             pngs = self.sd.generate(
                 prompt,
                 negative,
                 width,
                 height,
-                steps or recipe["steps"],
-                recipe["cfg_scale"],
+                steps or r["steps"],
+                r["cfg_scale"],
                 seed,
                 progress=j.progress,
             )
-            out: dict = {"count": len(pngs)}
-            if self.cfg.forget:
-                out["b64"] = [base64.b64encode(p).decode() for p in pngs]
-            else:
-                names = []
-                for p in pngs:
-                    name = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{uuid.uuid4().hex[:6]}.png"
-                    (image_engine.images_dir() / name).write_bytes(p)
-                    names.append(name)
-                out["files"] = names
-            return out
+            return self._save_media(pngs[0], "png")
+
+        return self._run_job(job, body)
+
+    def start_video_job(
+        self,
+        prompt: str,
+        negative: str,
+        seconds: float | None,
+        width: int | None,
+        height: int | None,
+        seed: int,
+        init_image_b64: str | None = None,
+    ) -> Job:
+        job = self._job("video", prompt[:60])
+
+        def body(j: Job) -> dict:
+            ch = self.media_choice("video")
+            if not self.sd.running() or self.sd.state.recipe != ch.recipe:
+                raise RuntimeError(
+                    "The video engine is not running. Start it from the Images & video screen."
+                )
+            r = image_engine.recipe_of(ch)
+            fps = r["fps"]
+            frames = r["frames"] if not seconds else max(5, int(seconds * fps) // 4 * 4 + 1)
+            j.phase = "generating"
+            data, mime = self.sd.generate_video(
+                prompt,
+                negative,
+                width or r["width"],
+                height or r["height"],
+                frames,
+                fps,
+                r["steps"],
+                r["cfg_scale"],
+                r["flow_shift"],
+                seed,
+                init_image_b64,
+                progress=j.progress,
+            )
+            return self._save_media(
+                data, "webm" if "webm" in mime else ("avi" if "msvideo" in mime else "webp")
+            )
 
         return self._run_job(job, body)
 
@@ -701,6 +793,24 @@ class Datas:
         self.cfg.save()
         return {"offering": self.worker_running()}
 
+    def open_url_window(self, url: str, title: str) -> dict:
+        p = subprocess.Popen(self._self_cmd() + ["open-url", url, "--title", title])
+        self._agent_windows.append(p)
+        return {"pid": p.pid}
+
+    def start_app_job(self, app_id: str, install_only: bool = False) -> Job:
+        a = self.apps.recipe(app_id)
+        job = self._job("app", a["name"])
+
+        def body(j: Job) -> dict:
+            if install_only:
+                return self.apps.install(app_id, j)
+            r = self.apps.start(app_id, j)
+            self.open_url_window(r["url"], f"{a['name']} — Datas.ar")
+            return r
+
+        return self._run_job(job, body)
+
     def open_agent_window(self) -> dict:
         """The agent runs in its own window *and* its own process, as requested."""
         p = subprocess.Popen(self._self_cmd() + ["agent-window"])
@@ -710,6 +820,7 @@ class Datas:
     def shutdown(self) -> None:
         self.stop()
         self.sd.stop()
+        self.apps.stop_all()
         if self.worker_running():
             self.set_pool_offer(False)
         for p in self._agent_windows:
@@ -753,5 +864,7 @@ class Datas:
             "images": {
                 "engine_installed": image_engine.installed_dir() is not None,
                 "running": self.sd.running(),
+                "recipe": self.sd.state.recipe,
             },
+            "starter_active": self.starter_active,
         }

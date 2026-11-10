@@ -50,7 +50,11 @@ Status:
 - [ ] Android: the same through whisper.cpp's and Kokoro's Android builds (not yet)
 - [x] **Images shipped** (`datas/engines/images.py`): stable-diffusion.cpp pinned release (Vulkan on any GPU, Metal on Mac, CPU fallback; CUDA/ROCm optional in Settings), recipe Z-Image-Turbo (GGUF Q3_K/Q4_K/Q8_0 by memory + Qwen3-4B text encoder + FLUX VAE, exact sizes in `media.json`), `sd-server` managed like `llama-server` (native async API, offload to CPU on small cards), Images screen with gallery, Forget mode keeps nothing on disk. Verdict "Making images" comes from the engine's own fit check.
 - [ ] Images: more recipes by device (Qwen-Image for big cards, FLUX.2 klein), image editing (Qwen-Image-Edit), upscaling
-- [ ] Video: making (Wan 2.2 / LTX-2.3 through the same engine, 12 GB+ card), then editing — label/object replacement (classical tracker first), "translate my video" (whisper → chat model → voice clone → lip-sync) with a consent gate and an AI-edited mark; no face swapping of other people — see docs/VIDEO.md
+- [x] **Video shipped**: Wan 2.2 TI2V 5B through the same engine (text→video, picture→video; WebM), rated per device, never refused — docs/VIDEO.md
+- [x] **More tools** (`datas/apps/`): third-party apps installed into isolated environments with uv and opened in their own window — ComfyUI (video/image making and editing) and FaceFusion (face swap, lip-sync, restoration); user recipes in `<data>/apps.d/` — docs/APPS.md
+- [x] **Chat from the first second**: the guide answers from device facts with no AI installed; on the first Run a 409 MB helper AI starts first so chatting works while the chosen AI downloads
+- [x] Specialist models on Home: Math, Legal texts, Medical (plus Programming)
+- [ ] One-click "translate my video" chain; voice cloning engine; more recipes (audio/music, 3D, OCR)
 
 ## 0.3 — devices
 - [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server

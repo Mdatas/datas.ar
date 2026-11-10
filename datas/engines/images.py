@@ -42,6 +42,15 @@ API_RELEASE = f"https://api.github.com/repos/{REPO}/releases/tags/{{tag}}"
 DOWNLOAD = f"https://github.com/{REPO}/releases/download/{{tag}}/{{asset}}"
 
 
+def media() -> dict:
+    with resources.files("datas.catalog").joinpath("media.json").open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def recipe_of(choice: ImageChoice) -> dict:
+    return media()[choice.kind]["recipes"][choice.recipe]
+
+
 def catalog() -> dict:
     with resources.files("datas.catalog").joinpath("media.json").open("r", encoding="utf-8") as fh:
         return json.load(fh)["image"]
@@ -224,15 +233,16 @@ class ImageChoice:
     total_bytes: int
     need_gib: float  # RAM (or VRAM when not offloading) while generating
     speed: str  # fast | ok | slow | crawl
-    fits: bool = True  # False → the UI must say "no" and why
+    fits: bool = True  # False → the UI says so and why; the user may still try ("force")
+    kind: str = "image"  # image | video
+    te_flag: str = "--llm"  # how sd-server takes this recipe's text encoder
     reasons: list[str] = field(default_factory=list)
 
     def files(self) -> list[dict]:
         return [self.diffusion, self.text_encoder, self.vae]
 
     def plain(self, lang: str = "en") -> dict:
-        cat = catalog()
-        r = cat["recipes"][self.recipe]
+        r = recipe_of(self)
         return {
             "name": r["name"],
             "maker": r["maker"],
@@ -324,8 +334,73 @@ def choose(spec: DeviceSpec, cfg: Config | None = None) -> ImageChoice:
     )
 
 
+def choose_video(spec: DeviceSpec, cfg: Config | None = None) -> ImageChoice:
+    """Wan 2.2 TI2V 5B: quantisation by graphics memory; never refused, only rated."""
+    r = media()["video"]["recipes"]["wan2.2-ti2v-5b"]
+    vram = spec.dedicated_vram_total / GiB
+    unified = any(g.unified for g in spec.gpus)
+    ram = spec.ram_total / GiB
+    reasons: list[str] = []
+    if vram >= 16 or (unified and ram >= 48):
+        q, te = "Q8_0", "Q8_0"
+        reasons.append("Plenty of graphics memory: best quality (Q8_0).")
+    elif vram >= 10 or (unified and ram >= 24):
+        q, te = "Q4_K_M", "Q4_K_M"
+        reasons.append("Mid-size graphics memory: balanced quality (Q4_K_M).")
+    else:
+        q, te = "Q3_K_S", "Q3_K_M"
+        reasons.append("Small memory: the most compact files (Q3).")
+    diffusion = dict(
+        next(f for f in r["diffusion"]["files"] if f["quant"] == q), repo=r["diffusion"]["repo"]
+    )
+    text_encoder = dict(
+        next(f for f in r["text_encoder"]["files"] if f["quant"] == te),
+        repo=r["text_encoder"]["repo"],
+    )
+    vae = dict(r["vae"]["files"][0], repo=r["vae"]["repo"])
+    total = diffusion["bytes"] + text_encoder["bytes"] + vae["bytes"]
+    need = total / GiB + 3.0  # video latents + VAE decode are heavy
+    if vram >= need + 1 and not unified:
+        device, offload, speed, fits = "gpu", False, "ok" if vram >= 16 else "slow", True
+        reasons.append(f"Everything fits in the {vram:.0f} GB graphics card; a clip takes minutes.")
+    elif vram >= 6:
+        device, offload, speed = "gpu", True, "slow"
+        fits = ram >= total / GiB + 2
+        reasons.append(
+            f"Weights stream from RAM to the {vram:.0f} GB graphics card; a clip takes many minutes."
+        )
+    elif unified:
+        device, offload, speed = "unified", False, "slow"
+        fits = ram >= need + 4
+        reasons.append("Shared-memory chip: works from the same RAM; a clip takes many minutes.")
+    else:
+        device, offload, speed = "cpu", False, "crawl"
+        fits = ram >= need + 2
+        reasons.append("No usable graphics card: the processor alone needs hours per clip.")
+    if not fits:
+        reasons.append(
+            "Not enough memory for the video model next to the rest of the computer — you can still try."
+        )
+    return ImageChoice(
+        recipe="wan2.2-ti2v-5b",
+        diffusion=diffusion,
+        text_encoder=text_encoder,
+        vae=vae,
+        backend=backend_for(spec, cfg),
+        offload=offload,
+        device=device,
+        total_bytes=total,
+        need_gib=round(need, 1),
+        speed=speed,
+        fits=fits,
+        kind="video",
+        te_flag=r["text_encoder"].get("flag", "--t5xxl"),
+        reasons=reasons,
+    )
+
+
 def local_path(f: dict) -> Path:
-    return models_dir() / f["file"]
+    return models_dir() / Path(f["file"]).name
 
 
 def installed_files(choice: ImageChoice) -> dict:
@@ -396,7 +471,7 @@ class SdServer:
         a = [
             "--diffusion-model",
             str(local_path(choice.diffusion)),
-            "--llm",
+            choice.te_flag,
             str(local_path(choice.text_encoder)),
             "--vae",
             str(local_path(choice.vae)),
@@ -548,3 +623,64 @@ class SdServer:
                     raise RuntimeError(f"image generation {st}: {j.get('error') or ''}")
                 time.sleep(0.7)
         raise TimeoutError("image generation took too long")
+
+    def generate_video(
+        self,
+        prompt: str,
+        negative: str = "",
+        width: int = 832,
+        height: int = 480,
+        frames: int = 33,
+        fps: int = 16,
+        steps: int = 20,
+        cfg_scale: float = 6.0,
+        flow_shift: float = 3.0,
+        seed: int = -1,
+        init_image_b64: str | None = None,
+        progress=None,  # noqa: ANN001
+        timeout: float = 6 * 3600,
+    ) -> tuple[bytes, str]:
+        """Text→video, or picture→video when ``init_image_b64`` is given. Returns (bytes, mime)."""
+        base = f"http://127.0.0.1:{self.state.port}"
+        body: dict[str, Any] = {
+            "prompt": prompt,
+            "negative_prompt": negative,
+            "width": int(width),
+            "height": int(height),
+            "seed": int(seed),
+            "video_frames": int(frames),
+            "fps": int(fps),
+            "output_format": "webm",
+            "sample_params": {
+                "sample_method": "euler",
+                "sample_steps": int(steps),
+                "flow_shift": float(flow_shift),
+                "guidance": {"txt_cfg": float(cfg_scale)},
+            },
+        }
+        if init_image_b64:
+            body["init_image"] = init_image_b64
+        with httpx.Client(timeout=httpx.Timeout(30, read=300), trust_env=False) as c:
+            r = c.post(f"{base}/sdcpp/v1/vid_gen", json=body)
+            if r.status_code == 400 and "output_format" in r.text:  # build without WebM support
+                body["output_format"] = "avi"
+                r = c.post(f"{base}/sdcpp/v1/vid_gen", json=body)
+            if r.status_code >= 400:
+                raise RuntimeError(
+                    f"sd-server refused the request: HTTP {r.status_code} {r.text[:300]}"
+                )
+            jid = r.json()["id"]
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                j = c.get(f"{base}/sdcpp/v1/jobs/{jid}").json()
+                st = j.get("status")
+                p = j.get("progress") or {}
+                if progress and p:
+                    progress(int(p.get("step", 0) or 0), int(p.get("total_steps", steps) or steps))
+                if st == "completed":
+                    res = j["result"]
+                    return base64.b64decode(res["b64_json"]), res.get("mime_type", "video/webm")
+                if st in ("failed", "cancelled"):
+                    raise RuntimeError(f"video generation {st}: {j.get('error') or ''}")
+                time.sleep(1.5)
+        raise TimeoutError("video generation took too long")

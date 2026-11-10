@@ -143,7 +143,8 @@
               "file": "Qwen3-4B-Instruct-2507-Q8_0.gguf",
               "bytes": 4280405600
             }
-          ]
+          ],
+          "flag": "--llm"
         },
         "vae": {
           "repo": "black-forest-labs/FLUX.1-schnell",
@@ -161,5 +162,83 @@
       }
     },
     "_sizes": "bytes from the Hugging Face API tree listings on 2026-11-09"
+  },
+  "video": {
+    "engine": "stable-diffusion.cpp",
+    "recipes": {
+      "wan2.2-ti2v-5b": {
+        "name": "Wan 2.2 TI2V 5B",
+        "maker": "Wan-AI (Alibaba)",
+        "page": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B",
+        "license": "Apache-2.0",
+        "license_source": "model card of Wan-AI/Wan2.2-TI2V-5B (re-check before redistribution)",
+        "width": 832,
+        "height": 480,
+        "frames": 33,
+        "fps": 16,
+        "steps": 20,
+        "cfg_scale": 6.0,
+        "flow_shift": 3.0,
+        "plain_en": "Makes a short video clip (about 2 seconds at a time) from a description, or animates a picture you give it.",
+        "plain_es": "Crea un clip corto de video (unos 2 segundos por vez) a partir de una descripción, o anima una imagen que le des.",
+        "limits_en": "Short clips, no sound; minutes per clip on a strong graphics card, hours on a processor; faces and hands can warp.",
+        "limits_es": "Clips cortos, sin sonido; minutos por clip con una buena placa de video, horas con procesador; caras y manos pueden deformarse.",
+        "diffusion": {
+          "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+          "page": "https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF",
+          "files": [
+            {
+              "quant": "Q3_K_S",
+              "file": "Wan2.2-TI2V-5B-Q3_K_S.gguf",
+              "bytes": 2294755680
+            },
+            {
+              "quant": "Q4_K_M",
+              "file": "Wan2.2-TI2V-5B-Q4_K_M.gguf",
+              "bytes": 3433116000
+            },
+            {
+              "quant": "Q8_0",
+              "file": "Wan2.2-TI2V-5B-Q8_0.gguf",
+              "bytes": 5400179040
+            }
+          ]
+        },
+        "text_encoder": {
+          "repo": "city96/umt5-xxl-encoder-gguf",
+          "page": "https://huggingface.co/city96/umt5-xxl-encoder-gguf",
+          "flag": "--t5xxl",
+          "files": [
+            {
+              "quant": "Q3_K_M",
+              "file": "umt5-xxl-encoder-Q3_K_M.gguf",
+              "bytes": 3055097696
+            },
+            {
+              "quant": "Q4_K_M",
+              "file": "umt5-xxl-encoder-Q4_K_M.gguf",
+              "bytes": 3655145312
+            },
+            {
+              "quant": "Q8_0",
+              "file": "umt5-xxl-encoder-Q8_0.gguf",
+              "bytes": 6043068256
+            }
+          ]
+        },
+        "vae": {
+          "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+          "page": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+          "files": [
+            {
+              "quant": "f16",
+              "file": "split_files/vae/wan2.2_vae.safetensors",
+              "bytes": 1409400960
+            }
+          ]
+        }
+      }
+    },
+    "_sizes": "bytes from the Hugging Face API tree listings on 2026-11-09; defaults from stable-diffusion.cpp docs/wan.md"
   }
 }

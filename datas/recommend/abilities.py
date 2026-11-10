@@ -61,8 +61,6 @@ def assess(spec: DeviceSpec, rec: Recommendation, voice_available: bool = True) 
     out: list[Ability] = []
     fits = rec.fits
     best = rec.default
-    vram = _gpu_vram_gib(spec)
-    uni = _unified_gib(spec)
     ram = spec.ram_total / GiB
     cores = spec.cpu_cores_logical or 1
     phone = spec.form_factor == "phone"
@@ -290,34 +288,53 @@ def assess(spec: DeviceSpec, rec: Recommendation, voice_available: bool = True) 
             )
         )
 
-    # ---- making video --------------------------------------------------------
-    if vram >= 12 or uni >= 32:
-        vid = (
-            "not_yet",
-            "This device has the graphics memory for short video clips; the engine comes after images.",
-            "Este equipo tiene la memoria de video para clips cortos; el motor llega después de imágenes.",
-        )
-        needs = ("", "")
-    elif vram >= 8:
-        vid = (
-            "not_yet",
-            "Borderline: short low-resolution clips only, slowly; the engine comes after images.",
-            "Al límite: solo clips cortos en baja resolución, lento; el motor llega después de imágenes.",
-        )
-        needs = (
-            "12 GB+ of graphics memory for comfortable use",
-            "12 GB+ de memoria de video para usarlo cómodo",
+    # ---- making video (stable-diffusion.cpp, Wan 2.2 TI2V 5B) ------------------
+    vc = image_engine.choose_video(spec)
+    where_v = {
+        "gpu": ("on the graphics card", "en la placa de video"),
+        "unified": ("on the shared-memory chip", "en el chip de memoria compartida"),
+        "cpu": ("on the processor alone", "solo con el procesador"),
+    }[vc.device]
+    if phone:
+        v_verdict = "no"
+    elif not vc.fits:
+        v_verdict = "no"
+    else:
+        v_verdict = "yes" if vc.speed in ("fast", "ok") else "slow"
+    pace_en = {
+        "ok": "minutes per clip",
+        "slow": "many minutes per clip",
+        "crawl": "hours per clip",
+        "fast": "minutes per clip",
+    }[vc.speed]
+    pace_es = {
+        "ok": "minutos por clip",
+        "slow": "muchos minutos por clip",
+        "crawl": "horas por clip",
+        "fast": "minutos por clip",
+    }[vc.speed]
+    if v_verdict == "no":
+        out.append(
+            Ability(
+                "video",
+                "no",
+                f"Making video needs about {vc.need_gib:.0f} GB of memory; this device is below that. You can still try it from the Images & video screen.",
+                f"Crear video necesita unos {vc.need_gib:.0f} GB de memoria; este equipo está por debajo. Igual podés probarlo desde la pantalla Imágenes y video.",
+                needs="a graphics card with 8 GB+ (12 GB+ to be comfortable)",
+                needs_es="una placa de video de 8 GB+ (12 GB+ para estar cómodo)",
+                engine="stable-diffusion.cpp",
+            )
         )
     else:
-        vid = (
-            "no",
-            "Making video needs a graphics card with 12 GB+ of memory; this device does not have it.",
-            "Crear video necesita una placa de video con 12 GB+ de memoria; este equipo no la tiene.",
+        out.append(
+            Ability(
+                "video",
+                v_verdict,
+                f"Wan 2.2 ({vc.total_bytes / GiB:.1f} GB download) makes short clips {where_v[0]}: {pace_en}.",
+                f"Wan 2.2 ({vc.total_bytes / GiB:.1f} GB de descarga) crea clips cortos {where_v[1]}: {pace_es}.",
+                engine="stable-diffusion.cpp",
+            )
         )
-        needs = ("graphics card with 12 GB+ of memory", "placa de video con 12 GB+ de memoria")
-    out.append(
-        Ability("video", vid[0], vid[1], vid[2], needs[0], needs[1], engine="stable-diffusion.cpp")
-    )
 
     # ---- pooling ---------------------------------------------------------------
     if rec.budget.nodes > 1:

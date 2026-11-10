@@ -139,7 +139,9 @@ def system_prompt(
         )
     sk = skill_prompt(skill)
     if sk == "GUIDE":
-        parts.append(extra or "You are the Datas guide; the device facts are unavailable right now.")
+        parts.append(
+            extra or "You are the Datas guide; the device facts are unavailable right now."
+        )
     elif sk:
         parts.append("Current skill: " + sk)
     if internet:
@@ -184,7 +186,10 @@ def _sse(obj: dict) -> str:
 
 async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIterator[str]:
     messages = [
-        {"role": "system", "content": system_prompt(cfg, req.skill, req.internet, req.lang, req.extra)}
+        {
+            "role": "system",
+            "content": system_prompt(cfg, req.skill, req.internet, req.lang, req.extra),
+        }
     ] + [
         {"role": m["role"], "content": m.get("content", "")}
         for m in req.messages

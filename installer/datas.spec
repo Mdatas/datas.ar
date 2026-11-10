@@ -17,6 +17,7 @@ datas = [
     (os.path.join(ROOT, "datas", "catalog", "models.json"), os.path.join("datas", "catalog")),
     (os.path.join(ROOT, "datas", "catalog", "media.json"), os.path.join("datas", "catalog")),
     (os.path.join(ROOT, "datas", "sources.json"), "datas"),
+    (os.path.join(ROOT, "datas", "apps", "apps.json"), os.path.join("datas", "apps")),
     (os.path.join(ROOT, "datas", "server", "ui", "index.html"), os.path.join("datas", "server", "ui")),
     (os.path.join(ROOT, "datas", "server", "ui", "agent.html"), os.path.join("datas", "server", "ui")),
     (os.path.join(ROOT, "datas", "server", "ui", "datas.ico"), os.path.join("datas", "server", "ui")),

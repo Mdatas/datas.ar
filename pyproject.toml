@@ -59,6 +59,7 @@ packages = ["datas"]
 "datas/catalog/models.json" = "datas/catalog/models.json"
 "datas/catalog/media.json" = "datas/catalog/media.json"
 "datas/sources.json" = "datas/sources.json"
+"datas/apps/apps.json" = "datas/apps/apps.json"
 "datas/server/ui/index.html" = "datas/server/ui/index.html"
 "datas/server/ui/agent.html" = "datas/server/ui/agent.html"
 "datas/server/ui/datas.ico" = "datas/server/ui/datas.ico"

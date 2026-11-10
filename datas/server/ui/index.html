@@ -45,7 +45,7 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:8} .modal.on{display:flex} .modal .card{width:min(680px,92vw);max-height:86vh;overflow:auto}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:14px}
   .abilities{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px;margin-top:6px} .ab{display:flex;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)} .ab.picked{border-color:var(--accent)} .ab-icon{font-size:16px;line-height:1.3} .ab.no{opacity:.85}
-  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px} .gallery figure{margin:0;position:relative} .gallery img{width:100%;border-radius:10px;border:1px solid var(--line);display:block} .gallery button{position:absolute;top:6px;right:6px} #imgResult img{max-width:100%;border-radius:12px;border:1px solid var(--line);margin-top:10px}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px} .gallery figure{margin:0;position:relative} .gallery img{width:100%;border-radius:10px;border:1px solid var(--line);display:block} .gallery button{position:absolute;top:6px;right:6px} .gallery video,#imgResult video{width:100%;border-radius:10px;border:1px solid var(--line);display:block} #imgResult video{max-width:100%;margin-top:10px} #imgResult img{max-width:100%;border-radius:12px;border:1px solid var(--line);margin-top:10px}
 </style>
 </head>
 <body>
@@ -55,7 +55,8 @@
     <button data-go="home" class="on" data-t="nav_home">Home</button>
     <button data-go="library" data-t="nav_library">My AIs</button>
     <button data-go="chat" data-t="nav_chat">Chat</button>
-    <button data-go="images" class="hidden" id="navImages" data-t="nav_images">Images</button>
+    <button data-go="images" id="navImages" data-t="nav_images">Images &amp; video</button>
+    <button data-go="tools" data-t="nav_tools">More tools</button>
     <button data-go="settings" data-t="nav_settings">Settings</button>
     <button data-go="about" data-t="nav_about">About</button>
   </nav>
@@ -97,7 +98,7 @@
     <div class="choice on" data-mode="balanced"><b data-t="m_bal">Balanced</b><span data-t="m_bal_d">Recommended. A good AI with a comfortable margin left over.</span></div>
     <div class="choice" data-mode="heavy"><b data-t="m_heavy">Heavy</b><span data-t="m_heavy_d">Give the AI almost everything. Close other programs first.</span></div>
   </div>
-  <div class="row" style="margin:22px 0 8px"><button class="primary big" id="runBtn" data-t="h_run">▶ Run — check my computer</button><span class="fine" id="runNote"></span></div>
+  <div class="row" style="margin:22px 0 8px"><button class="primary big" id="runBtn" data-t="h_run">▶ Run — check my computer</button><button id="guideHomeBtn">🧭 <span data-t="g_home">Ask the guide</span></button><label class="fine"><span data-t="sp_label">Specialist:</span> <select id="roleSel"><option value="general" data-t="sp_general">No — a good all-rounder</option><option value="math" data-t="sp_math">Math</option><option value="legal" data-t="sp_legal">Legal texts</option><option value="medical" data-t="sp_medical">Medical text &amp; images</option></select></label><span class="fine" id="runNote"></span></div>
   <details><summary data-t="h_adv">Advanced options</summary>
     <div class="card">
       <div class="row"><label data-t="adv_head">Keep free for other programs</label><input type="range" id="headroom" min="8" max="70" step="2"><b id="headroomLbl"></b></div>
@@ -207,23 +208,32 @@
 
 <!-- ================= ABOUT ================= -->
 <section class="screen" id="s-images">
-  <h1 data-t="i_title">Make images</h1>
+  <h1 data-t="i_title2">Make images and video</h1>
+  <div class="choices" id="mediaKind"><div class="choice on" data-kind="image"><b data-t="mk_image">Picture</b><span data-t="mk_image_d">From a description. Seconds to minutes.</span></div><div class="choice" data-kind="video"><b data-t="mk_video">Video clip</b><span data-t="mk_video_d">From a description, or animate a picture. Minutes to hours.</span></div></div>
   <p class="fine" id="imgStatus"></p>
   <div class="card">
-    <textarea id="imgPrompt" style="width:100%;height:80px" data-tp="i_ph" placeholder="Describe the picture. English works best, e.g.: a watercolor of a lighthouse at dawn, soft light, mist"></textarea>
+    <textarea id="imgPrompt" style="width:100%;height:80px" data-tp="i_ph" placeholder="Describe it. English works best, e.g.: a watercolor of a lighthouse at dawn, soft light, mist"></textarea>
     <div class="row" style="margin-top:8px">
-      <select id="imgSize"><option value="1024x1024">1024 × 1024 (square)</option><option value="768x1024">768 × 1024 (portrait)</option><option value="1024x768">1024 × 768 (landscape)</option><option value="640x640">640 × 640 (quick)</option></select>
+      <select id="imgSize"></select>
+      <label class="fine hidden" id="initWrap"><span data-t="vd_init">Start from this picture (optional):</span> <input type="file" id="initImg" accept="image/*"></label>
       <input type="text" id="imgNeg" style="flex:1;min-width:160px" data-tp="i_neg" placeholder="Avoid (optional): blurry, text, watermark">
-      <button class="primary" id="imgGo" data-t="i_go">Make the picture</button>
-      <button class="small" id="imgStart" data-t="i_start">Start the image engine</button>
-      <button class="small" id="imgStop" data-t="i_stop">Stop the image engine</button>
+      <button class="primary" id="imgGo" data-t="i_go">Make it</button>
+      <button class="small" id="imgStart" data-t="i_start">Download / start the engine</button>
+      <button class="small" id="imgStop" data-t="i_stop">Stop the engine</button>
     </div>
     <div class="fine" id="imgProg" style="margin-top:6px"></div>
   </div>
   <div id="imgResult"></div>
-  <h2 data-t="i_gallery">Your pictures</h2>
-  <p class="fine" data-t="i_gallery_d">Saved on this computer only (in Forget mode nothing is saved; the picture shows once).</p>
+  <h2 data-t="i_gallery">Your pictures and clips</h2>
+  <p class="fine" data-t="i_gallery_d">Saved on this computer only (in Forget mode nothing is saved; the result shows once).</p>
   <div class="gallery" id="imgGallery"></div>
+  <p class="fine" data-t="i_more">Need more — editing video, swapping faces, lip-sync, replacing objects? See <a href="#" onclick="go('tools');return false">More tools</a>.</p>
+</section>
+<section class="screen" id="s-tools">
+  <h1 data-t="t_title">More AI tools</h1>
+  <p class="lead" data-t="t_lead">Programs made by others that Datas installs and opens for you, each in its own window. Datas checks your device and tells you what to expect; it does not change what they do — how you use them is up to you.</p>
+  <div id="toolsList"></div>
+  <p class="fine" data-t="t_own">Advanced: add your own tool by dropping a recipe file into the "apps.d" folder of the Datas data folder (see docs/APPS.md).</p>
 </section>
 <section class="screen" id="s-about">
   <h1 data-t="a_title">About this app &amp; its sources</h1>
@@ -258,7 +268,7 @@ es:{
  h_title:"¿Para qué vas a usar tu IA?",h_lead:"Elegí una o más opciones. Después apretá Correr: Datas revisa tu computadora y elige la mejor IA que puede cargar sin trabar todo lo demás.",
  u_text:"Chat y escritura",u_text_d:"Preguntas, emails, resúmenes, ideas, traducciones.",u_images:"Entender imágenes",u_images_d:"Describir o leer una foto, una captura, un documento.",u_coding:"Programar",u_coding_d:"Escribir y corregir código.",
  u_agents:"Que haga tareas por mí",u_agents_d:"Buscar cosas, leer y escribir archivos, trabajar paso a paso (un \"agente\").",u_sound:"Voz y sonido",u_sound_d:"Hablale a la IA y escuchá la respuesta. Suma un modelo de oído (whisper.cpp) y una voz (Kokoro); los dos corren en el procesador.",u_video:"Imágenes y video (crearlos)",u_soon2:"Datas revisa si este equipo podría hacerlo (necesita una placa de video de verdad). El motor para esto viene después.",
- nav_images:"Imágenes",i_title:"Crear imágenes",i_ph:"Describí la imagen. En inglés funciona mejor, p. ej.: a watercolor of a lighthouse at dawn, soft light, mist",i_neg:"Evitar (opcional): blurry, text, watermark",i_go:"Crear la imagen",i_start:"Iniciar el motor de imágenes",i_stop:"Parar el motor de imágenes",i_gallery:"Tus imágenes",i_gallery_d:"Guardadas solo en esta computadora (en modo Olvidar no se guarda nada; la imagen se muestra una vez).",i_setup:"Descargar e iniciar el motor de imágenes",i_ready_stopped:"Ya está todo descargado; iniciá el motor para crear imágenes.",i_not_setup:"Todavía no está listo: andá a Inicio, marcá \"Imágenes y video\", apretá Correr y elegí \"Descargar e iniciar el motor de imágenes\".",i_starting:"Iniciando el motor de imágenes… (cargar unos GB tarda uno o dos minutos)",i_working:"Creando la imagen…",i_set_d:"El motor de imágenes (stable-diffusion.cpp) usa Vulkan en cualquier placa de video y Metal en Mac — descarga chica, drivers normales. Con NVIDIA podés pasar a CUDA (más rápido, +850 MB) — aplica en la próxima instalación.",i_backend:"Versión del motor de imágenes",ph_img_engine:"Descargando el motor de imágenes (stable-diffusion.cpp)…",ph_img_models:"Descargando el modelo de imágenes (unos GB)…",engine:"motor",
+ nav_images:"Imágenes y video",nav_tools:"Más herramientas",g_home:"Preguntale a la guía",sp_label:"Especialista:",sp_general:"No — una buena todo terreno",sp_math:"Matemática",sp_legal:"Textos legales",sp_medical:"Texto e imágenes médicas",vd_title:"Crear video",below:"por debajo de lo que necesita",i_try:"Probar igual",i_title2:"Crear imágenes y video",mk_image:"Imagen",mk_image_d:"A partir de una descripción. De segundos a minutos.",mk_video:"Clip de video",mk_video_d:"A partir de una descripción, o animar una imagen. De minutos a horas.",vd_init:"Partir de esta imagen (opcional):",i_more:"¿Necesitás más — editar video, cambiar caras, sincronizar labios, reemplazar objetos? Mirá <a href=\"#\" onclick=\"go('tools');return false\">Más herramientas</a>.",t_title:"Más herramientas de IA",t_lead:"Programas hechos por otros que Datas instala y abre por vos, cada uno en su ventana. Datas revisa tu equipo y te dice qué esperar; no cambia lo que hacen — cómo los usás es cosa tuya.",t_own:"Avanzado: sumá tu propia herramienta dejando un archivo de receta en la carpeta \"apps.d\" de la carpeta de datos de Datas (ver docs/APPS.md).",t_show:"Mostrar su ventana",t_open:"Abrir",t_install:"Instalar y abrir",t_stop:"Parar",t_remove:"Quitar",website:"sitio",ph_app_dl:"Descargando la herramienta…",ph_app_in:"Instalando la herramienta (la primera vez puede tardar varios minutos)…",ph_app_st:"Iniciando la herramienta…",starter_ready:"Ya hay una IA ayudante chica lista: podés chatear (o preguntarle a la guía) mientras se descarga tu IA.",i_title:"Crear imágenes",i_ph:"Describí la imagen. En inglés funciona mejor, p. ej.: a watercolor of a lighthouse at dawn, soft light, mist",i_neg:"Evitar (opcional): blurry, text, watermark",i_go:"Crear",i_start:"Descargar / iniciar el motor",i_stop:"Parar el motor",i_gallery:"Tus imágenes y clips",i_gallery_d:"Guardadas solo en esta computadora (en modo Olvidar no se guarda nada; la imagen se muestra una vez).",i_setup:"Descargar e iniciar",i_ready_stopped:"Ya está todo descargado; iniciá el motor para crear imágenes.",i_not_setup:"Todavía no está listo: andá a Inicio, marcá \"Imágenes y video\", apretá Correr y elegí \"Descargar e iniciar el motor de imágenes\".",i_starting:"Iniciando el motor de imágenes… (cargar unos GB tarda uno o dos minutos)",i_working:"Trabajando…",i_set_d:"El motor de imágenes (stable-diffusion.cpp) usa Vulkan en cualquier placa de video y Metal en Mac — descarga chica, drivers normales. Con NVIDIA podés pasar a CUDA (más rápido, +850 MB) — aplica en la próxima instalación.",i_backend:"Versión del motor de imágenes",ph_img_engine:"Descargando el motor de imágenes (stable-diffusion.cpp)…",ph_img_models:"Descargando el modelo de imágenes (unos GB)…",engine:"motor",
  g_ask:"Preguntale a la guía sobre esta computadora",g_ask_d:"Un chat que conoce este equipo, los modelos y cómo usarlos bien. Necesita una IA corriendo.",g_title:"Guía de Datas",g_lead:"Preguntame qué puede hacer esta computadora, qué IA usar para qué, o cómo preguntar mejor. Probá una:",
  ab_title:"En esta computadora",ab_text:"Chat y escritura",ab_images:"Entender imágenes",ab_coding:"Programar",ab_agents:"Tareas por mí (agente)",ab_sound:"Voz y sonido",ab_image_gen:"Crear imágenes",ab_video:"Crear video",ab_pool:"Dispositivos en conjunto",ab_yes:"Sí",ab_slow:"Sí, lento",ab_no:"No",ab_not_yet:"Todavía no",ab_needs:"Necesita:",
  v_title:"Voz",v_hear:"Oído",v_speak:"Voz",v_extra:"se suma a la descarga",v_mem:"de memoria extra",v_install:"Instalar la voz (oído + habla)",v_installed:"Voz instalada",v_notavail:"Esta copia de Datas vino sin los paquetes de voz; reinstalá con el instalador más nuevo.",v_mic:"Hablar",v_listening:"Escuchando… tocá para terminar",v_working:"Entendiendo…",v_read:"Leer las respuestas en voz alta",v_nomic:"No se encontró micrófono en esta computadora.",v_model:"Modelo de oído",v_voice:"Voz",v_auto:"Automático (según la computadora)",ph_voice:"Descargando el oído y la voz…",
@@ -309,7 +319,7 @@ const $ = id => document.getElementById(id);
 const api = async (path, opts={}) => { const r = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, opts)); if(!r.ok){ let t = await r.text(); try{ t = JSON.parse(t).message || JSON.parse(t).detail || t }catch(e){} throw new Error(t.slice(0,300)); } return r.json(); };
 const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(msg, ms=3500){ const t=$("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", ms); }
-function go(name){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $("s-"+name).classList.add("on"); document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===name)); window.scrollTo(0,0); if(name==="library") loadLibrary(); if(name==="settings") loadSettings(); if(name==="about") loadAbout(); if(name==="chat") enterChat(); if(name==="images") enterImages(); }
+function go(name){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $("s-"+name).classList.add("on"); document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===name)); window.scrollTo(0,0); if(name==="library") loadLibrary(); if(name==="settings") loadSettings(); if(name==="about") loadAbout(); if(name==="chat") enterChat(); if(name==="images") enterImages(); if(name==="tools") enterTools(); }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.go));
 function dots(n){ return `<span class="dots" title="${tr('quality','Quality')} ${n}/5">${"●".repeat(n)}${"○".repeat(5-n)}</span>`; }
 function sw(el, on){ el.classList.toggle("on", !!on); }
@@ -343,7 +353,7 @@ $("runBtn").onclick = async ()=>{
   $("runBtn").disabled=true; $("runNote").textContent = lang==="es"?"Revisando…":"Checking…";
   try{
     SPEC = await api("/api/spec?refresh=1");
-    const q = new URLSearchParams({use: uses().join(","), mode: mode(), context: $("context").value, kv_bits: isOn($("kvSwitch"))?8:16, pool: isOn($("poolSwitch"))?"1":"0"});
+    const q = new URLSearchParams({role: $("roleSel").value, use: uses().join(","), mode: mode(), context: $("context").value, kv_bits: isOn($("kvSwitch"))?8:16, pool: isOn($("poolSwitch"))?"1":"0"});
     if($("headroom").dataset.touched) q.set("headroom", (+$("headroom").value)/100);
     REC = await api("/api/recommend?"+q);
     // Nothing fits? Quietly try a shorter memory before giving up, and say so.
@@ -370,7 +380,7 @@ function renderResult(){
   $("askGuideBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
   if(!d){ $("hero").innerHTML = `<b>${tr("none_fit","No model fits with these settings. Try Heavy or lower the margin in Advanced options.")}</b>`; $("others").innerHTML=""; renderNofit(); return; }
   $("hero").innerHTML = heroCard(d, true) + voiceCard() + imagesCard();
-  const ib = $("hero").querySelector("#imgSetupBtn"); if(ib) ib.onclick = async ()=>{ const j = await api("/api/images/setup",{method:"POST"}); watchJob(j.id, "Z-Image-Turbo"); };
+  $("hero").querySelectorAll("[data-msetup]").forEach(b=>b.onclick = async ()=>{ MEDIA_KIND=b.dataset.msetup; const j = await api("/api/images/setup?kind="+MEDIA_KIND,{method:"POST"}); watchJob(j.id, MEDIA_KIND==="video"?"Wan 2.2":"Z-Image-Turbo"); });
   $("hero").querySelector("[data-run]").onclick = ()=>startRun(d.model_id, d.quant);
   const others = REC.fits.filter(c=>c.model_id!==d.model_id);
   $("others").innerHTML = others.length ? others.map(c=>`<div class="card">${heroCard(c,false)}</div>`).join("") : `<p class="fine">—</p>`;
@@ -398,18 +408,20 @@ function abilitiesCard(){
   const picked = uses();
   return `<div style="margin-top:10px"><b>${tr("ab_title","On this computer")}</b><div class="abilities">${A.map(a=>`<div class="ab ${a.verdict} ${picked.includes(a.id)?"picked":""}"><span class="ab-icon">${AB_ICON[a.verdict]||""}</span><div><b>${tr("ab_"+a.id, AB_NAMES[a.id]||a.id)}</b> — ${tr("ab_"+a.verdict, {yes:"Yes",slow:"Yes, slowly",no:"No",not_yet:"Not yet"}[a.verdict])}<div class="fine">${esc(lang==="es"?a.why_es:a.why)}${(lang==="es"?a.needs_es:a.needs)?` <i>${tr("ab_needs","Needs:")} ${esc(lang==="es"?a.needs_es:a.needs)}</i>`:""}</div></div></div>`).join("")}</div></div>`;
 }
-function imagesCard(){
-  if(!uses().includes("video")) return "";
-  const c = REC.images; if(!c) return "";
-  const p = c.plain, ab = (REC.abilities||[]).find(a=>a.id==="image_gen")||{};
-  if(!c.fits) return `<div class="card" style="margin-top:10px"><h3>🖼 ${tr("i_title","Make images")}</h3><p class="fine" style="color:var(--warn)">${esc(lang==="es"?ab.why_es:ab.why)} ${(lang==="es"?ab.needs_es:ab.needs)?`<i>${tr("ab_needs","Needs:")} ${esc(lang==="es"?ab.needs_es:ab.needs)}</i>`:""}</p></div>`;
-  return `<div class="card" style="margin-top:10px"><h3>🖼 ${tr("i_title","Make images")}: ${esc(p.name)}</h3>
+function mediaCard(kind, c, icon, title){
+  if(!c) return "";
+  const p = c.plain;
+  return `<div class="card" style="margin-top:10px"><h3>${icon} ${title}: ${esc(p.name)}</h3>
     <div class="fine">${tr("maker","Made by")} ${esc(p.maker)} · <a href="${esc(p.page)}" target="_blank" rel="noopener">${tr("model_page","model page")}</a> · ${tr("license","license")}: ${esc(p.license)} · ${tr("engine","engine")}: stable-diffusion.cpp</div>
     <p style="margin:6px 0">${esc(p.what)}</p>
     <ul class="plain">${c.reasons.map(r=>`<li class="fine">${esc(r)}</li>`).join("")}</ul>
-    <div class="chips"><span class="chip ${c.speed==="fast"||c.speed==="ok"?"good":"warn"}">${tr(c.speed)}</span><span class="chip">+${esc(p.download)}</span><span class="chip">${esc(p.memory)} ${tr("v_mem","extra memory")}</span></div>
+    <div class="chips"><span class="chip ${c.fits&&(c.speed==="fast"||c.speed==="ok")?"good":"warn"}">${c.fits?tr(c.speed):tr("below","below what it needs")}</span><span class="chip">+${esc(p.download)}</span><span class="chip">${esc(p.memory)} ${tr("v_mem","extra memory")}</span></div>
     <p class="fine"><b>${tr("limits","Limits")}:</b> ${esc(p.limits)}</p>
-    <div class="row" style="margin-top:8px"><button class="primary" id="imgSetupBtn">${tr("i_setup","Download and start the image engine")}</button></div></div>`;
+    <div class="row" style="margin-top:8px"><button class="${c.fits?"primary":""}" data-msetup="${kind}">${c.fits?tr("i_setup","Download and start"):tr("i_try","Try anyway")}</button></div></div>`;
+}
+function imagesCard(){
+  if(!uses().includes("video")) return "";
+  return mediaCard("image", REC.images, "🖼", tr("i_title","Make images")) + mediaCard("video", REC.video, "🎬", tr("vd_title","Make video"));
 }
 function voiceCard(){
   if(!uses().includes("sound")) return "";
@@ -432,11 +444,12 @@ function watchJob(id, label){
   $("progress").scrollIntoView({behavior:"smooth", block:"center"});
   POLL = setInterval(async ()=>{
     const j = await api("/api/jobs/"+id);
-    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)"), voice:tr("ph_voice","Downloading the hearing model and the voice…"), "image-engine":tr("ph_img_engine","Downloading the image engine (stable-diffusion.cpp)…"), "image-models":tr("ph_img_models","Downloading the picture model (a few GB)…")}[j.phase] || "";
+    const ph = {runtime:tr("ph_runtime","Preparing the engine (llama.cpp)…"), model:tr("ph_model","Downloading the AI…"), starting:tr("ph_starting","Starting the AI… (the first time can take a minute)"), "app-download":tr("ph_app_dl","Downloading the tool…"), "app-install":tr("ph_app_in","Installing the tool (this can take several minutes the first time)…"), "app-start":tr("ph_app_st","Starting the tool…"), voice:tr("ph_voice","Downloading the hearing model and the voice…"), "image-engine":tr("ph_img_engine","Downloading the image engine (stable-diffusion.cpp)…"), "image-models":tr("ph_img_models","Downloading the picture model (a few GB)…")}[j.phase] || "";
     $("pPhase").textContent = " · "+ph; $("pPct").textContent = j.percent!=null?`${j.percent}% · ${(j.done/2**30).toFixed(1)} / ${(j.total/2**30).toFixed(1)} GB`:""; $("pBar").style.width=(j.percent||0)+"%"; $("pLog").textContent=j.log.join("\n");
+    if(j.kind==="run" && j.phase==="model" && !window._starterTold){ const st = await api("/api/status"); if(st.starter_active){ window._starterTold=true; STATUS=st; toast(tr("starter_ready","A small helper AI is ready: you can chat (or ask the guide) while your AI downloads."), 9000); } }
     $("pHint").textContent = j.phase==="model" ? (lang==="es"?"Podés seguir usando la computadora. La descarga se reanuda sola si se corta.":"You can keep using the computer. The download resumes by itself if it drops.") : "";
     if(j.state==="done"||j.state==="error"){ clearInterval(POLL);
-      if(j.state==="done"){ $("pBar").style.width="100%"; $("pPhase").textContent=" · "+tr("ph_done","Ready! You can chat now."); await refreshStatus(); if(j.kind==="run") { setTimeout(()=>go("chat"), 600); } if(j.kind==="images") { setTimeout(()=>go("images"), 600); } if(j.kind==="bench"&&j.result){ toast(tr("bench_result","Measured speed: %g words/s writing (%p reading).").replace("%g", j.result.gen_tps).replace("%p", j.result.prompt_tps), 8000); } }
+      if(j.state==="done"){ $("pBar").style.width="100%"; $("pPhase").textContent=" · "+tr("ph_done","Ready! You can chat now."); await refreshStatus(); if(j.kind==="run") { setTimeout(()=>go("chat"), 600); } if(j.kind==="images") { setTimeout(()=>go("images"), 600); } window._starterTold=false; if(j.kind==="bench"&&j.result){ toast(tr("bench_result","Measured speed: %g words/s writing (%p reading).").replace("%g", j.result.gen_tps).replace("%p", j.result.prompt_tps), 8000); } }
       else { $("pPhase").textContent=" · "+tr("ph_error","Something failed:")+" "+(j.error||""); }
     }
   }, 800);
@@ -445,7 +458,7 @@ function watchJob(id, label){
 // ---------- status ----------
 async function refreshStatus(){
   STATUS = await api("/api/status"); $("ver").textContent = STATUS.version;
-  if(STATUS.images) $("navImages").classList.toggle("hidden", !(STATUS.images.engine_installed||STATUS.images.running));
+
   const s = STATUS.server, pill = $("statusPill");
   if(s.running){ const name = libName(s.model_id) || s.model_id; pill.textContent = "● "+tr("status_running","Running")+": "+name; pill.classList.add("on"); $("chatTitle").textContent = name; }
   else { pill.textContent = "○ "+tr("stopped","No AI running"); pill.classList.remove("on"); $("chatTitle").textContent = tr("c_title","Chat"); }
@@ -492,7 +505,7 @@ $("agentBtn").onclick = async ()=>{ try{ await api("/api/window/agent",{method:"
 function addMsg(role, text){ const d=document.createElement("div"); d.className="msg "+role; d.textContent=text; $("msgs").appendChild(d); $("msgs").scrollTop=1e9; return d; }
 async function send(){
   const text=$("input").value.trim(); if(!text) return;
-  if(!STATUS.server.running && STATUS.provider==="local"){ toast(tr("no_ai")); return; }
+  if(!STATUS.server.running && STATUS.provider==="local" && currentSkill!=="guide"){ toast(tr("no_ai")); return; }
   $("input").value=""; chatMsgs.push({role:"user",content:text}); addMsg("user",text);
   const el = addMsg("ai",""); el.innerHTML = `<div class="tools hidden"></div><div class="think hidden"></div><div class="body"></div>`;
   const tools=el.querySelector(".tools"), think=el.querySelector(".think"), body=el.querySelector(".body"); $("send").disabled=true;
@@ -509,27 +522,50 @@ async function send(){
   }catch(e){ body.textContent="Error: "+e.message; }
   $("send").disabled=false;
 }
-// ---- images ----
-let IMG=null, imgPoll=null;
+// ---- images & video ----
+let IMG=null, imgPoll=null, MEDIA_KIND="image";
+const SIZES={image:[["1024x1024","1024 × 1024"],["768x1024","768 × 1024"],["1024x768","1024 × 768"],["640x640","640 × 640"]], video:[["832x480|2","832 × 480 · 2 s"],["480x832|2","480 × 832 · 2 s"],["832x480|4","832 × 480 · 4 s"],["1280x704|3","1280 × 704 · 3 s"]]};
+document.querySelectorAll("#mediaKind .choice").forEach(c=>c.onclick=()=>{ MEDIA_KIND=c.dataset.kind; enterImages(); });
+function mediaTag(name){ const u="/api/images/file/"+encodeURIComponent(name); return /\.(webm|avi)$/.test(name) ? `<video src="${u}" controls loop muted playsinline></video>` : `<img src="${u}" loading="lazy" alt="">`; }
 async function enterImages(){
-  try{ IMG = await api("/api/images"); }catch(e){ return; }
-  const run = IMG.server.running;
-  $("imgStatus").textContent = run ? (lang==="es"?`Motor de imágenes corriendo: ${IMG.choice.plain.name} (${IMG.choice.plain.where}).`:`Image engine running: ${IMG.choice.plain.name} (${IMG.choice.plain.where}).`) : (IMG.ready ? tr("i_ready_stopped","Everything is downloaded; start the engine to make pictures.") : tr("i_not_setup","Not set up yet: go to Home, tick \"Images & video\", press Run and choose \"Download and start the image engine\"."));
-  $("imgGo").disabled = !run; $("imgStart").classList.toggle("hidden", run || !IMG.ready); $("imgStop").classList.toggle("hidden", !run);
+  document.querySelectorAll("#mediaKind .choice").forEach(c=>c.classList.toggle("on", c.dataset.kind===MEDIA_KIND));
+  $("imgSize").innerHTML = SIZES[MEDIA_KIND].map(([v,l])=>`<option value="${v}">${l}</option>`).join(""); $("initWrap").classList.toggle("hidden", MEDIA_KIND!=="video");
+  try{ IMG = await api("/api/images?kind="+MEDIA_KIND); }catch(e){ return; }
+  const run = IMG.server.running, c = IMG.choice;
+  $("imgStatus").innerHTML = (run ? (lang==="es"?"Motor corriendo: ":"Engine running: ") : (IMG.ready ? (lang==="es"?"Descargado, motor detenido: ":"Downloaded, engine stopped: ") : (lang==="es"?"Sin descargar todavía: ":"Not downloaded yet: "))) + `<b>${esc(c.plain.name)}</b> · ${esc(c.plain.download)} · ${esc(c.plain.where)} · ${c.fits?tr(c.speed):`<span style="color:var(--warn)">${tr("below","below what it needs")}</span>`}<br>${c.reasons.map(esc).join(" ")}`;
+  $("imgGo").disabled = !run; $("imgStart").classList.toggle("hidden", run); $("imgStop").classList.toggle("hidden", !run);
   loadGallery();
 }
-async function loadGallery(){ try{ const g = await api("/api/images/list"); $("imgGallery").innerHTML = g.images.map(x=>`<figure><img src="/api/images/file/${encodeURIComponent(x.name)}" loading="lazy" alt=""><button class="small danger" data-del="${esc(x.name)}">✕</button></figure>`).join("") || `<p class="fine">—</p>`; $("imgGallery").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ await fetch("/api/images/file/"+encodeURIComponent(b.dataset.del),{method:"DELETE"}); loadGallery(); }); }catch(e){} }
-$("imgStart").onclick = async()=>{ const j = await api("/api/images/setup",{method:"POST"}); $("imgProg").textContent = tr("i_starting","Starting the image engine… (loading a few GB takes a minute or two)"); imgPoll=setInterval(async()=>{ const x = await api("/api/jobs/"+j.id); if(x.state==="done"||x.state==="error"){ clearInterval(imgPoll); $("imgProg").textContent = x.state==="error" ? "⚠ "+x.error : ""; enterImages(); } }, 1500); };
+async function loadGallery(){ try{ const g = await api("/api/images/list"); $("imgGallery").innerHTML = g.images.map(x=>`<figure>${mediaTag(x.name)}<button class="small danger" data-del="${esc(x.name)}">✕</button></figure>`).join("") || `<p class="fine">—</p>`; $("imgGallery").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ await fetch("/api/images/file/"+encodeURIComponent(b.dataset.del),{method:"DELETE"}); loadGallery(); }); }catch(e){} }
+function pollJob(id, onTick){ return new Promise(res=>{ imgPoll=setInterval(async()=>{ const x = await api("/api/jobs/"+id); if(onTick) onTick(x); if(x.state==="done"||x.state==="error"){ clearInterval(imgPoll); res(x); } }, 1200); }); }
+$("imgStart").onclick = async()=>{ $("imgStart").disabled=true; const j = await api("/api/images/setup?kind="+MEDIA_KIND,{method:"POST"}); const x = await pollJob(j.id, x=>{ $("imgProg").textContent = (x.percent!=null?`${x.percent}% · `:"") + (x.log[x.log.length-1]||""); }); $("imgProg").textContent = x.state==="error" ? "⚠ "+x.error : ""; $("imgStart").disabled=false; enterImages(); };
 $("imgStop").onclick = async()=>{ await api("/api/images/stop",{method:"POST"}); enterImages(); };
+function fileB64(f){ return new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(String(fr.result).split(",")[1]); fr.readAsDataURL(f); }); }
 $("imgGo").onclick = async()=>{
-  const prompt=$("imgPrompt").value.trim(); if(!prompt) return; const [w,h]=$("imgSize").value.split("x").map(Number);
-  $("imgGo").disabled=true; $("imgProg").textContent = tr("i_working","Making the picture…"); $("imgResult").innerHTML="";
+  const prompt=$("imgPrompt").value.trim(); if(!prompt) return;
+  $("imgGo").disabled=true; $("imgProg").textContent = tr("i_working","Working…"); $("imgResult").innerHTML="";
   try{
-    const j = await api("/api/images/generate",{method:"POST",body:JSON.stringify({prompt, negative:$("imgNeg").value.trim(), width:w, height:h})});
-    await new Promise(res=>{ imgPoll=setInterval(async()=>{ const x = await api("/api/jobs/"+j.id); if(x.total) $("imgProg").textContent = `${tr("i_working","Making the picture…")} ${x.done}/${x.total}`; if(x.state==="done"){ clearInterval(imgPoll); $("imgProg").textContent=""; const r=x.result||{}; if(r.files) $("imgResult").innerHTML = r.files.map(f=>`<img src="/api/images/file/${encodeURIComponent(f)}" alt="">`).join(""); else if(r.b64) $("imgResult").innerHTML = r.b64.map(b=>`<img src="data:image/png;base64,${b}" alt="">`).join(""); loadGallery(); res(); } else if(x.state==="error"){ clearInterval(imgPoll); $("imgProg").textContent="⚠ "+x.error; res(); } }, 1000); });
+    let j;
+    if(MEDIA_KIND==="video"){ const [sz,secs]=$("imgSize").value.split("|"), [w,h]=sz.split("x").map(Number); const f=$("initImg").files[0]; j = await api("/api/video/generate",{method:"POST",body:JSON.stringify({prompt, negative:$("imgNeg").value.trim(), width:w, height:h, seconds:+secs, init_image_b64: f? await fileB64(f): null})}); }
+    else { const [w,h]=$("imgSize").value.split("x").map(Number); j = await api("/api/images/generate",{method:"POST",body:JSON.stringify({prompt, negative:$("imgNeg").value.trim(), width:w, height:h})}); }
+    const x = await pollJob(j.id, x=>{ if(x.total) $("imgProg").textContent = `${tr("i_working","Working…")} ${x.done}/${x.total}`; });
+    if(x.state==="error") $("imgProg").textContent="⚠ "+x.error;
+    else { $("imgProg").textContent=""; const r=x.result||{}; if(r.files) $("imgResult").innerHTML = r.files.map(mediaTag).join(""); else if(r.b64) $("imgResult").innerHTML = r.b64.map(b=> r.ext==="png" ? `<img src="data:image/png;base64,${b}" alt="">` : `<video src="data:video/${r.ext};base64,${b}" controls loop></video>`).join(""); loadGallery(); }
   }catch(e){ $("imgProg").textContent="⚠ "+e.message; }
   $("imgGo").disabled=false;
 };
+// ---- more tools (third-party apps) ----
+const TASKS={video:["Make video","Crear video"],"video-edit":["Edit video","Editar video"],image:["Make images","Crear imágenes"],"image-edit":["Edit images","Editar imágenes"],"face-swap":["Swap faces","Cambiar caras"],"lip-sync":["Lip-sync / dubbing","Sincronizar labios / doblaje"]};
+async function enterTools(){
+  const r = await api("/api/apps");
+  $("toolsList").innerHTML = r.apps.map(a=>`<div class="card"><div class="row"><div><div style="font-size:20px;font-weight:700">${esc(a.name)}</div><div class="fine">${tr("maker","Made by")} ${esc(a.maker)} · <a href="${esc(a.url)}" target="_blank" rel="noopener">${tr("website","website")}</a> · ${tr("license","license")}: ${esc(a.license)} · ${esc(a.tag)}</div></div><span class="spacer"></span><span class="chip ${a.verdict==="yes"?"good":"warn"}">${AB_ICON[a.verdict]||""} ${tr("ab_"+a.verdict,{yes:"Yes",slow:"Yes, slowly",no:"Below what it needs"}[a.verdict])}</span></div>
+    <div class="chips">${(a.tasks||[]).map(t=>`<span class="chip">${(TASKS[t]||[t,t])[lang==="es"?1:0]}</span>`).join("")}</div>
+    <p style="margin:8px 0">${esc(lang==="es"?(a.plain_es||a.plain_en):a.plain_en)}</p><p class="fine">${esc(a.why)}${a.supports?` · ${esc(a.supports)}`:""}</p>
+    <div class="row"><button class="primary" data-open="${a.id}">${a.running?tr("t_show","Show its window"):(a.installed?tr("t_open","Open"):tr("t_install","Install and open"))}</button>${a.running?`<button data-stopapp="${a.id}">${tr("t_stop","Stop")}</button>`:""}${a.installed?`<button class="small danger" data-rm="${a.id}">${tr("t_remove","Remove")}</button>`:""}<span class="fine" id="tp_${a.id}"></span></div></div>`).join("");
+  $("toolsList").querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const id=b.dataset.open; const j = await api(`/api/apps/${id}/open`,{method:"POST"}); const x = await pollJob(j.id, x=>{ $("tp_"+id).textContent = (x.log[x.log.length-1]||"").slice(0,140); }); if(x.state==="error") toast("⚠ "+x.error, 12000); enterTools(); });
+  $("toolsList").querySelectorAll("[data-stopapp]").forEach(b=>b.onclick=async()=>{ await api(`/api/apps/${b.dataset.stopapp}/stop`,{method:"POST"}); enterTools(); });
+  $("toolsList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{ if(!confirm(lang==="es"?"¿Quitar esta herramienta y todo lo que descargó?":"Remove this tool and everything it downloaded?")) return; await fetch(`/api/apps/${b.dataset.rm}`,{method:"DELETE"}); enterTools(); });
+}
 // ---- voice: server-side microphone (works in every window toolkit) + read aloud ----
 let listening=false, levelPoll=null, player=null;
 $("micBtn").onclick = async ()=>{
@@ -557,6 +593,7 @@ function stopSpeaking(){ if(player){ try{ player.pause(); }catch(e){} player=nul
 $("stopSpeakBtn").onclick = stopSpeaking;
 $("speakSwitch").onclick = async ()=>{ const on = !isOn($("speakSwitch")); sw($("speakSwitch"), on); if(!on) stopSpeaking(); try{ await api("/api/settings",{method:"POST",body:JSON.stringify({voice_speak_answers:on})}); }catch(e){} };
 $("aboutGuideBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
+$("guideHomeBtn").onclick = ()=>{ currentSkill="guide"; go("chat"); };
 $("send").onclick=send; $("input").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
 
 // files modal

@@ -200,3 +200,28 @@ def open_window(
                     time.sleep(3600)
             except KeyboardInterrupt:
                 pass
+
+
+def open_external(url: str, title: str = "Datas.ar", width: int = 1280, height: int = 860) -> None:
+    """A plain window on a local web app Datas started (ComfyUI, FaceFusion…)."""
+    _attach_console_to_log()
+    _log(f"open_external {url}")
+    try:
+        import webview
+
+        gui = None
+        if sys.platform.startswith("linux"):
+            try:
+                import qtpy  # noqa: F401
+
+                gui = "qt"
+                flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+                if hasattr(os, "geteuid") and os.geteuid() == 0 and "--no-sandbox" not in flags:
+                    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (flags + " --no-sandbox").strip()
+            except ImportError:
+                gui = None
+        webview.create_window(title, url, width=width, height=height)
+        webview.start(gui=gui)
+    except Exception as e:  # noqa: BLE001
+        _log(f"pywebview unavailable ({e}); opening the browser instead")
+        webbrowser.open(url)

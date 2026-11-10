@@ -75,6 +75,16 @@ def open_window(
     _open(model_id=model)
 
 
+@app.command("open-url")
+def open_url(url: str, title: str = "Datas.ar"):
+    """Open a local web app in its own Datas window (used for third-party tools)."""
+    from datas.desktop import open_external
+
+    if not url.startswith(("http://127.0.0.1", "http://localhost")):
+        raise typer.BadParameter("only local addresses")
+    open_external(url, title)
+
+
 @app.command("agent-window")
 def agent_window():
     """Open the agent in its own window (separate process)."""
@@ -829,6 +839,45 @@ def images_make(
 def images_stop():
     _core().stop_images()
     con.print("stopped")
+
+
+# ---- third-party apps -----------------------------------------------------------
+
+tools_app = typer.Typer(help="Third-party AI apps (ComfyUI, FaceFusion, your own recipes).")
+app.add_typer(tools_app, name="apps")
+
+
+@tools_app.command("list")
+def apps_list():
+    for a in _core().apps.list():
+        con.print(
+            f"{a['id']:12s} {a['name']:12s} {a['tag']:10s} installed={a['installed']} running={a['running']} · {a['verdict']}: {a['why']}"
+        )
+
+
+@tools_app.command("install")
+def apps_install(app_id: str):
+    core = _core()
+    _wait(core.start_app_job(app_id, install_only=True))
+    con.print("[green]installed[/green]")
+
+
+@tools_app.command("open")
+def apps_open(app_id: str):
+    """Install if needed, start, and open its window. Ctrl-C stops it."""
+    core = _core()
+    _wait(core.start_app_job(app_id))
+    con.print(core.apps.url(app_id))
+    try:
+        while core.apps.running(app_id):
+            time.sleep(1)
+    except KeyboardInterrupt:
+        core.apps.stop(app_id)
+
+
+@tools_app.command("remove")
+def apps_remove(app_id: str, keep_models: bool = False):
+    con.print("removed" if _core().apps.remove(app_id, keep_models) else "not installed")
 
 
 if __name__ == "__main__":

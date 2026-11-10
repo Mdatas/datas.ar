@@ -63,7 +63,9 @@ def build(core, lang: str = "en") -> str:  # noqa: ANN001 - Datas orchestrator
     for a in abilities:
         why = a.why_es if lang == "es" else a.why
         needs = a.needs_es if lang == "es" else a.needs
-        lines.append(f"- {a.id}: {a.verdict.upper()} — {why}" + (f" Needs: {needs}" if needs else ""))
+        lines.append(
+            f"- {a.id}: {a.verdict.upper()} — {why}" + (f" Needs: {needs}" if needs else "")
+        )
 
     lines.append("\nINSTALLED AIs (ready to start from My AIs)")
     from datas import library
@@ -81,7 +83,9 @@ def build(core, lang: str = "en") -> str:  # noqa: ANN001 - Datas orchestrator
     lines.append(f"- Currently running: {st.model_id or 'nothing'}")
 
     lines.append("\nRECOMMENDED FOR THIS DEVICE (from the last check)")
-    shown = ([rec.default] if rec.default else []) + [c for c in rec.fits if c is not rec.default][:5]
+    shown = ([rec.default] if rec.default else []) + [c for c in rec.fits if c is not rec.default][
+        :5
+    ]
     for c in shown:
         cmp = comparable(c.quality_tier)
         p = c.plain()
@@ -93,14 +97,18 @@ def build(core, lang: str = "en") -> str:  # noqa: ANN001 - Datas orchestrator
     if rec.does_not_fit:
         lines.append(
             "- Does NOT fit here: "
-            + "; ".join(f"{c.name} (needs {c.need.total / GiB:.1f} GB)" for c in rec.does_not_fit[:6])
+            + "; ".join(
+                f"{c.name} (needs {c.need.total / GiB:.1f} GB)" for c in rec.does_not_fit[:6]
+            )
         )
 
     # the full catalog only when the running context can afford it (~1k tokens)
     lines.append("\nALL MODELS DATAS KNOWS (name — size — good for — limits — license)")
     models = core.catalog.models if (core.cfg.context or 8192) >= 6144 else []
     if not models:
-        lines.append("- (list shortened: the current AI keeps little text in mind; see Home → other recommendations)")
+        lines.append(
+            "- (list shortened: the current AI keeps little text in mind; see Home → other recommendations)"
+        )
     for m in models:
         size = f"{m.params_b:g}B params" if m.params_b else "size unknown"
         lines.append(
@@ -140,3 +148,131 @@ STARTERS = {
         "¿Cómo hago para que la IA olvide todo sobre mí?",
     ],
 }
+
+
+def offline_answer(core, question: str, lang: str = "en") -> str:  # noqa: ANN001
+    """Answer without any AI: pick the facts that match the question. Used before the first
+    model is installed and while it downloads, so the guide exists from the first second."""
+    es = lang == "es"
+    q = question.lower()
+    spec = core.spec()
+    rec = core.recommendation()
+    va = core.voice_status()
+    abil = assess(spec, rec, voice_available=va["available"]["stt"] and va["available"]["tts"])
+    names = {
+        "text": ("Chat & writing", "Chat y escritura"),
+        "images": ("Understanding pictures", "Entender imágenes"),
+        "coding": ("Programming", "Programar"),
+        "agents": ("Tasks for me (agent)", "Tareas por mí (agente)"),
+        "sound": ("Voice", "Voz"),
+        "image_gen": ("Making images", "Crear imágenes"),
+        "video": ("Making video", "Crear video"),
+        "pool": ("Devices together", "Dispositivos en conjunto"),
+    }
+    word = {
+        "yes": ("yes", "sí"),
+        "slow": ("yes, slowly", "sí, lento"),
+        "no": ("no", "no"),
+        "not_yet": ("not yet in Datas", "todavía no en Datas"),
+    }
+
+    def verdicts() -> str:
+        rows = []
+        for a in abil:
+            n = names.get(a.id, (a.id, a.id))[es]
+            needs = a.needs_es if es else a.needs
+            rows.append(
+                f"• {n}: {word[a.verdict][es]} — {a.why_es if es else a.why}"
+                + (f" ({'Necesita' if es else 'Needs'}: {needs})" if needs else "")
+            )
+        return "\n".join(rows)
+
+    def device() -> str:
+        return (
+            f"{spec.cpu_name}, {spec.ram_total / GiB:.0f} GB RAM ({'memoria de trabajo' if es else 'working memory'}), {_gpu_line(spec)}, "
+            f"{spec.disk_free_models / GiB:.0f} GB {'libres en disco' if es else 'free on disk'}."
+        )
+
+    def reco() -> str:
+        if not rec.default:
+            return (
+                "Ningún modelo de chat entra con los ajustes actuales."
+                if es
+                else "No chat model fits with the current settings."
+            )
+        c = rec.default
+        p = c.plain()
+        cmp = comparable(c.quality_tier)
+        others = ", ".join(x.name for x in rec.fits if x is not c)[:300]
+        return (
+            (
+                f"Recomendado: {c.name} — {p['download']} {p['memory']} Parecido a: {cmp['openai']} / {cmp['google']} / {cmp['anthropic']}. Límites: {p['limits']}"
+                + (f"\nTambién entran: {others}." if others else "")
+            )
+            if es
+            else (
+                f"Recommended: {c.name} — {p['download']} {p['memory']} Roughly like: {cmp['openai']} / {cmp['google']} / {cmp['anthropic']}. Limits: {p['limits']}"
+                + (f"\nAlso fit: {others}." if others else "")
+            )
+        )
+
+    tips = (
+        "Para mejores respuestas: decí qué querés, para quién y en qué formato; pegá el texto o los datos; pedí un borrador y después ajustá ('más corto', 'más formal'); una tarea por vez; verificá cifras, nombres y fechas."
+        if es
+        else "For better answers: say what you want, for whom and in what shape; paste the text or data; ask for a draft, then refine ('shorter', 'more formal'); one task at a time; double-check numbers, names and dates."
+    )
+    ctx = (
+        "El 'contexto' es cuánto texto la IA tiene presente a la vez. Si el documento es más largo, hay que partirlo o agregarlo en 'Mis documentos'."
+        if es
+        else "'Context' is how much text the AI keeps in mind at once. Longer documents must be split, or added under 'My documents'."
+    )
+    forget = (
+        "Ajustes → Privacidad → 'Olvidar todo': no se guarda nada. 'Borrar todo lo que recuerda' elimina lo ya guardado."
+        if es
+        else "Settings → Privacy → 'Forget everything': nothing is saved. 'Delete everything it remembers' removes what was stored."
+    )
+    parts: list[str] = []
+    if any(k in q for k in ("prompt", "ask", "pregunt", "mejor", "better")):
+        parts.append(tips)
+    if any(k in q for k in ("context", "contexto")):
+        parts.append(ctx)
+    if any(k in q for k in ("forget", "olvid", "privac", "borr")):
+        parts.append(forget)
+    if any(
+        k in q
+        for k in (
+            "which",
+            "cuál",
+            "cual",
+            "recom",
+            "model",
+            "bigger",
+            "grande",
+            "email",
+            "resum",
+            "summar",
+        )
+    ):
+        parts.append(reco())
+    if not parts or any(
+        k in q
+        for k in (
+            "can",
+            "puede",
+            "computer",
+            "computadora",
+            "device",
+            "equipo",
+            "video",
+            "imag",
+            "voz",
+            "voice",
+        )
+    ):
+        parts = [("Tu equipo: " if es else "Your device: ") + device(), verdicts()] + parts
+    note = (
+        "(Respuesta armada con los datos de tu equipo, sin IA todavía. Cuando haya una IA corriendo, la guía conversa de verdad.)"
+        if es
+        else "(Answer assembled from your device's facts, no AI yet. Once an AI is running, the guide really converses.)"
+    )
+    return "\n\n".join(parts + [note])

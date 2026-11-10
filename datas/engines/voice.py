@@ -178,7 +178,9 @@ def _download_url(url: str, dest: Path, expected: int, sha256: str | None, job: 
     headers = {"User-Agent": "datas.ar"}
     if done:
         headers["Range"] = f"bytes={done}-"
-    with httpx.Client(timeout=httpx.Timeout(60, read=300), follow_redirects=True, headers=headers) as c:
+    with httpx.Client(
+        timeout=httpx.Timeout(60, read=300), follow_redirects=True, headers=headers
+    ) as c:
         with c.stream("GET", url) as r:
             r.raise_for_status()
             mode = "ab" if (done and r.status_code == 206) else "wb"
@@ -191,7 +193,9 @@ def _download_url(url: str, dest: Path, expected: int, sha256: str | None, job: 
                     if job:
                         job.progress(done, expected)
     if part.stat().st_size != expected:
-        raise OSError(f"Incomplete download of {dest.name}: {part.stat().st_size} of {expected} bytes")
+        raise OSError(
+            f"Incomplete download of {dest.name}: {part.stat().st_size} of {expected} bytes"
+        )
     if sha256:
         h = hashlib.sha256()
         with part.open("rb") as fh:

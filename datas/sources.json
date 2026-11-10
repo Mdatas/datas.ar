@@ -250,6 +250,48 @@
       "by": "Black Forest Labs",
       "license": "Apache-2.0",
       "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
+    },
+    {
+      "name": "uv",
+      "role": "Sets up Python and isolated environments for the third-party tools under \"More tools\".",
+      "by": "Astral",
+      "license": "Apache-2.0 / MIT",
+      "url": "https://github.com/astral-sh/uv"
+    },
+    {
+      "name": "ComfyUI",
+      "role": "Optional tool (More tools): the workshop for making and editing images and video.",
+      "by": "Comfy Org / comfyanonymous",
+      "license": "GPL-3.0",
+      "url": "https://github.com/comfyanonymous/ComfyUI"
+    },
+    {
+      "name": "FaceFusion",
+      "role": "Optional tool (More tools): face swap, lip-sync, face and frame restoration.",
+      "by": "Henry Ruhs",
+      "license": "OpenRAIL-AS",
+      "url": "https://github.com/facefusion/facefusion"
+    },
+    {
+      "name": "Wan 2.2 TI2V 5B",
+      "role": "The video model Datas downloads for making clips.",
+      "by": "Wan-AI (Alibaba); GGUF by QuantStack; umt5-xxl encoder GGUF by city96; VAE repackaged by Comfy-Org",
+      "license": "Apache-2.0 (as stated on the model card)",
+      "url": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B"
+    },
+    {
+      "name": "Qwen2.5-Math, Saul-7B, MedGemma",
+      "role": "Specialist chat models offered on Home (math, legal texts, medical).",
+      "by": "Alibaba Qwen; Equall; Google — GGUF by bartowski, mradermacher, Unsloth",
+      "license": "Apache-2.0; MIT; Health AI Developer Foundations terms",
+      "url": "https://huggingface.co/bartowski/Qwen2.5-Math-7B-Instruct-GGUF"
+    },
+    {
+      "name": "static-ffmpeg / FFmpeg",
+      "role": "Video reading and writing for tools that need it, when FFmpeg is not already on the computer.",
+      "by": "zackees; FFmpeg project",
+      "license": "MIT (wrapper); LGPL/GPL (FFmpeg)",
+      "url": "https://github.com/zackees/static_ffmpeg"
     }
   ]
 }

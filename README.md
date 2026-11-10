@@ -55,6 +55,9 @@ Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md
 **Datas guide** — after the first run, a chat that knows *your* computer: what it can and can't do, which AI to
 use for what, how to ask better. It runs on the AI you already installed, no extra download.
 
+**Images, video and more tools** — pictures (Z-Image-Turbo) and video clips (Wan 2.2) built in; under *More tools*,
+Datas installs and opens ComfyUI and FaceFusion for editing video, swapping faces and lip-sync (docs/VIDEO.md, docs/APPS.md).
+
 **Voice** — pick "Voice & sound" on the Run screen and Datas adds a hearing model (whisper.cpp) and a
 voice (Kokoro): a **Talk** button in the chat and **Read answers aloud**, English and Spanish, on the
 processor, nothing recorded to disk.

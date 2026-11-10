@@ -68,7 +68,12 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
     with httpx.Client(timeout=httpx.Timeout(600, connect=30)) as client:
         for step in range(cfg.max_steps):
             if cfg.should_stop and cfg.should_stop():
-                yield {"type": "error", "step": step, "error": "stopped by user", "events": ctx.events}
+                yield {
+                    "type": "error",
+                    "step": step,
+                    "error": "stopped by user",
+                    "events": ctx.events,
+                }
                 return
             payload = {
                 "model": cfg.model,

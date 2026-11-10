@@ -1,0 +1,53 @@
+{
+  "_comment": "Third-party AI applications Datas can install and open for the user. Each runs in its own isolated Python environment (managed with uv) inside <data>/apps/<id>; Datas only installs, starts, stops and shows them — it does not change what they do. Users can add their own recipes as JSON files in <data>/apps.d/. Facts verified against each project's repository at the pinned tag (2026-11-09).",
+  "apps": [
+    {
+      "id": "comfyui",
+      "name": "ComfyUI",
+      "maker": "Comfy Org / comfyanonymous",
+      "license": "GPL-3.0",
+      "url": "https://github.com/comfyanonymous/ComfyUI",
+      "docs": "https://docs.comfy.org",
+      "tasks": ["video", "video-edit", "image", "image-edit"],
+      "plain_en": "The full workshop for making and editing images and video: text→video, picture→video, video→video, replacing or repainting parts of a video (a label, a bottle, a background), upscaling, and hundreds of community add-ons. Powerful; it shows ready-made templates to start from.",
+      "plain_es": "El taller completo para crear y editar imágenes y video: texto→video, imagen→video, video→video, reemplazar o repintar partes de un video (una etiqueta, una botella, un fondo), mejorar resolución y cientos de complementos de la comunidad. Potente; trae plantillas listas para empezar.",
+      "supports": "Wan 2.1/2.2, LTX-Video, HunyuanVideo, CogVideoX, Mochi; Stable Diffusion, SDXL, Flux, Qwen Image and Qwen Image Edit, Z-Image and more (per its README)",
+      "source": {"repo": "comfyanonymous/ComfyUI", "tag": "v0.44.2"},
+      "python": "3.12",
+      "install": [
+        {"pip": ["torch", "torchvision", "torchaudio"], "extra_by_accel": {
+          "nvidia": ["--extra-index-url", "https://download.pytorch.org/whl/cu130"],
+          "amd-linux": ["--index-url", "https://download.pytorch.org/whl/rocm7.2"],
+          "cpu": ["--index-url", "https://download.pytorch.org/whl/cpu"],
+          "mac": []}},
+        {"pip_requirements": "requirements.txt"}
+      ],
+      "launch": {"args": ["main.py", "--listen", "127.0.0.1", "--port", "{port}", "--disable-auto-launch"], "args_by_accel": {"cpu": ["--cpu"]}},
+      "port": 8188,
+      "needs_ffmpeg": false,
+      "guide": {"gpu": true, "vram_gib": 8, "ram_gib": 16}
+    },
+    {
+      "id": "facefusion",
+      "name": "FaceFusion",
+      "maker": "Henry Ruhs",
+      "license": "OpenRAIL-AS",
+      "url": "https://github.com/facefusion/facefusion",
+      "docs": "https://docs.facefusion.io",
+      "tasks": ["face-swap", "lip-sync", "video-edit", "image-edit"],
+      "plain_en": "Changes faces in photos and videos: put a face on another person (face swap), make lips follow a new audio track (lip-sync, for dubbing), restore or sharpen faces, change expression or age, remove the background, colourise and upscale frames.",
+      "plain_es": "Cambia caras en fotos y videos: poner una cara en otra persona (face swap), hacer que los labios sigan un audio nuevo (lip-sync, para doblaje), restaurar o mejorar caras, cambiar expresión o edad, quitar el fondo, colorear y mejorar cuadros.",
+      "supports": "processors in the pinned version: face_swapper, deep_swapper, lip_syncer, face_enhancer, face_editor, expression_restorer, age_modifier, background_remover, frame_enhancer, frame_colorizer",
+      "source": {"repo": "facefusion/facefusion", "tag": "3.9.2"},
+      "python": "3.12",
+      "install": [
+        {"python": ["install.py", "--skip-conda", "{onnx}"], "vars_by_accel": {
+          "nvidia": {"onnx": "cuda@13"}, "windows-gpu": {"onnx": "directml"}, "amd-linux": {"onnx": "default"}, "cpu": {"onnx": "default"}, "mac": {"onnx": "default"}}}
+      ],
+      "launch": {"args": ["facefusion.py", "run"], "env": {"GRADIO_SERVER_PORT": "{port}", "GRADIO_SERVER_NAME": "127.0.0.1"}},
+      "port": 7860,
+      "needs_ffmpeg": true,
+      "guide": {"gpu": false, "vram_gib": 4, "ram_gib": 8}
+    }
+  ]
+}

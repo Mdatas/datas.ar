@@ -121,6 +121,7 @@ def recommend(
     if "video" in uses:
         try:
             out["images"] = core.image_status()["choice"]
+            out["video"] = core.image_status("video")["choice"]
         except Exception as e:  # noqa: BLE001
             out["images_error"] = str(e)
     if "sound" in uses:
@@ -144,14 +145,24 @@ class GenerateBody(BaseModel):
     seed: int = -1
 
 
+class VideoBody(BaseModel):
+    prompt: str
+    negative: str = ""
+    seconds: float | None = None
+    width: int | None = None
+    height: int | None = None
+    seed: int = -1
+    init_image_b64: str | None = None  # picture → video
+
+
 @app.get("/api/images")
-def images_status() -> dict:
-    return core.image_status()
+def images_status(kind: str = "image") -> dict:
+    return core.image_status("video" if kind == "video" else "image")
 
 
 @app.post("/api/images/setup")
-def images_setup() -> dict:
-    return core.start_images_job().to_dict()
+def images_setup(kind: str = "image") -> dict:
+    return core.start_images_job("video" if kind == "video" else "image").to_dict()
 
 
 @app.post("/api/images/stop")
@@ -170,15 +181,46 @@ def images_generate(body: GenerateBody) -> dict:
     ).to_dict()
 
 
+@app.post("/api/video/generate")
+def video_generate(body: VideoBody) -> dict:
+    return core.start_video_job(
+        body.prompt.strip(),
+        body.negative.strip(),
+        body.seconds,
+        body.width,
+        body.height,
+        body.seed,
+        body.init_image_b64,
+    ).to_dict()
+
+
+MEDIA_TYPES = {
+    ".png": "image/png",
+    ".webm": "video/webm",
+    ".avi": "video/x-msvideo",
+    ".webp": "image/webp",
+}
+
+
 @app.get("/api/images/list")
 def images_list() -> dict:
     from datas.engines import images as image_engine
 
     d = image_engine.images_dir()
-    files = sorted(d.glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)[:60]
+    files = sorted(
+        (f for f in d.iterdir() if f.suffix in MEDIA_TYPES),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )[:80]
     return {
         "images": [
-            {"name": f.name, "when": f.stat().st_mtime, "bytes": f.stat().st_size} for f in files
+            {
+                "name": f.name,
+                "when": f.stat().st_mtime,
+                "bytes": f.stat().st_size,
+                "video": f.suffix != ".png",
+            }
+            for f in files
         ]
     }
 
@@ -191,8 +233,8 @@ def images_file(name: str):
 
     p = (image_engine.images_dir() / Path(name).name).resolve()
     if not p.exists() or p.parent != image_engine.images_dir().resolve():
-        raise HTTPException(404, "no such image")
-    return FileResponse(str(p), media_type="image/png")
+        raise HTTPException(404, "no such file")
+    return FileResponse(str(p), media_type=MEDIA_TYPES.get(p.suffix, "application/octet-stream"))
 
 
 @app.delete("/api/images/file/{name}")
@@ -203,6 +245,34 @@ def images_delete(name: str) -> dict:
     existed = p.exists()
     p.unlink(missing_ok=True)
     return {"removed": existed}
+
+
+# ---- third-party apps (ComfyUI, FaceFusion, user recipes) -------------------------
+
+
+@app.get("/api/apps")
+def apps_list() -> dict:
+    return {"apps": core.apps.list()}
+
+
+@app.post("/api/apps/{app_id}/open")
+def apps_open(app_id: str) -> dict:
+    """Install if needed, start, open its window. One click."""
+    try:
+        return core.start_app_job(app_id).to_dict()
+    except KeyError as e:
+        raise HTTPException(404, "no such app") from e
+
+
+@app.post("/api/apps/{app_id}/stop")
+def apps_stop(app_id: str) -> dict:
+    core.apps.stop(app_id)
+    return {"ok": True}
+
+
+@app.delete("/api/apps/{app_id}")
+def apps_remove(app_id: str, keep_models: bool = False) -> dict:
+    return {"removed": core.apps.remove(app_id, keep_models)}
 
 
 # ---- voice: hearing (microphone → text) and speaking (text → audio) ----------
@@ -398,6 +468,7 @@ class RunBody(BaseModel):
     pool: bool = False
     with_vision: bool = False
     with_voice: bool = False
+    starter: bool = True
 
 
 class RunCustomBody(BaseModel):
@@ -421,6 +492,7 @@ def run(body: RunBody) -> dict:
         body.pool,
         body.with_vision,
         body.with_voice,
+        body.starter,
     ).to_dict()
 
 
@@ -651,6 +723,21 @@ class ChatBody(BaseModel):
 @app.post("/api/chat")
 async def chat(body: ChatBody):
     prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    if prov.kind in ("local", "pool") and not core.server.running() and body.skill == "guide":
+        from datas import guide
+
+        last = next(
+            (m.get("content", "") for m in reversed(body.messages) if m.get("role") == "user"), ""
+        )
+        text = guide.offline_answer(core, last, body.lang or core.cfg.lang)
+
+        async def canned():
+            yield f"data: {json.dumps({'type': 'token', 'text': text}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+        return StreamingResponse(
+            canned(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
+        )
     if prov.kind in ("local", "pool") and not core.server.running():
         return JSONResponse(
             {"error": "no_model", "message": "No AI is running yet."}, status_code=503
