@@ -201,8 +201,8 @@ def offline_answer(core, question: str, lang: str = "en") -> str:  # noqa: ANN00
                 else "No chat model fits with the current settings."
             )
         c = rec.default
-        p = c.plain()
-        cmp = comparable(c.quality_tier)
+        p = c.plain("es" if es else "en")
+        cmp = comparable(c.quality_tier, "es" if es else "en")
         others = ", ".join(x.name for x in rec.fits if x is not c)[:300]
         return (
             (

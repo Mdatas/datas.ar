@@ -214,7 +214,11 @@ class ModbusDevice(Server):
 
 class Board:
     """A board on a serial port (a pseudo-terminal): says READY while it waits, then answers
-    each line — like an Arduino sketch that reads commands. POSIX only."""
+    each line — like an Arduino sketch that reads commands. POSIX only.
+
+    Its two threads never sit inside a read or a write of the pseudo-terminal: they wait with
+    ``select`` and stop before the ends are closed. On macOS, closing an end while another
+    thread is blocked reading it never returns."""
 
     def __init__(self) -> None:
         import pty
@@ -222,44 +226,65 @@ class Board:
 
         self.master, slave = pty.openpty()
         tty.setraw(slave)
+        os.set_blocking(self.master, False)
         self.port = os.ttyname(slave)
         self._slave = slave
         self.got: list[str] = []
-        threading.Thread(target=self._run, daemon=True).start()
-        threading.Thread(target=self._greet, daemon=True).start()
+        self._stop = threading.Event()
+        self._threads = [
+            threading.Thread(target=self._run, daemon=True),
+            threading.Thread(target=self._greet, daemon=True),
+        ]
+        for t in self._threads:
+            t.start()
+
+    def _say(self, data: bytes) -> None:
+        try:
+            os.write(self.master, data)
+        except OSError:  # nobody is listening and the line is full, or it was closed
+            pass
 
     def _greet(self) -> None:
-        import time
-
-        while not self.got:
-            try:
-                os.write(self.master, b"READY v1\r\n")
-            except OSError:
-                return
-            time.sleep(0.1)
+        while not self.got and not self._stop.wait(0.1):
+            self._say(b"READY v1\r\n")
 
     def _run(self) -> None:
+        import select
+
         buf = b""
-        while True:
+        while not self._stop.is_set():
             try:
+                ready, _, _ = select.select([self.master], [], [], 0.05)
+                if not ready:
+                    continue
                 data = os.read(self.master, 256)
-            except OSError:
-                return
+            except BlockingIOError:
+                continue
+            except (OSError, ValueError):
+                # Linux answers "input/output error" while no program has the port open
+                if self._stop.wait(0.05):
+                    return
+                continue
             if not data:
-                return
+                if self._stop.wait(0.05):
+                    return
+                continue
             buf += data
             while b"\n" in buf:
                 line, buf = buf.split(b"\n", 1)
                 cmd = line.decode("utf-8", "replace").strip()
                 self.got.append(cmd)
                 if cmd == "LED ON":
-                    os.write(self.master, b"OK led=1\r\n")
+                    self._say(b"OK led=1\r\n")
                 elif cmd == "TEMP?":
-                    os.write(self.master, b"TEMP 21.5\r\n")
+                    self._say(b"TEMP 21.5\r\n")
                 else:
-                    os.write(self.master, b"ERR unknown\r\n")
+                    self._say(b"ERR unknown\r\n")
 
     def close(self) -> None:
+        self._stop.set()
+        for t in self._threads:
+            t.join(2)
         for fd in (self.master, self._slave):
             try:
                 os.close(fd)

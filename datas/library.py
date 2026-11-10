@@ -147,6 +147,7 @@ def details(core, lang: str = "en") -> list[dict]:  # noqa: ANN001 - Datas orche
     """Installed AIs with what a person wants to know: what it is good for, what it is not,
     who made it, what it costs this device, and lighter / stronger versions that exist."""
     from datas.recommend.engine import evaluate
+    from datas.words import tr
 
     es = 1 if lang == "es" else 0
     cat = core.catalog
@@ -155,6 +156,7 @@ def details(core, lang: str = "en") -> list[dict]:  # noqa: ANN001 - Datas orche
     fit_ids = {c.model_id: c for c in rec.fits}
     out = []
     for it in installed():
+        it["limits"] = tr(it.get("limits") or "", lang)
         if it["custom"]:
             it.update({"good_for": "", "resources": None, "versions": [], "alternatives": {}})
             out.append(it)
@@ -162,7 +164,7 @@ def details(core, lang: str = "en") -> list[dict]:  # noqa: ANN001 - Datas orche
         m = cat.get(it["model_id"])
         f = m.file(it["quant"])
         c = evaluate(m, f, budget, ctx)
-        p = c.plain()
+        p = c.plain(lang)
         it.update(
             {
                 "family": m.family,

@@ -255,9 +255,11 @@ def swift():
         pytest.skip("the iPhone link code is built on a Mac with Xcode")
     package = ROOT / "ios" / "DatasLink"
     build = ["swift", "build", "-c", "release", "--package-path", str(package)]
-    r = subprocess.run([*build, "--product", "datas-link"], capture_output=True, text=True)
+    r = subprocess.run(
+        [*build, "--product", "datas-link"], capture_output=True, text=True, timeout=1200
+    )
     assert r.returncode == 0, r.stdout[-4000:] + r.stderr[-4000:]
-    where = subprocess.run([*build, "--show-bin-path"], capture_output=True, text=True)
+    where = subprocess.run([*build, "--show-bin-path"], capture_output=True, text=True, timeout=300)
     program = Path(where.stdout.strip()) / "datas-link"
     assert program.is_file(), where.stdout + where.stderr
 

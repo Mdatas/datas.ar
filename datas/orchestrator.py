@@ -385,7 +385,7 @@ class Datas:
         except Exception:
             pass
         say(f"Ready at {self.server.base_url()}/v1 (OpenAI-compatible).")
-        return {"server": state.to_dict(), "candidate": c.to_dict(), "notes": notes}
+        return {"server": state.to_dict(), "candidate": c.to_dict(self.cfg.lang), "notes": notes}
 
     def run_custom(
         self,

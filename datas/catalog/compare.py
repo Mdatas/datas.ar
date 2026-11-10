@@ -48,6 +48,9 @@ TIERS: dict[int, dict[str, str]] = {
 }
 
 
-def comparable(tier: int) -> dict[str, str]:
+def comparable(tier: int, lang: str = "en") -> dict[str, str]:
+    """The comparison for a quality tier, said in ``lang`` (Spanish lives in datas/words.py)."""
+    from datas.words import tr
+
     t = TIERS.get(max(1, min(5, tier)), TIERS[3])
-    return dict(t, disclaimer=DISCLAIMER)
+    return {k: tr(v, lang) for k, v in dict(t, disclaimer=DISCLAIMER).items()}

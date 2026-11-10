@@ -49,6 +49,24 @@ def test_every_sentence_the_backend_says_has_its_spanish():
     assert not missing, f"no Spanish for: {missing}"
 
 
+def test_every_fixed_answer_of_the_service_has_its_spanish():
+    """A refusal or problem the service states as one fixed sentence (not built from parts)."""
+    tree = ast.parse((ROOT / "server" / "app.py").read_text(encoding="utf-8"))
+    fixed = {}
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "id", "") == "HTTPException"
+            and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Constant)
+            and isinstance(node.args[1].value, str)
+        ):
+            fixed[node.args[1].value] = node.lineno
+    assert len(fixed) > 20
+    missing = {line: text for text, line in fixed.items() if text not in ES}
+    assert not missing, f"no Spanish for these answers of datas/server/app.py: {missing}"
+
+
 def test_the_small_word_lists_have_their_spanish_too():
     from datas.things import control
 
@@ -147,3 +165,48 @@ def test_the_list_of_hardware_reads_in_the_persons_language(tmp_path, monkeypatc
         "La cámara necesita" if lang == "es" else "The camera needs"
     )
     assert set(inv["ffmpeg"]) == {"found", "bytes"}
+
+
+def test_what_is_said_about_each_ai_has_its_spanish(tmp_path, monkeypatch):
+    """The plain sentences of a recommendation: speed, where it runs, what to keep in mind,
+    which paid AI it is like. Every AI of the list, every quality tier."""
+    monkeypatch.setenv("DATAS_HOME", str(tmp_path))
+    from datas import catalog
+    from datas.catalog.compare import DISCLAIMER, TIERS, comparable
+    from datas.recommend.engine import Budget, GiB, evaluate
+
+    cat = catalog.load()
+    without = [m.id for m in cat.models if not m.limits or m.limits not in ES]
+    assert not without, f"no Spanish for what to keep in mind about: {without}"
+    for tier, parts in TIERS.items():
+        for text in (*parts.values(), DISCLAIMER):
+            assert text in ES, text
+        assert comparable(tier, "es") != comparable(tier) and comparable(tier) == comparable(
+            tier, "en"
+        )
+    # a real evaluation of every AI, small and large memory, said in both languages
+    seen = set()
+    for ram in (4, 16, 64):
+        budget = Budget(
+            ram_total=(ram + 2) * GiB,
+            ram_budget=ram * GiB,
+            ram_headroom=2 * GiB,
+            vram_total=0,
+            vram_budget=0,
+            unified=False,
+            backend="cpu",
+            disk_free=500 * GiB,
+            threads=8,
+        )
+        for m in cat.models:
+            c = evaluate(m, m.files[0], budget, 4096)
+            en, es = c.plain(), c.plain("es")
+            assert en == c.plain("en") and c.to_dict("es")["plain"] == es
+            for key in ("speed", "where", "download", "memory", "limits", "kind"):
+                assert en[key] and es[key] and en[key] != es[key], (m.id, key)
+                assert ES.get(en[key], es[key]) == es[key], (m.id, key)
+            assert en["download"].split(" GB")[0] == es["download"].split(" GB")[0]
+            if m.license_source == "unverified":
+                assert es["license"].endswith("(licencia todavía no verificada por Datas)")
+            seen.add((c.speed_class, c.placement))
+    assert len(seen) >= 3  # more than one kind of verdict was said

@@ -277,9 +277,11 @@ class Candidate:
     arch: str = "dense"
     finetune_of: str | None = None
 
-    def plain(self) -> dict:
-        """Sentences a non-technical person can read. Acronyms are spelled out."""
+    def plain(self, lang: str = "en") -> dict:
+        """Sentences a non-technical person can read, in ``lang``. Acronyms are spelled out.
+        English is written here; the Spanish of each sentence is in datas/words.py."""
         from datas.catalog.compare import comparable
+        from datas.words import tr
 
         speed = {
             "fast": "Fast — answers appear quickly, like a paid chat service.",
@@ -296,28 +298,39 @@ class Candidate:
             "none": "Does not fit in this device's memory.",
         }[self.placement]
         return {
-            "speed": speed,
-            "where": where,
-            "download": f"{self.need.weights / GiB:.1f} GB to download once; then it works offline.",
-            "memory": f"Uses about {self.need.total / GiB:.1f} GB of memory while running.",
-            "comparable": comparable(self.quality_tier),
-            "limits": self.limits or "",
+            "speed": tr(speed, lang),
+            "where": tr(where, lang),
+            "download": tr(
+                "{size} GB to download once; then it works offline.",
+                lang,
+                size=f"{self.need.weights / GiB:.1f}",
+            ),
+            "memory": tr(
+                "Uses about {size} GB of memory while running.",
+                lang,
+                size=f"{self.need.total / GiB:.1f}",
+            ),
+            "comparable": comparable(self.quality_tier, lang),
+            "limits": tr(self.limits or "", lang),
             "maker": self.vendor,
             "maker_url": self.vendor_url,
             "model_page": f"https://huggingface.co/{self.hf_repo}",
             "license": self.license
             + (
-                " (license not yet verified by Datas)"
+                tr(" (license not yet verified by Datas)", lang)
                 if self.license_source == "unverified"
                 else ""
             ),
-            "kind": "Mixture of Experts (MoE): only a slice of the model works on each word, so it is faster than its size suggests."
-            if self.arch == "moe"
-            else "Dense model: the whole model works on every word.",
+            "kind": tr(
+                "Mixture of Experts (MoE): only a slice of the model works on each word, so it is faster than its size suggests."
+                if self.arch == "moe"
+                else "Dense model: the whole model works on every word.",
+                lang,
+            ),
             "finetune_of": self.finetune_of,
         }
 
-    def to_dict(self) -> dict:
+    def to_dict(self, lang: str = "en") -> dict:
         return {
             "model_id": self.model_id,
             "vendor": self.vendor,
@@ -328,7 +341,7 @@ class Candidate:
             "use_cases": self.use_cases,
             "arch": self.arch,
             "finetune_of": self.finetune_of,
-            "plain": self.plain(),
+            "plain": self.plain(lang),
             "name": self.name,
             "quant": self.quant,
             "path": self.path,
@@ -554,14 +567,14 @@ class Recommendation:
     fits: list[Candidate]
     does_not_fit: list[Candidate]
 
-    def to_dict(self) -> dict:
+    def to_dict(self, lang: str = "en") -> dict:
         return {
             "budget": self.budget.to_dict(),
             "context": self.context,
             "kv_bits": self.kv_bits,
-            "default": self.default.to_dict() if self.default else None,
-            "fits": [c.to_dict() for c in self.fits],
-            "does_not_fit": [c.to_dict() for c in self.does_not_fit],
+            "default": self.default.to_dict(lang) if self.default else None,
+            "fits": [c.to_dict(lang) for c in self.fits],
+            "does_not_fit": [c.to_dict(lang) for c in self.does_not_fit],
         }
 
 

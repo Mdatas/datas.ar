@@ -93,3 +93,5 @@ ignore = ["E501", "B008"]  # B008: typer.Option defaults are idiomatic
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# a test stuck for this many seconds prints where every thread is waiting (it is not stopped)
+faulthandler_timeout = 180

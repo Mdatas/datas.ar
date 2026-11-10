@@ -294,7 +294,7 @@ def recommend(
         role=role,
         pool_nodes=nodes,
     )
-    out = rec.to_dict()
+    out = rec.to_dict(core.cfg.lang)
     out["unsupported_use_cases"] = unsupported
     out["headroom"] = headroom if headroom is not None else core.cfg.headroom
     va = core.voice_status()["available"]

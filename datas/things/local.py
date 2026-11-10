@@ -530,8 +530,9 @@ def serial_talk(
                 end = time.time() + wait
                 while time.time() < end:  # read the board's greeting while it starts
                     got += s.read(4096)
+                # write() waits at most write_timeout; no flush() here, which would wait
+                # without a limit on a device that stopped taking data
                 s.write(send.encode("utf-8") + (b"" if send.endswith("\n") else b"\n"))
-                s.flush()
             end = time.time() + seconds
             while time.time() < end and len(got) < limit:
                 got += s.read(4096)

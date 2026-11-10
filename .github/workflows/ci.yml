@@ -17,6 +17,10 @@ jobs:
           - os: ubuntu-24.04-arm
             python: "3.12"
     runs-on: ${{ matrix.os }}
+    # A test that waits forever would otherwise keep the machine for six hours. After three
+    # minutes inside one test pytest prints where every thread is (faulthandler_timeout in
+    # pyproject.toml), so the log of a stopped run says which line was waiting.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
