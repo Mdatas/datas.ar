@@ -189,33 +189,34 @@ def java(tmp_path_factory):
     return run
 
 
-def test_the_android_link_code_talks_to_a_real_datas(computer, java):
-    a = computer
+def a_phone_program_links_and_is_treated_like_a_phone(a, phone_app) -> None:
+    """The same walk for every phone app's link code (Java for Android, Swift for iPhone),
+    through its small command-line program, against a real running Datas ``a``."""
     code = a.http.post("/api/link/pairing").json()["pairing"]["code"]
-    wrong = java("pair", "127.0.0.1", str(a.link), "AAAA-BBBB-CCCC", "Java phone")
+    wrong = phone_app("pair", "127.0.0.1", str(a.link), "AAAA-BBBB-CCCC", "Test phone")
     assert wrong.returncode == 2 and "LINK:" in wrong.stdout
-    r = java("pair", "127.0.0.1", str(a.link), code, 'Phone "J" ñ')
+    r = phone_app("pair", "127.0.0.1", str(a.link), code, 'Phone "J" ñ')
     assert r.returncode == 0, r.stdout + r.stderr
     remembered = r.stdout.strip().splitlines()[-1]
     assert '"name":"Device A"' in remembered
     peers = a.http.get("/api/link").json()["peers"]
     assert [(p["kind"], p["name"]) for p in peers] == [("app", 'Phone "J" ñ')]
 
-    assert '"name":"Device A"' in java("info", remembered).stdout
+    assert '"name":"Device A"' in phone_app("info", remembered).stdout
 
-    got = java("get", remembered, "/api/status")
+    got = phone_app("get", remembered, "/api/status")
     status, _, body = got.stdout.partition("\n")
     assert status.strip() == "200", got.stdout + got.stderr
     assert '"device":"Device A"' in body.replace(": ", ":")
     # a real page and a script file come through whole
-    page = java("get", remembered, "/ui/app.js").stdout
+    page = phone_app("get", remembered, "/ui/app.js").stdout
     assert page.startswith("200") and "function renderShell" in page
     # sending something, and being refused where a phone should be
-    saved = java(
+    saved = phone_app(
         "post", remembered, "/api/chats", '{"messages":[{"role":"user","content":"hola"}]}'
     )
     assert saved.stdout.startswith("200") and "chat_id" in saved.stdout
-    assert java("post", remembered, "/api/shutdown", "{}").stdout.startswith("403")
+    assert phone_app("post", remembered, "/api/shutdown", "{}").stdout.startswith("403")
 
     # the computer's certificate is pinned: another Datas at that address is not accepted
     b = Instance(a.home.parent, "B")
@@ -224,14 +225,47 @@ def test_the_android_link_code_talks_to_a_real_datas(computer, java):
         b.http.post("/api/link/enable", json={"on": True})
         elsewhere = remembered.replace(f'"port":{a.link}', f'"port":{b.link}')
         assert elsewhere != remembered
-        out = java("info", elsewhere)
+        out = phone_app("info", elsewhere)
         assert out.returncode == 2 and "not the computer that was linked" in out.stdout
         # through the door the person sees a plain page, not an error code
-        door = java("get", elsewhere, "/api/status").stdout
+        door = phone_app("get", elsewhere, "/api/status").stdout
         assert door.startswith("502") and "Not connected" in door
     finally:
         b.stop()
 
     # unlinked at the computer: the phone is turned away
     assert a.http.delete(f"/api/link/peers/{peers[0]['id']}").json()["removed"]
-    assert java("info", remembered).returncode == 2
+    assert phone_app("info", remembered).returncode == 2
+
+
+def test_the_android_link_code_talks_to_a_real_datas(computer, java):
+    a_phone_program_links_and_is_treated_like_a_phone(computer, java)
+
+
+# ---- the iPhone app's own link code (Swift), against a real Datas ------------------------
+
+
+@pytest.fixture(scope="module")
+def swift():
+    """The command-line program around the iPhone's link library (ios/DatasLink). It uses
+    Apple's own network and security libraries, so it is built and run on a Mac only."""
+    import sys
+
+    if sys.platform != "darwin" or not shutil.which("swift"):
+        pytest.skip("the iPhone link code is built on a Mac with Xcode")
+    package = ROOT / "ios" / "DatasLink"
+    build = ["swift", "build", "-c", "release", "--package-path", str(package)]
+    r = subprocess.run([*build, "--product", "datas-link"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-4000:] + r.stderr[-4000:]
+    where = subprocess.run([*build, "--show-bin-path"], capture_output=True, text=True)
+    program = Path(where.stdout.strip()) / "datas-link"
+    assert program.is_file(), where.stdout + where.stderr
+
+    def run(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([str(program), *args], capture_output=True, text=True, timeout=180)
+
+    return run
+
+
+def test_the_iphone_link_code_talks_to_a_real_datas(computer, swift):
+    a_phone_program_links_and_is_treated_like_a_phone(computer, swift)

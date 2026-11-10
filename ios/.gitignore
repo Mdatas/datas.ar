@@ -1,0 +1,8 @@
+# made by XcodeGen and Xcode; the recipe is App/project.yml
+App/Datas.xcodeproj/
+App/Datas/Info.plist
+DatasLink/.build/
+DatasLink/.swiftpm/
+*.xcuserstate
+xcuserdata/
+DerivedData/

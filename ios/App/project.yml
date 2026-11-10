@@ -1,0 +1,84 @@
+# The recipe for the Xcode project of the iPhone app. The project file itself is not kept in
+# the repository: make it with XcodeGen (https://github.com/yonaskolb/XcodeGen, MIT):
+#   brew install xcodegen && cd ios/App && xcodegen generate && open Datas.xcodeproj
+name: Datas
+options:
+  bundleIdPrefix: ar.datas
+  deploymentTarget:
+    iOS: "15.0"
+  developmentLanguage: en
+packages:
+  DatasLink:
+    path: ../DatasLink
+targets:
+  Datas:
+    type: application
+    platform: iOS
+    sources:
+      - path: Datas
+    dependencies:
+      - package: DatasLink
+        product: DatasLink
+    info:
+      path: Datas/Info.plist
+      properties:
+        CFBundleDisplayName: Datas
+        CFBundleShortVersionString: "0.4.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # the web view talks to a door on this phone itself (127.0.0.1), nothing else in plain HTTP
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSLocalNetworkUsageDescription: Datas connects only to the computers you linked yourself, on your own network.
+        NSBonjourServices:
+          - _datas-link._tcp
+        NSCameraUsageDescription: Only when you choose to take a photo to attach to a chat on your computer's Datas.
+        NSMicrophoneUsageDescription: Only when you choose to record a video to attach to a chat on your computer's Datas.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ar.datas.app
+        MARKETING_VERSION: "0.4.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+  # The same tests as the link library's, run inside the iPhone simulator with the app as
+  # host — there they also load a real Datas in the app's own kind of web view.
+  DatasTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../DatasLink/Tests/DatasLinkTests
+    dependencies:
+      - target: Datas
+      - package: DatasLink
+        product: DatasLink
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ar.datas.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+schemes:
+  Datas:
+    build:
+      targets:
+        Datas: all
+        DatasTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - DatasTests

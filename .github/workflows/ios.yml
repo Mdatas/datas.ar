@@ -1,0 +1,54 @@
+name: ios
+# The iPhone app (ios/): its link library is built and tested on a Mac, linked against a real
+# Datas started here, then the app is built for the iPhone simulator and the same tests run
+# inside the simulator — where they also load the real Datas in the app's own web view.
+# Nothing here can sign the app or put it on a phone: that needs the owner's Apple account
+# (ios/README.md).
+
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", "datas/link/**", "datas/server/**", "scripts/phone_target.py", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  iphone:
+    runs-on: macos-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: tools on this Mac
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: a Datas for the phone to link to
+        run: pip install .
+      - name: the link library builds; its arithmetic matches the computer's
+        working-directory: ios/DatasLink
+        run: swift build 2>&1 | tail -n 40 && swift test 2>&1 | tail -n 60
+      - name: the link library against a real Datas (pair, open its window, be refused like a phone)
+        run: python scripts/phone_target.py --name "Mac test" --run "swift test --package-path ios/DatasLink --filter RealDatasTests"
+      - name: make the Xcode project from its recipe
+        run: |
+          brew install xcodegen
+          cd ios/App && xcodegen generate
+      - name: the app builds for iPhone
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/Datas.xcodeproj -scheme Datas -configuration Debug \
+            -sdk iphonesimulator -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tail -n 60
+      - name: in the iPhone simulator, link to the real Datas and load it in the app's web view
+        run: |
+          python scripts/phone_target.py --name "iPhone (simulator)" --prefix TEST_RUNNER_ --run \
+            "xcodebuild test -project ios/App/Datas.xcodeproj -scheme Datas -destination id={sim} -resultBundlePath $RUNNER_TEMP/ios-tests.xcresult CODE_SIGNING_ALLOWED=NO"
+      - name: what the tests said
+        if: always()
+        run: |
+          xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/ios-tests.xcresult" 2>/dev/null | head -c 6000 || true

@@ -29,11 +29,31 @@ def step(name: str, ok: bool, detail: str = "", seconds: float = 0.0) -> bool:
     return ok
 
 
+SERVICE = None  # the `datas serve` this script started, if it did
+
+
 def wait_job(c: httpx.Client, job: dict, limit: float) -> dict:
     """Poll a job until it ends; print its progress now and then."""
-    t0, last = time.time(), ""
+    t0, last, misses = time.time(), "", 0
     while time.time() - t0 < limit:
-        j = c.get(f"/api/jobs/{job['id']}").json()
+        try:
+            j = c.get(f"/api/jobs/{job['id']}").json()
+            misses = 0
+        except httpx.HTTPError as e:
+            # one lost connection is not the end; a service that is gone is
+            misses += 1
+            gone = SERVICE is not None and SERVICE.poll() is not None
+            print(f"       … no answer ({type(e).__name__}: {e})", flush=True)
+            if gone:
+                return {
+                    "state": "error",
+                    "error": f"the service stopped by itself (exit code {SERVICE.returncode})",
+                    "log": [],
+                }
+            if misses >= 8:
+                return {"state": "error", "error": f"the service stopped answering: {e}", "log": []}
+            time.sleep(2)
+            continue
         line = f"{j.get('phase') or j.get('state')} {j.get('percent') or 0:.0f}%"
         if line != last and int(time.time() - t0) % 5 == 0:
             print("       …", line, flush=True)
@@ -88,10 +108,22 @@ def main() -> int:
         port = a.base.rsplit(":", 1)[-1].strip("/")
         log = open(a.serve_log, "w", encoding="utf-8")  # noqa: SIM115 - lives as long as the service
         service = subprocess.Popen(
-            [sys.executable, "-m", "datas", "serve", "--port", port],
+            [
+                sys.executable,
+                "-X",
+                "faulthandler",
+                "-m",
+                "datas",
+                "serve",
+                "--port",
+                port,
+                "--no-browser",
+            ],
             stdout=log,
             stderr=subprocess.STDOUT,
         )
+        global SERVICE
+        SERVICE = service
     try:
         return run(a)
     finally:
