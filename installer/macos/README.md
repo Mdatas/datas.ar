@@ -24,5 +24,5 @@ Command line: `/Applications/Datas.app/Contents/MacOS/datas-cli` (`scan`, `docto
 pip install ".[voice]" pyinstaller
 installer/macos/make-icns.sh
 pyinstaller --noconfirm installer/datas.spec
-installer/macos/build-dmg.sh 0.2.0
+installer/macos/build-dmg.sh 0.3.0
 ```

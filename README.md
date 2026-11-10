@@ -1,111 +1,149 @@
 # Datas.ar
 
-**Your own AI, on your own computer. One install, one icon, one button.**
+**Your own AI, on your own computer. One install, one icon, a few clicks.**
 
-Datas puts an AI (Artificial Intelligence) assistant — the kind you know from ChatGPT —
-on your own computer or phone. It runs there, offline, for free. Nothing you type leaves
-your device unless *you* switch the internet on for a session or decide to plug in a
-paid service.
+Datas puts an AI (Artificial Intelligence) assistant — the kind you know from ChatGPT — on
+your own computer. It runs there, offline, for free. Nothing you type leaves your device
+unless *you* switch the internet on for a chat or choose a paid online service.
 
-It is made for people who have never heard the words "model", "GPU" or "quantization":
-install, double-click the icon, press **Run**, pick what you'll use it for, and Datas
-chooses the best open AI your machine can carry **without slowing everything else down**,
-downloads it, and opens a chat.
+It is made for people who have never heard the words "model", "GPU" or "quantization".
+Datas looks at your device, picks the best open AI it can carry **without slowing everything
+else down**, downloads it and opens a chat. It stays neutral: it tells you plainly what your
+device can and cannot do, and the choices are yours.
 
-## How it works, in three steps
+## Start in three steps
 
-1. **Run — check my computer.** Datas reads your working memory (RAM), graphics card (GPU)
-   and disk, and asks two simple questions: *what will you use it for?* (chat & writing,
-   understanding pictures, programming, doing tasks) and *how much of the computer may
-   it use?* (light / balanced / heavy).
-2. **The recommendation**, in plain words: why this one, what it can't do, who made it
-   (with a link), how big the download is, and **how it compares to the paid AIs you know**
-   (OpenAI, Google, Anthropic/Claude — approximate, by class). "See the other
-   recommendations" shows every alternative that fits.
-3. **Install and start.** The AI is downloaded once and opens in the chat. From then on it
-   appears under **My AIs**, with its own Desktop icon if you want one.
+1. **Install and open Datas.** It asks one thing: *Remember* (chats and notes stay on this
+   device) or *Forget* (nothing is written down).
+2. **Add an AI.** Datas reads your working memory (RAM), graphics card (GPU) and disk, asks
+   what you want to do besides chatting and writing — look at pictures, write code, do tasks
+   with files and the web, talk and listen, make pictures and video — and how much of the
+   device the AI may use. It shows one recommendation in plain words: why this one, what it
+   cannot do, who made it, how big the download is. Every other AI that fits is listed too.
+3. **Chat.** A small AI (about 0.4 GB) starts first, so you can talk while the chosen one
+   downloads. Even before that, the built-in guide answers questions about your device.
 
-## Your choice: remember or forget
+## What is in the window
 
-On first start Datas asks one question:
+| Screen | What it is for |
+|---|---|
+| **Chats** (left side) | Every chat, with search. Start a new chat with any AI you have; each chat remembers which AI it used. |
+| **My AIs** | The AIs on this device, each with a plain summary (good for, keep in mind, memory and disk used), lighter and stronger versions, a desktop shortcut, and *Use a model file I already have*. |
+| **Add an AI** | The recommendation, plus *What this device can do*: a plain yes / slow / no for each kind of task. Nothing is hidden or greyed out. |
+| **Create** | Pictures and short videos made on this device. |
+| **Tools** | Recording → text with subtitles, text → audio, summarise or translate long documents; the agent; the open programs found on this computer; connections; bigger creative tools. |
+| **Devices** | Link your own computers with a one-time code. |
+| **Learn** | AI from zero to expert, in English and Spanish. |
+| **Settings** | Privacy, language and look (day or night), the AI, voice, paid online services, updates. |
+| **About Datas** | Version, everything Datas is built on, technical logs. |
 
-- **Remember me** — your chats and a short notes file stay on this computer so the AI gets
-  to know you. You can read, edit or delete the notes at any time.
-- **Forget everything** — nothing is saved, not even technical logs. Every conversation
-  starts from zero. Fully anonymous.
+### In a chat
 
-Switch any time in *Settings → Privacy*. → [docs/PRIVACY.md](docs/PRIVACY.md)
+- **Helpers.** 43 ready ones — the same AI prepared for one kind of job (write a letter,
+  explain a contract, plan a week, review code…) — and you can make your own.
+- **Documents.** Attach PDF, Word, Excel, PowerPoint, web pages or text and ask about them;
+  pictures too when the AI can see. → [docs/EVERYDAY.md](docs/EVERYDAY.md)
+- **Save an answer** as Word, Excel, PowerPoint, PDF, web page, Markdown or plain text.
+- **Internet, per chat.** Off until you switch it on; the AI shows which pages it used.
+- **Voice.** Talk to it and have answers read aloud, all on this device.
+- **Paid AIs, optionally.** Paste an API key (Application Programming Interface key: a
+  password-like code from OpenAI, Google, Anthropic, Groq…) and use the same chat with their
+  AI. The key stays on your computer; that company then sees what you send it.
 
-## What else it does
+### Your devices, together
 
-- **Internet, per session.** A switch in the chat lets the AI search and open web pages;
-  it tells you which links it used. Off by default.
-- **Skills and documents.** One-tap skills (summarize, translate, fix my writing, teach me…)
-  and "My documents": text files you add so the AI can answer about them.
-- **The agent.** Opens in its own window and works step by step in its own folder: read and
-  write files, look things up, and — only if you allow it — run commands. Everything it
-  does is shown.
-- **Paid AIs, optionally.** Paste an API key (a password-like code from OpenAI, Google,
-  Anthropic, Groq…) and use the same chat with their model. The key stays on your computer.
-- **My devices working together.** Two or more computers at home can pool their memory so
-  a bigger AI fits (own network only). → [docs/POOLING.md](docs/POOLING.md)
-- **Everything used is credited.** *About* lists GitHub and every project, model and library
-  Datas is built on, with links.
+Link the computers you own with a one-time code. They can then keep the same chats, lend
+each other memory so a bigger AI fits, and use each other's AI; if one drops out, the one
+you are on carries on alone. The link is encrypted with the web's standard (TLS 1.3) and
+only devices you paired can connect — no account, no server in the middle. Strangers'
+devices are not supported, because that cannot be made private today.
+→ [docs/DEVICES.md](docs/DEVICES.md) · [docs/P2P.md](docs/P2P.md)
 
-**Datas guide** — after the first run, a chat that knows *your* computer: what it can and can't do, which AI to
-use for what, how to ask better. It runs on the AI you already installed, no extra download.
+### Learn
 
-**Images, video and more tools** — pictures (Z-Image-Turbo) and video clips (Wan 2.2) built in; under *More tools*,
-Datas installs and opens ComfyUI and FaceFusion for editing video, swapping faces and lip-sync (docs/VIDEO.md, docs/APPS.md).
+14 short lessons written for Datas, a 42-word glossary and 55 hand-checked courses, videos,
+books, reports and official texts, arranged in 18 paths: what AI is, using it well, how it
+works, building with it, its history, who is who, the public debates and the rules, and how
+to bring it into a business, a school, a social project or a government office.
+→ [docs/LEARN.md](docs/LEARN.md)
 
-**Voice** — pick "Voice & sound" on the Run screen and Datas adds a hearing model (whisper.cpp) and a
-voice (Kokoro): a **Talk** button in the chat and **Read answers aloud**, English and Spanish, on the
-processor, nothing recorded to disk.
+### The agent and your other programs
+
+The agent works step by step in its own folder and in the folders you tick: read, write,
+sort and convert files, look things up, and — only if you allow it — run commands. It asks
+before anything risky and "delete" is a move to a trash folder. It can use the open programs
+already on your computer (LibreOffice, FFmpeg, Inkscape, Blender, ArtCraft…) and any program
+that speaks the Model Context Protocol (MCP), an open standard for giving tools to an AI.
+→ [docs/AGENTS.md](docs/AGENTS.md) · [docs/PROGRAMS.md](docs/PROGRAMS.md)
+
+### Updates you can undo
+
+Nothing updates by itself. *Settings → Updates* checks for you; the app, the AI engine, the
+picture engine and the list of AIs each update separately and each can go back to the version
+before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATES.md)
 
 ## Install
 
-| Platform | How |
+| System | How |
 |---|---|
-| **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit** (and *Read me*). Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No wizard, no folder to pick, no administrator password. Until a release exists, the `windows-installer` GitHub Action builds the exe on every push. |
-| **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in `installer/linux/README.md`. |
-| **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; first time **right-click → Open** (the app is not Apple-signed yet). Apple Silicon runs the AI on the GPU (Metal). Uninstall: drag to the Trash; your data stays in `~/Library/Application Support/Datas`. |
-| **Android** | Native app in [`android/`](android/README.md) — APK built by the `android-apk` Action. |
-| **Anything with Python** | `pip install datas-ar && datas` |
+| **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit**. Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No administrator password. |
+| **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in [`installer/linux/README.md`](installer/linux/README.md). |
+| **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
+| **Android** | Its own app in [`android/`](android/README.md), built by the `android-apk` workflow. It chats on the phone; it cannot link with computers yet. |
+| **Anything with Python 3.10+** | `pip install datas-ar && datas` |
 
-Needs an arm64 phone or a 64-bit computer. No account. No admin rights for the per-user
-install. First start downloads the engine (llama.cpp, 30–200 MB depending on your graphics
-card); the AI itself is a one-time download of 0.5–20 GB depending on what fits.
+Needs a 64-bit computer (or an arm64 phone). No account. The first start downloads the AI
+engine (llama.cpp, 30–200 MB depending on your graphics card); each AI is a one-time download
+of 0.4–20 GB depending on what fits.
+
+Until a release is published, the installers are produced by the project's GitHub Actions
+(*windows-installer*, *desktop-installers*) on every change.
+
+## What is not there yet
+
+- **The installers are not code-signed.** Windows and macOS show a warning on first start.
+  Signing needs paid certificates.
+- **Phones do not link yet**, and there is no iPhone app.
+- **Linked devices make a bigger AI fit, not a faster one.** Splitting many tasks across
+  devices is planned.
+- **Some texts are English only**: the limits and comparisons written for each AI, and
+  technical messages. The window itself is fully in English and Spanish.
+
+More in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## For developers
 
 Datas is deliberately a thin layer: the engine is [llama.cpp](https://github.com/ggml-org/llama.cpp),
-the models are the open-weight community's, the hardware math is deterministic arithmetic
-you can read in [`datas/recommend/engine.py`](datas/recommend/engine.py).
+the AIs are the open-weight community's, and the choice of AI is plain arithmetic you can
+read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks the AI.
 
 | | |
 |---|---|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, data flow, code map |
-| [RECOMMENDER.md](docs/RECOMMENDER.md) | the memory math, thresholds, ranking |
-| [HARDWARE_DETECTION.md](docs/HARDWARE_DETECTION.md) | what is read, from where, per OS |
-| [CATALOG.md](docs/CATALOG.md) | 20 verified models, schema, how to add |
-| [RUNTIME.md](docs/RUNTIME.md) | llama.cpp asset selection, pinning, flags |
-| [PRIVACY.md](docs/PRIVACY.md) | remember/forget, what is stored where |
-| [PROVIDERS.md](docs/PROVIDERS.md) | local / pool / API keys, the `/v1` proxy |
-| [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | your own devices today; strangers' devices — ruled out until it can be private, and why |
-| [AGENTS.md](docs/AGENTS.md) | the agent runner, permissions |
-| [MOBILE.md](docs/MOBILE.md) · [android/](android/README.md) | phones |
-| [API.md](docs/API.md) | the local HTTP API |
-| [ROADMAP.md](docs/ROADMAP.md, docs/VIDEO.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | |
+| [UI.md](docs/UI.md) | the window: files, design rules, how to add a screen or a text |
+| [RECOMMENDER.md](docs/RECOMMENDER.md) · [HARDWARE_DETECTION.md](docs/HARDWARE_DETECTION.md) | the memory arithmetic; what is read from the device, per system |
+| [CATALOG.md](docs/CATALOG.md) | the 27 verified AIs, the format, how to add one |
+| [RUNTIME.md](docs/RUNTIME.md) · [UPDATES.md](docs/UPDATES.md) | llama.cpp builds, pinning, updates and going back |
+| [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) | what is stored where; how the app is protected and what it does not protect against |
+| [DEVICES.md](docs/DEVICES.md) · [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | linked devices; the older manual pooling; why strangers' devices are ruled out |
+| [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
+| [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
+| [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; paid services and the `/v1` address; phones |
+| [API.md](docs/API.md) | the local HTTP interface |
+| [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | what is next; who Datas is built on; how to help |
 
 ```bash
 git clone https://github.com/Mdatas/datas.ar && cd datas.ar
-pip install -e ".[dev]" && pytest        # 38 tests, ~3 s; one runs a real llama-server on a synthetic model
-datas-cli --help  # or: datas scan | recommend | run | chat | agent | pool worker | provider | runtime | catalog
+pip install -e ".[dev]" && pytest   # about 120 tests, under a minute; one runs a real llama-server on a tiny model
+datas selftest                      # checks this copy: window, lessons, documents, device link, local service
+datas-cli --help                    # scan | recommend | run | chat | agent | link | provider | runtime | catalog | doctor …
 ```
 
-Command line, local API (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatible endpoint
-(`http://127.0.0.1:8420/v1`) are all there for people who want them; the window never shows them.
+A command line, a local interface (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatible
+address (`http://127.0.0.1:8420/v1`) are there for people who want them; the window never
+shows them.
 
 ## License
 
-GPL-3.0-or-later (chosen when the repository was created; switchable). Models keep their own licenses (shown on every card).
+GPL-3.0-or-later. The AIs keep their own licences, shown on every card; everything Datas is
+built on is listed in *About Datas* and in [docs/CREDITS.md](docs/CREDITS.md).

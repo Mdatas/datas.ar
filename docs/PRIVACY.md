@@ -1,25 +1,32 @@
 # Privacy: remember or forget
 
-Datas has two modes. The user picks one on first start (the Welcome screen) and can switch
-any time in *Settings → Privacy*. The setting is `memory_mode` in `config.json`.
+Datas has two modes. The user picks one on first start and can switch any time in
+*Settings → Privacy*. The setting is `memory_mode` in `config.json`. `<home>` below is
+Datas' data folder (*About Datas* shows where it is and opens it).
 
 ## Remember me (`memory_mode = remember`)
 
 | What | Where | Who can read it |
 |---|---|---|
-| Conversations | `<home>/chats/<id>.json` | only this device; shown under *Previous chats* |
-| Notes about the user | `<home>/memory.md` — plain text, editable in Settings | injected into the system prompt so the AI "knows" the user |
-| Documents the user added | `<home>/context/` | given to the AI with each message |
-| Technical logs | `<home>/logs/llama-server.log` (engine output; never messages) | switchable off |
+| Conversations | `<home>/chats/<id>.json` | only this device (and the devices you linked, if you switched chat sync on); listed on the left of the window, with search |
+| Notes about the user | `<home>/memory.md` — plain text, editable in Settings | given to the AI at the start of every chat so it "knows" the user |
+| Documents always at hand | `<home>/context/` | the passages that match each question are given to the AI |
+| Your own helpers | `<home>/assistants/` | only this device |
+| What you marked as done in Learn | `<home>/learn.json` | only this device |
+| Files you saved from answers | your Documents folder, in `Datas/` | ordinary files of yours |
+| Technical logs | `<home>/logs/` (engine output and errors; never messages) | switchable off |
 
-"End & learn" at the end of a chat asks the running model to extract up to 6 durable facts
-the user *actually said* (`chats.LEARN_PROMPT`) and appends them to `memory.md` with a date.
-"Delete everything it remembers" wipes chats, notes and documents; installed AIs stay.
+*Remember what matters from this chat* (the ⋯ menu of a chat) asks the running AI to list up
+to 6 lasting facts the user *actually said* (`chats.LEARN_PROMPT`) and adds them to
+`memory.md` with a date. Nothing is added by itself.
+*Erase everything Datas remembers* (Settings) deletes chats, notes and the documents kept at
+hand; installed AIs stay.
 
 ## Forget everything (`memory_mode = forget`)
 
-- Nothing above is written. `save_chat`, `append_memory` are no-ops; the chat sidebar and
-  "End & learn" disappear.
+- Nothing above is written. `save_chat`, `append_memory` are no-ops; the chat list says
+  that chats are not kept, Learn does not record progress, and chat sync between devices is
+  off.
 - The engine starts with `--log-disable` and its output goes to the null device.
 - The desktop window runs in private mode (no cookies/local storage persisted).
 - Job logs exist only in memory for the current process.
@@ -30,10 +37,16 @@ control.
 
 ## Internet
 
-Off by default. The chat has a per-session switch; when on, the model gets exactly two
-read-only tools — `web_search` (DuckDuckGo HTML results) and `fetch_url` — and the UI shows
-every lookup. The agent window has its own switch. Nothing is ever *sent* anywhere by
-these tools beyond the query/URL itself.
+Off by default. Each chat has its own switch; when on, the AI gets exactly two read-only
+tools — `web_search` (DuckDuckGo results) and `fetch_url` — and the window shows every
+lookup. The agent window has its own switch. Nothing is *sent* anywhere by these tools
+beyond the search words or the address itself. Addresses inside your own network (router,
+printer, other computers) are refused unless you allow them in Settings
+(see [SECURITY.md](SECURITY.md)).
+
+**Links you click** (in Learn, About, an AI's maker page) open in your usual browser, outside
+Datas. From then on it is ordinary browsing: that website sees your visit as it would any
+other. Datas adds nothing to the address and keeps no list of what you opened.
 
 ## Paid providers
 
@@ -41,17 +54,34 @@ An API key the user adds is stored in `config.json` on this device and sent only
 base URL of that provider when the user chats through it. `GET /api/providers` never returns
 keys. Using a paid provider means that company sees the conversation — the UI says so.
 
-## Pooling
+## Your linked devices
 
-Pool traffic (your own devices) is unauthenticated and unencrypted llama.cpp RPC — LAN or
-VPN only. Model activations cross the network; the text itself does not, but activations
-can leak information. Treat your pool like you treat your home Wi-Fi.
+Devices you link yourself (*Devices*) talk over an encrypted connection (TLS 1.3, a pinned
+certificate on both sides); there is no Datas account and no server in between. What travels:
+presence (name, system, versions, memory on offer), the chats if you switched sync on, the
+AI's internal numbers when memory is shared, and your messages when you use another device's
+AI. Someone watching the network sees that your devices talk, how much and when — not what.
+Details and limits: [DEVICES.md](DEVICES.md).
+
+The older, hand-made way of pooling (`datas pool worker --host …`, [POOLING.md](POOLING.md))
+is llama.cpp's own protocol with no password and no encryption: only for a network you fully
+control.
 
 ## What Datas never does
 
-No telemetry, no analytics, no account, no update check that sends data. The only outbound
-connections are GitHub (llama.cpp download), Hugging Face (model download + hash check),
-and whatever the user explicitly enables (internet switch, a paid provider).
+No usage statistics, no analytics, no account, and nothing updates by itself. The outbound
+connections are:
+
+| To | When | What is sent |
+|---|---|---|
+| Hugging Face | you add an AI, voice or picture model | the request for that file (your internet address, like any download) |
+| GitHub | the AI engine is downloaded; you press *Check for updates* or *Get ArtCraft* | the request for the file or for the public list of versions |
+| A paid service | you added its key and chat through it | the conversation |
+| The web | you switched internet on in a chat or for the agent | search words and page addresses |
+| Your other devices | you linked them | see above |
+| PyPI and the tool's own sources | you open a "bigger creative tool" | the download of that tool |
+
+Nothing about you, your device or your use of Datas is sent to the project.
 
 ## Voice
 

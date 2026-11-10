@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datas-ar"
-version = "0.2.0"
+version = "0.3.0"
 description = "Datas.ar — download, hit run, get the best open AI your device can carry. Local-first, open source, pools your devices."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
@@ -64,6 +64,9 @@ Issues = "https://github.com/mdatas/datas.ar/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["datas"]
 
+# `packages` already ships every file inside datas/ (the window in datas/server/ui, the fonts,
+# the lessons…). The single files below are listed so a build fails loudly if one goes missing.
+# Do not list a *folder* here: it would be added twice and the build would stop.
 [tool.hatch.build.targets.wheel.force-include]
 "datas/catalog/models.json" = "datas/catalog/models.json"
 "datas/catalog/media.json" = "datas/catalog/media.json"
@@ -73,8 +76,6 @@ packages = ["datas"]
 "datas/learn/catalog.json" = "datas/learn/catalog.json"
 "datas/learn/lessons.en.md" = "datas/learn/lessons.en.md"
 "datas/learn/lessons.es.md" = "datas/learn/lessons.es.md"
-"datas/server/ui" = "datas/server/ui"
-"datas/fonts" = "datas/fonts"
 
 [tool.ruff]
 line-length = 100

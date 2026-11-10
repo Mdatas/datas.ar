@@ -63,6 +63,7 @@ const Chat = {
           h("span", { class: "sub", text: (q && c.snippet) || c.model_name || c.model || "" })),
         h("button", { class: "icon-btn", "aria-label": t("chat_options"), onclick: e => openMenu(e.currentTarget, [
           { label: t("rename"), icon: "edit", fn: () => Chat.rename(c) },
+          { label: t("chat_learn"), icon: "spark", fn: () => Chat.learn(c) },
           { label: t("delete"), icon: "trash", danger: true, fn: () => Chat.remove(c) },
         ]) }, icon("more", 18))));
     }
@@ -88,6 +89,18 @@ const Chat = {
     try { await api("/api/chats/" + c.id, { method: "PATCH", body: { title } }); } catch (e) { oops(e); }
     if (Chat.cur && Chat.cur.id === c.id) Chat.cur.title = title;
     Chat.loadList();
+  },
+  /* The AI reads the chat and adds up to six short notes about the person to the notes file
+     (Settings, "What the AI should remember about you"). Only things the person said. */
+  async learn(c) {
+    if (aiState().state !== "awake") { toast(t("chat_learn_need_ai"), { ms: 8000 }); return; }
+    toast(t("chat_learn_working"), { ms: 4000 });
+    try {
+      const full = await api("/api/chats/" + c.id);
+      const r = await api("/api/chat/learn", { body: { messages: full.messages || [] } });
+      if (r.learned) toast(t("chat_learn_done", { n: r.learned }), { actions: [{ label: t("nav_settings"), fn: () => go("settings") }] });
+      else toast(t("chat_learn_none"));
+    } catch (e) { oops(e); }
   },
   async remove(c) {
     if (!await confirmDialog(t("delete_chat_title"), t("delete_chat_text", { name: c.title || t("untitled") }), t("delete"), true)) return;

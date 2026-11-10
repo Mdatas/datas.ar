@@ -20,7 +20,8 @@ const I18N = {
 "foot_remember": "Chats are kept on this device only", "foot_forget": "Forget mode: nothing is kept",
 "today": "Today", "yesterday": "Yesterday", "this_week": "Earlier this week", "this_month": "This month", "older": "Older",
 "chats_none": "Your chats will appear here.", "chats_none_found": "No chat matches that search.",
-"chats_forget": "Forget mode is on: chats are not kept.", "chat_options": "More options", "chat_name": "Name of the chat",
+"chats_forget": "Forget mode is on: chats are not kept.", "chat_options": "More options",
+"chat_learn": "Remember what matters from this chat", "chat_learn_working": "The AI is reading the chat…", "chat_learn_done": "{n} new notes about you were added. Read or edit them in Settings.", "chat_learn_none": "Nothing new to remember in this chat.", "chat_learn_need_ai": "Start an AI first: it is the AI that reads the chat and writes the notes.", "chat_name": "Name of the chat",
 "delete_chat_title": "Delete this chat?",
 "delete_chat_text": "“{name}” will be removed from this device and from your linked devices.",
 
@@ -313,7 +314,8 @@ const I18N = {
 "foot_remember": "Los chats se guardan solo en este dispositivo", "foot_forget": "Modo Olvidar: no se guarda nada",
 "today": "Hoy", "yesterday": "Ayer", "this_week": "Esta semana", "this_month": "Este mes", "older": "Más antiguos",
 "chats_none": "Acá van a aparecer tus chats.", "chats_none_found": "Ningún chat coincide con esa búsqueda.",
-"chats_forget": "El modo Olvidar está activo: los chats no se guardan.", "chat_options": "Más opciones", "chat_name": "Nombre del chat",
+"chats_forget": "El modo Olvidar está activo: los chats no se guardan.", "chat_options": "Más opciones",
+"chat_learn": "Recordar lo importante de este chat", "chat_learn_working": "La IA está leyendo el chat…", "chat_learn_done": "Se agregaron {n} notas nuevas sobre vos. Podés leerlas o editarlas en Ajustes.", "chat_learn_none": "No hay nada nuevo para recordar en este chat.", "chat_learn_need_ai": "Primero iniciá una IA: es la IA la que lee el chat y escribe las notas.", "chat_name": "Nombre del chat",
 "delete_chat_title": "¿Borrar este chat?",
 "delete_chat_text": "«{name}» se va a borrar de este dispositivo y de tus dispositivos vinculados.",
 

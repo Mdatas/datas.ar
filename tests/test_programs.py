@@ -157,3 +157,95 @@ def test_programs_api():
     assert c.delete("/api/mcp/faketest").json()["removed"]
     assert c.post("/api/mcp/faketest/test").status_code == 404
     assert c.post("/api/programs/libreoffice-nope/open", json={}).status_code == 400
+
+
+def test_found_programs_are_not_a_side_door_for_running_code():
+    code = programs.runs_code
+    assert code("blender", ["-b", "scene.blend", "--python", "x"]) == "--python"
+    assert code("blender", ["-b", "scene.blend", "-P", "do.py"]) == "-P"
+    assert code("blender", ["-Pdo"]) == "-Pdo"  # the value written right after the letter
+    assert code("blender", ["--python-expr=import os"]) == "--python-expr=import os"
+    assert code("libreoffice", ["--headless", "macro:///Standard.M.Main"])
+    assert code("libreoffice", ["-env:UserInstallation=file:///tmp/other-profile"])
+    assert code("pandoc", ["in.md", "-o", "out.pdf", "--lua-filter", "f.lua"])
+    assert code("pandoc", ["in.md", "--lua-f=f"]) == "--lua-f=f"  # a long option cut short
+    assert code("pandoc", ["in.md", "-Fmyfilter"]) == "-Fmyfilter"
+    assert code("pandoc", ["in.md", "-o", "o.pdf", "--pdf-engine-opt=-shell-escape"])
+    assert code("gimp", ["-i", "-b", "(gimp-quit 0)"]) == "-b"
+    assert code("gimp", ["-ib", "(gimp-quit 0)"]) == "-ib"  # letters grouped
+    assert code("imagemagick", ["msl:evil.msl"])
+    assert code("imagemagick", ["@arguments.txt"])
+    assert code("freecad", ["--response-file", "a.txt"])
+    assert code("ffmpeg", ["x.sh"])
+    for ok in (
+        ("libreoffice", ["--headless", "--convert-to", "pdf", "letter.docx"]),
+        ("ffmpeg", ["-i", "talk.mp4", "-vn", "-b:a", "128k", "talk.mp3"]),
+        ("inkscape", ["logo.svg", "--export-type=png", "--export-filename=logo.png"]),
+        ("pandoc", ["notes.md", "-f", "markdown", "--to=docx", "--file-scope", "-o", "n.docx"]),
+        ("blender", ["-b", "scene.blend", "-o", "//frame_", "-F", "PNG", "-f", "1"]),
+        ("blender", ["-b", "s.blend", "-p", "0", "0", "800", "600", "-noaudio", "-Y"]),
+        ("gimp", ["-i", "-d", "-f", "photo.xcf"]),
+        ("tesseract", ["scan.png", "scan", "-l", "eng+spa"]),
+    ):
+        assert code(*ok) is None, ok
+
+
+def test_found_programs_keep_to_the_internet_switch_and_the_allowed_folders(tmp_path):
+    net = programs.network_addresses
+    assert net(["-i", "http://example.org/a.mp4", "out.mp3"]) == ["http://example.org/a.mp4"]
+    assert net(["--output=rtmp://10.0.0.5/live"]) == ["rtmp://10.0.0.5/live"]
+    assert net(["file://server/share/x.docx"]) == ["file://server/share/x.docx"]  # a shared folder
+    assert net(["file:///tmp/a.png", "//frame_", "scale=640:480", "C://x", "-ss", "00:01:00"]) == []
+
+    ws, other = tmp_path / "ws", tmp_path / "other"
+    ws.mkdir()
+    other.mkdir()
+    (other / "private.txt").write_text("x")
+    out = programs.outside_paths
+    assert out("pandoc", [str(other / "private.txt"), "-o", "copy.txt"], [ws], ws)
+    assert out("pandoc", ["../other/private.txt", "-o", "copy.txt"], [ws], ws)
+    assert out("pandoc", ["notes.md", f"--output={other / 'new.docx'}"], [ws], ws)  # writing there
+    assert out("libreoffice", ["--convert-to", "pdf", "--outdir", str(other), "a.docx"], [ws], ws)
+    assert out("ffmpeg", ["-i", "~"], [ws], ws)
+    # the same file is fine once the user gave the agent that folder
+    assert out("pandoc", [str(other / "private.txt"), "-o", "copy.txt"], [ws, other], ws) == []
+    for ok in (
+        ("ffmpeg", ["-i", "talk.mp4", "-vf", "scale=iw/2:ih/2", "-r", "30000/1001", "out.mp4"]),
+        ("ffmpeg", ["-i", "talk.mp4", "-f", "null", "/dev/null"]),
+        ("ffmpeg", ["-i", "talk.mp4", "-map", "0:a", "-f", "wav", "-"]),
+        ("blender", ["-b", "scene.blend", "-o", "//frame_", "-f", "1"]),
+        ("pandoc", ["notes.md", "-V", "geometry:margin=1in", "-o", str(ws / "sub" / "n.pdf")]),
+    ):
+        assert out(*ok, [ws], ws) == [], ok
+
+
+def test_running_a_found_program_is_checked_and_a_user_program_is_not(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATAS_HOME", str(tmp_path / "home"))
+    ws, other = tmp_path / "ws", tmp_path / "other"
+    ws.mkdir()
+    other.mkdir()
+    (other / "private.txt").write_text("x")
+    # stand-in: "pandoc" is found on this computer (the real one is not needed for the checks)
+    monkeypatch.setattr(programs, "find", lambda pid: sys.executable if pid == "pandoc" else None)
+    show = ["-c", "import sys; print('ran', len(sys.argv))"]
+    run = lambda ctx, args: T.run_program(ctx, "pandoc", args)  # noqa: E731
+
+    off = T.ToolContext(workspace=ws, allow_network=False)
+    assert run(off, show).startswith("exit 0")
+    assert "can make pandoc run code" in run(off, [*show, "--lua-filter", "f"])
+    assert "internet is off" in run(off, [*show, "https://example.org/page.html"])
+    assert "outside the folders" in run(off, [*show, str(other / "private.txt")])
+
+    on = T.ToolContext(workspace=ws, allow_network=True)
+    assert "inside your own network" in run(on, [*show, "http://192.168.1.1/setup"])
+    assert "inside your own network" in run(on, [*show, "rtmp://127.0.0.1/live"])
+    home_net = T.ToolContext(workspace=ws, allow_network=True, allow_local=True)
+    assert run(home_net, [*show, "http://192.168.1.1/setup"]).startswith("exit 0")
+
+    # the user gave the agent that folder: allowed
+    granted = T.ToolContext(workspace=ws, roots=[other])
+    assert run(granted, [*show, str(other / "private.txt")]).startswith("exit 0")
+    # "may run commands" is on: the user already allowed anything
+    free = T.ToolContext(workspace=ws, allow_shell=True, allow_network=False)
+    r = run(free, [*show, "x.sh", str(other / "private.txt"), "https://example.org/"])
+    assert r.startswith("exit 0") and "ran 4" in r

@@ -43,6 +43,7 @@ first: `mac`, `nvidia`, `amd-linux`, `windows-gpu`, `cpu`.
 
 ## Specialist chat models
 
-Not tools but models: Home → "Specialist" offers Math (Qwen2.5-Math 7B), Legal texts (Saul 7B)
-and Medical (MedGemma 1.5 4B, own licence terms) besides Programming. They are ordinary catalog
+Not tools but AIs: *Add an AI* lists Math (Qwen2.5-Math 7B), Legal texts (Saul 7B) and
+Medical (MedGemma 1.5 4B, own licence terms) among the other AIs, each with its verdict for
+this device; a specialist is never picked unless you choose it. They are ordinary catalog
 entries with a `role`; add more in `datas/catalog/models.json`.

@@ -129,7 +129,7 @@
       "name": "python-zeroconf",
       "role": "Finds your other devices on the home network.",
       "by": "Jakub Stasiak and contributors",
-      "license": "LGPL-2.1",
+      "license": "LGPL-2.1-or-later",
       "url": "https://github.com/python-zeroconf/python-zeroconf"
     },
     {
@@ -292,6 +292,118 @@
       "by": "zackees; FFmpeg project",
       "license": "MIT (wrapper); LGPL/GPL (FFmpeg)",
       "url": "https://github.com/zackees/static_ffmpeg"
+    },
+    {
+      "name": "Hermes 4 (14B, 4.3 36B, 70B)",
+      "role": "General chat AIs offered in the list of AIs.",
+      "by": "Nous Research — built on Qwen3 14B, Seed-OSS 36B and Llama 3.1 70B; GGUF by bartowski, Nous Research, lmstudio-community",
+      "license": "Apache-2.0 (14B, 4.3 36B); Llama 3 licence (70B) — as stated on the model cards",
+      "url": "https://huggingface.co/NousResearch"
+    },
+    {
+      "name": "Dolphin 3.0 (Llama 3.1 8B)",
+      "role": "General chat AI offered in the list of AIs.",
+      "by": "Cognitive Computations (Dolphin) — built on Meta Llama 3.1 8B",
+      "license": "Llama 3.1 licence — as stated on the model card",
+      "url": "https://huggingface.co/dphn"
+    },
+    {
+      "name": "pypdf",
+      "role": "Reads the PDF files you attach or keep at hand.",
+      "by": "pypdf contributors",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/py-pdf/pypdf"
+    },
+    {
+      "name": "python-docx",
+      "role": "Reads and writes Word documents (.docx).",
+      "by": "python-openxml contributors",
+      "license": "MIT",
+      "url": "https://github.com/python-openxml/python-docx"
+    },
+    {
+      "name": "openpyxl",
+      "role": "Reads and writes Excel spreadsheets (.xlsx).",
+      "by": "openpyxl contributors",
+      "license": "MIT",
+      "url": "https://openpyxl.readthedocs.io"
+    },
+    {
+      "name": "python-pptx",
+      "role": "Reads and writes PowerPoint presentations (.pptx).",
+      "by": "python-pptx contributors",
+      "license": "MIT",
+      "url": "https://github.com/scanny/python-pptx"
+    },
+    {
+      "name": "fpdf2",
+      "role": "Writes PDF files from the AI's answers.",
+      "by": "fpdf2 contributors",
+      "license": "LGPL-3.0-only",
+      "url": "https://py-pdf.github.io/fpdf2/"
+    },
+    {
+      "name": "markdown-it-py",
+      "role": "Reads the structure of an answer (headings, lists, tables) so it can be saved as a document.",
+      "by": "Executable Books contributors",
+      "license": "MIT",
+      "url": "https://github.com/executablebooks/markdown-it-py"
+    },
+    {
+      "name": "cryptography",
+      "role": "Creates each device's key and certificate for the encrypted link between your own devices.",
+      "by": "Python Cryptographic Authority",
+      "license": "Apache-2.0 OR BSD-3-Clause",
+      "url": "https://github.com/pyca/cryptography"
+    },
+    {
+      "name": "PyQt6 + Qt WebEngine",
+      "role": "The window on Linux.",
+      "by": "Riverbank Computing; The Qt Company",
+      "license": "GPL-3.0-only (PyQt6); LGPL v3 (Qt libraries) — from the packages' own metadata",
+      "url": "https://www.riverbankcomputing.com/software/pyqt/"
+    },
+    {
+      "name": "Asap",
+      "role": "The typeface of the whole window.",
+      "by": "The Asap Project Authors (Omnibus-Type)",
+      "license": "SIL Open Font License 1.1",
+      "url": "https://github.com/Omnibus-Type/Asap"
+    },
+    {
+      "name": "MuseoModerno",
+      "role": "The typeface of the name \"Datas\".",
+      "by": "The MuseoModerno Project Authors (Omnibus-Type)",
+      "license": "SIL Open Font License 1.1",
+      "url": "https://github.com/Omnibus-Type/MuseoModerno"
+    },
+    {
+      "name": "DejaVu fonts",
+      "role": "The typeface inside the PDF files Datas writes (it covers many alphabets).",
+      "by": "DejaVu fonts team, based on Bitstream Vera",
+      "license": "Bitstream Vera licence; DejaVu changes in the public domain",
+      "url": "https://dejavu-fonts.github.io"
+    },
+    {
+      "name": "Model Context Protocol (MCP)",
+      "role": "The open standard Datas' agent speaks to use the functions other programs offer.",
+      "by": "Model Context Protocol project",
+      "license": "MIT (specification)",
+      "url": "https://modelcontextprotocol.io"
+    },
+    {
+      "name": "ArtCraft",
+      "role": "Open creative apps the agent can work with; Datas can fetch its launcher.",
+      "by": "storytold",
+      "license": "MIT or Apache-2.0 — as stated on its site",
+      "url": "https://getartcraft.com/"
+    },
+    {
+      "name": "DuckDuckGo",
+      "role": "Web search results, only when you switch internet on for a chat or the agent.",
+      "by": "DuckDuckGo",
+      "license": "online service",
+      "url": "https://duckduckgo.com"
     }
   ]
 }

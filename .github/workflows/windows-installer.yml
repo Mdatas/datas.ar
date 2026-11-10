@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($args in @(@('--version'), @('scan'), @('recommend','--context','4096'), @('catalog','list'), @('voice','status'), @('images','status'), @('apps','list'), @('voice','say','Datas can talk.','--out','say.wav'))) {
+          foreach ($args in @(@('--version'), @('selftest'), @('scan'), @('recommend','--context','4096'), @('catalog','list'), @('voice','status'), @('images','status'), @('apps','list'), @('voice','say','Datas can talk.','--out','say.wav'))) {
             & dist\Datas\datas-cli.exe @args
             if ($LASTEXITCODE -ne 0) { throw "datas-cli.exe $args failed with exit code $LASTEXITCODE" }
           }

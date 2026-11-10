@@ -6,7 +6,8 @@
 git clone https://github.com/mdatas/datas.ar && cd datas.ar
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -e ".[dev,nvidia]"
-pytest                                           # unit tests (~2 s)
+pytest                                           # about 120 tests, under a minute
+datas selftest                                   # this copy checks itself (window, documents, device link…)
 DATAS_HOME=/tmp/datas-dev datas install          # fetch llama.cpp once …
 DATAS_HOME=/tmp/datas-dev pytest                 # … and the integration test runs too
 ruff check . && ruff format --check .
@@ -31,8 +32,14 @@ orchestrator is the only place that knows about all of them.
 3. **Reuse upstream.** If llama.cpp grows a flag that replaces our logic (as `--fit` did
    for layer placement), prefer the flag and delete our code.
 4. **Local by default.** New network calls go to GitHub, Hugging Face or a provider the
-   user configured — nothing else — and must be listed in README › Privacy.
+   user configured — nothing else — and must be listed in `docs/PRIVACY.md`.
 5. **Docs with code.** Every user-visible change touches the relevant `docs/*.md`.
+6. **Neutral and plain.** The app says what a device can and cannot do (yes / slow / no);
+   it does not hide options or decide for the user. Every text a user sees is plain
+   language, with acronyms spelled out, in English and Spanish (`tests/test_ui.py` checks
+   that both languages have every text). See [docs/UI.md](docs/UI.md).
+7. **Few clicks.** A new feature must be usable without reading a manual. If it needs an
+   explanation, the explanation goes behind a "more" fold, not in the way.
 
 ## Adding a catalog model
 
@@ -50,6 +57,16 @@ two-quants rule unless there's a reason not to.
   (`tests/make_tiny_gguf.py`) and runs the real `llama-server` through our process
   manager. Skipped when the runtime isn't installed.
 - `tests/test_api.py` — FastAPI routes via `TestClient`.
+- `tests/test_ui.py` — every text the window asks for exists in English and Spanish, no
+  script is written into a page, the page is served with its protections.
+- `tests/test_link.py` — two devices pair and talk over the encrypted link; a wrong code
+  and an unknown device are refused.
+- `tests/test_updates.py` — a real engine switch, and the automatic return when a new build
+  fails.
+- `tests/test_selftest.py` — `datas selftest`, which every installer build also runs on the
+  finished app.
+- `scripts/ui_shot.py` — screenshots of every screen without a display (needs the `qt`
+  extra); look at them before sending a change to the window.
 
 ## Commits
 
@@ -59,5 +76,9 @@ Conventional-ish: `feat:`, `fix:`, `docs:`, `catalog:`, `test:`. Keep PRs single
 
 1. `datas catalog refresh --write`, bump `KNOWN_GOOD_TAG` after testing a newer
    llama.cpp build, bump `__version__` and `pyproject.toml`.
-2. `pytest` on Linux, macOS and Windows (CI does this).
-3. `python -m build && twine upload dist/*`.
+2. `pytest` on Linux, macOS and Windows (CI does this, and also installs the package the
+   way a user would and runs `datas selftest` on it).
+3. GitHub → Actions → **release** → Run workflow → type the version. It creates the tag and
+   the release and starts the installer builds, which attach their files. Details in
+   [docs/UPDATES.md](docs/UPDATES.md).
+4. Optional, for `pip install datas-ar`: `python -m build && twine upload dist/*`.

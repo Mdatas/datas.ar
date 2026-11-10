@@ -38,7 +38,8 @@ def test_versions_and_installer_for_each_system(monkeypatch):
         Path,
         "exists",
         lambda p: (
-            str(p) == "/etc/debian_version" or (str(p) != "/etc/arch-release" and real_exists(p))
+            p.as_posix() == "/etc/debian_version"
+            or (p.as_posix() != "/etc/arch-release" and real_exists(p))
         ),
     )
     assert updates.asset_for_this_os(assets)["name"].endswith(".deb")
@@ -46,7 +47,8 @@ def test_versions_and_installer_for_each_system(monkeypatch):
         Path,
         "exists",
         lambda p: (
-            str(p) == "/etc/arch-release" or (str(p) != "/etc/debian_version" and real_exists(p))
+            p.as_posix() == "/etc/arch-release"
+            or (p.as_posix() != "/etc/debian_version" and real_exists(p))
         ),
     )
     assert updates.asset_for_this_os(assets)["name"].endswith(".pkg.tar.zst")

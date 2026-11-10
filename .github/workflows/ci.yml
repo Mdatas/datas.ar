@@ -33,3 +33,21 @@ jobs:
         env:
           DATAS_HOME: ${{ runner.temp }}/datas-home
         run: pytest -q tests/test_gguf_and_server.py
+
+  package:
+    # The installers are made from a normal install, not the editable one the tests use.
+    # Build it the same way here and let the result check itself (window files, lessons,
+    # documents, device link, local service), so a packaging mistake fails this workflow too.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install as a user would (pip install .)
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install .
+      - name: the installed copy checks itself, away from the source folder
+        working-directory: ${{ runner.temp }}
+        run: venv/bin/datas selftest

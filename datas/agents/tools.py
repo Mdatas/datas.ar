@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote_plus, unquote, urlparse
+from urllib.parse import quote_plus, unquote, urlparse, urlsplit
 
 import httpx
 
@@ -235,9 +235,35 @@ def run_program(ctx: ToolContext, program: str, arguments: list[str] | str = "")
             arguments = shlex.split(arguments, posix=platform.system() != "Windows")
         except ValueError as e:
             return f"bad arguments: {e}"
+    args = [str(a) for a in arguments]
+    if not ctx.allow_shell:
+        # Without "may run commands", a found program is for opening, converting and exporting
+        # inside the agent's folders — not a side door (see datas/programs.py).
+        bad = programs.runs_code(program, args)
+        if bad:
+            return (
+                f"DENIED: {bad!r} is a script, or an option that can make {program} run code "
+                "or start another program. That needs 'May run commands' switched on in the "
+                "agent window. (To read, write or convert a file use read_file, save_document "
+                "or convert_file.)"
+            )
+        for url in programs.network_addresses(args):
+            if not ctx.allow_network:
+                return f"DENIED: {url!r} is a network address and internet is off for this session."
+            try:  # the same question as for web pages: is this inside the user's own network?
+                netguard.check_url("http://" + urlsplit(url).netloc, ctx.allow_local)
+            except (netguard.Blocked, ValueError) as e:
+                return f"DENIED: {url!r}: {e}"
+        outside = programs.outside_paths(program, args, ctx.all_roots(), ctx.workspace)
+        if outside:
+            return (
+                f"DENIED: {outside[0]!r} is outside the folders the agent may use: "
+                + ", ".join(str(r) for r in ctx.all_roots())
+                + ". The user can add that folder in the agent window."
+            )
     try:
         out = subprocess.run(
-            [exe, *[str(a) for a in arguments]],
+            [exe, *args],
             cwd=ctx.workspace,
             capture_output=True,
             text=True,

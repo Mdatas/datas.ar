@@ -1,6 +1,6 @@
 # Roadmap
 
-## 0.1 (this release) — the core loop
+## 0.1 — the core loop
 - [x] Device detection (CPU/RAM/GPU/VRAM/disk/power/form factor) on Linux, macOS, Windows, Android
 - [x] Deterministic recommender with headroom budget, placement, fit level, speed class
 - [x] Verified 20-model catalog (ggml-org / Qwen / Unsloth), user catalog, `catalog add/refresh`
@@ -13,23 +13,18 @@
 - [x] Built-in agent runner with sandboxed tools
 - [x] Tests incl. a real llama-server integration test on a synthetic GGUF
 
-## 0.2 — for non-technical users (this release)
+## 0.2 — for non-technical users
 - [x] One window (pywebview), no browser/terminal; `Datas.exe` + `datas-cli.exe`; Program Files installer with Desktop icon and keep/delete-data uninstall
 - [x] Home: Run → what for (text / images / coding / agents; sound & video marked "later") → light / balanced / heavy → recommendation in plain words with paid-model comparison, limits, maker links, "see the other recommendations", advanced options
 - [x] My AIs library with per-AI Desktop icons; Remember/Forget privacy switch; chats, notes, "End & learn", documents, skills
 - [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; pool switches in Settings; About & sources page
 - [x] Spanish/English; acronyms spelled out
 - [x] One installer file with a launcher window (Install · Repair · Uninstall · Exit · Read me); detects any earlier copy, removes it, installs clean, keeps every model/chat/note and says so (finish screen + first-start notice in the app)
+- [x] **Datas guide**: a chat that knows this device, its verdicts, the installed and recommended AIs and how to ask well (`datas/guide.py`, built live, no extra download)
+- [x] *What this device can do*, per ability (yes / slow / no + what it would need / not yet in Datas) — `datas/recommend/abilities.py`
 
-## 0.2.x — polish the loop
+## 0.2.x — installers for every desktop
 - [x] macOS `.dmg`; Linux `.deb` (Debian family), Arch package + PKGBUILD, generic tarball with `install.sh` — all built and smoke-tested in CI (`desktop-installers`)
-- [ ] Code signing: Windows (SmartScreen) and macOS (Developer ID + notarization) — needs certificates
-- [ ] Multi-file (sharded) GGUF entries in the catalog (Qwen3.8-Flash-Next, DeepSeek V4)
-- [ ] Vision in the UI (image attach → `--mmproj`)
-- [ ] Download queue, pause/resume from the UI, disk cleanup of unused models
-- [ ] Benchmarks stored per model and shown as measured tok/s next to the speed class
-- [ ] Headless mode + systemd/launchd/Task Scheduler units (`datas service install`)
-- [ ] i18n beyond EN/ES (pt-BR first)
 
 ## 0.2.x — voice, sound and video (the "later" chips on Home)
 
@@ -56,28 +51,58 @@ Status:
 - [x] Specialist models on Home: Math, Legal texts, Medical (plus Programming)
 - [ ] One-click "translate my video" chain; voice cloning engine; more recipes (audio/music, 3D, OCR)
 
-## 0.3 — devices
-- [ ] Tauri desktop shell (tray icon, autostart) wrapping the same local server
-- [~] Android native app (WebView + foreground service + bundled engine) — code in `android/`, first APK pending CI build
-- [ ] Android: file picker for existing GGUFs, vision, Snapdragon flavour
-- [ ] iOS app on the llama.cpp xcframework, recommender ported to Swift — needs an Apple Developer account (US$99/yr) to run on a phone for more than 7 days / TestFlight; iOS cannot run a downloaded engine binary like Android does
+## 0.3 (this release) — a friendlier window, everyday work, your own devices
+
+- [x] **New window**: chats on the left with search, a new chat with any AI you have, each chat remembers its AI; day and night looks; plain verdicts instead of hidden options; English and Spanish — docs/UI.md
+- [x] **My AIs** with a plain summary per AI (good for, keep in mind, memory and disk), lighter and stronger versions, *Use a model file I already have*
+- [x] **Everyday work**: 43 ready helpers and your own; PDF, Word, Excel, PowerPoint, web pages and text in a chat; pictures for AIs that understand them; answers saved as Word, Excel, PowerPoint, PDF, web page, Markdown or text — docs/EVERYDAY.md
+- [x] **Everyday tools**: recording → text with subtitles, text → audio, long documents summarised or translated piece by piece
+- [x] **Your devices**: pairing with a one-time code, TLS 1.3 with pinned certificates on both sides; lend memory, use another device's AI, keep chats the same, carry on alone when a device drops out — docs/DEVICES.md
+- [x] **Learn**: 14 lessons, a 42-word glossary and 55 checked links in 18 paths, beginner to expert — docs/LEARN.md
+- [x] **Other programs**: the open programs found on the computer, connections through the Model Context Protocol (MCP), ArtCraft; agent tools to write documents, convert files and run those programs — docs/PROGRAMS.md
+- [x] **Updates with a way back** for the app, the AI engine, the picture engine and the list of AIs; automatic return when a new engine fails; settings saved once per version; a damaged settings file cannot stop the app — docs/UPDATES.md
+- [x] **Protection**: the local service answers only local names and refuses other web pages; no script can be written into the window; the AI cannot open addresses inside your network; downloads are checked; found programs cannot be used to run scripts while commands are off — docs/SECURITY.md
+- [x] **`datas selftest`**: a copy checks itself; every installer build runs it on the finished app
+- [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
+
+## Next
+
+**Installing and trusting**
+- [ ] Code signing: Windows (SmartScreen) and macOS (Developer ID + notarization) — needs paid certificates
+- [ ] A first published release, so *Check for updates* has something to find
+- [ ] Community catalog signing (sigstore) and a "tested on" list per kind of device
+
+**Devices**
+- [~] Android app (WebView + foreground service + bundled engine) — code in `android/`, APK built by CI
+- [ ] Android: linking with computers, file picker for model files, pictures, Snapdragon flavour, voice (whisper.cpp and Kokoro Android builds)
+- [ ] Linking devices in different places: a setup helper for WireGuard / Tailscale
+- [ ] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split)
 - [ ] exo backend for all-Apple-Silicon pools
+- [ ] iOS app on the llama.cpp xcframework — needs an Apple Developer account (US$99/yr); iOS cannot run a downloaded engine binary like Android does
 
-## 0.4 — agents
-- [x] Agent works in the user's own folders (per-session grants: Desktop, Documents, Downloads…, or any path; never the whole home), with find/move/copy/open tools, reversible delete (trash), web search, PDF/.docx reading
-- [x] Scheduled tasks ("every Monday at 9…") with a results inbox — run while Datas is open; catch up after the computer was off
-- [x] **Datas guide**: a chat skill that knows this device, its verdicts, the installed/recommended models and how to prompt well (`datas/guide.py`, built live, no extra download) — Home → "Ask the guide", starter questions, About
-- [x] The Run screen reports what *this* device can do, per ability (yes / slow / no + what it would need / not yet in Datas) — `datas/recommend/abilities.py`
+**The window**
+- [ ] Spanish for the texts that are still English only (limits and comparisons of each AI, picture-model descriptions, technical messages); then Portuguese (pt-BR)
+- [ ] Download queue, pause and resume from the window, cleaning up unused AIs
+- [ ] Measured speed stored per AI and shown next to the speed class
+- [ ] Tray icon, start with the system, tasks that run with the window closed (`datas service install`)
+- [ ] Learn: a scheduled re-check of every link; more material in Spanish and Portuguese
+
+**AIs and engines**
+- [ ] AI files split in several parts (Qwen3.8-Flash-Next, DeepSeek V4)
+- [ ] Speculative decoding presets (ggml-org ships draft files next to many models)
+- [ ] Pictures: more recipes by device (Qwen-Image for big cards, FLUX.2 klein), picture editing (Qwen-Image-Edit), upscaling
+- [ ] One-click "translate my video"; voice cloning; music, 3D, text recognition recipes
+
+**The agent**
+- [x] Works in the user's own folders (per-session grants), reversible delete, web search, documents
+- [x] Scheduled tasks with a results inbox
+- [x] MCP client; programs found on the computer
 - [ ] The agent's own browser: Playwright Firefox, isolated, hardened, optional Tor (docs/AGENTS.md)
-- [ ] Script-driven app control without vision (open apps/files, write .docx/.xlsx/.pdf directly, AppleScript / PowerShell-COM / D-Bus hooks)
-- [ ] "Look at my screen and help" (screenshot → vision model explains; the user clicks)
-- [ ] Screen control, experimental and device-gated: one window, dry-run, confirm-before-click, Esc panic key; the abilities panel gives it a yes/slow/no verdict (docs/AGENTS.md)
-- [ ] MCP client: use any MCP tool server from Datas agents
-- [ ] Per-tool allowlists; audit log of every tool call
-- [ ] Agent templates (research → file, inbox triage via IMAP, local RAG over a folder)
+- [ ] The system's automation hooks (AppleScript / PowerShell-COM / D-Bus)
+- [ ] "Look at my screen and help" (screenshot → an AI that sees explains; the user clicks)
+- [ ] Screen control, experimental and device-gated: one window, dry run, confirm before click, Esc to stop
+- [ ] Per-tool allowlists; a kept record of every tool call
+- [ ] Task templates (research → file, inbox triage via IMAP, questions over a folder)
 
-## Later
-- [ ] Speculative decoding presets (ggml-org ships draft/mtp/dflash files next to many models)
-- [ ] Community catalog signing (sigstore) and a curated "tested on" matrix per device class
-- [ ] Pools between your *own* devices beyond the LAN (WireGuard/Tailscale setup helper)
-- [~] Pooling with strangers' devices: **ruled out** while it cannot be made private — see docs/P2P.md
+**Ruled out for now**
+- [~] Pooling with strangers' devices: **not an option** while it cannot be made private — see docs/P2P.md

@@ -24,10 +24,12 @@ from __future__ import annotations
 import glob
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from datas.config import home
 
@@ -340,6 +342,131 @@ def _craft_paths(app: dict, cli: bool) -> tuple[list[str], list[str]]:
         f"~/Applications/{exe}",
         f"~/.local/bin/{exe}",
     ]
+
+
+# ---------------------------------------------------------------------------
+# What the agent may hand to a found program while "may run commands" is off
+# ---------------------------------------------------------------------------
+# The agent uses these programs to open, convert and export. Three things would turn
+# ``run_program`` into a side door, so they are refused unless the user allowed commands:
+#   * options and files that make a program run a script or start another program;
+#   * network addresses, when internet is off (or inside the user's own network);
+#   * files and folders outside the ones the user gave the agent.
+# A list like this cannot be complete: it closes the well-known doors, and ``run_program``
+# still asks first by default. Programs the user listed in programs.json are theirs to
+# decide about and are not filtered.
+SCRIPT_OPTIONS: dict[str, tuple[str, ...]] = {
+    "blender": ("-P", "--python", "--python-expr", "--python-text", "--python-console",
+                "--addons", "-y", "--enable-autoexec"),
+    "freecad": ("-c", "--run-test", "--response-file"),
+    "gimp": ("-b", "--batch", "--batch-interpreter"),
+    "pandoc": ("-F", "--filter", "-L", "--lua-filter", "--pdf-engine", "--pdf-engine-opt"),
+    "imagemagick": ("-script",),
+    "inkscape": ("--shell",),
+}  # fmt: skip
+SCRIPT_ENDINGS = (".py", ".fcmacro", ".scm", ".lua", ".msl", ".bat", ".cmd", ".ps1", ".sh", ".vbs")
+# LibreOffice macro addresses, ImageMagick scripts and pipes, files of arguments (@file),
+# LibreOffice start-up variables (-env:…, which can point it at another profile)
+SCRIPT_STARTS = ("macro:", "vnd.sun.star.script:", "msl:", "|", "@", "-env:")
+
+
+def _is_user_program(pid: str) -> bool:
+    return any(u["id"] == pid for u in user_programs())
+
+
+def _option_runs_code(text: str, options: tuple[str, ...]) -> bool:
+    opt = text.split("=", 1)[0]
+    if opt.startswith("--"):
+        low = opt.lower()
+        # programs such as pandoc accept a long option cut short (--lua-f): refuse any
+        # beginning of a refused option too
+        return low in options or (
+            len(low) >= 4 and any(o.startswith("--") and o.startswith(low) for o in options)
+        )
+    if not opt.startswith("-") or len(opt) < 2:
+        return False
+    if opt in options:  # exact; case matters (Blender: -P runs Python, -p places the window)
+        return True
+    letters = [o[1] for o in options if len(o) == 2]
+    if opt[1] in letters:  # value written right after the letter: -Pscript, -Ffilter
+        return True
+    return len(opt) <= 4 and any(ch in letters for ch in opt[1:])  # letters grouped: -ib
+
+
+def runs_code(pid: str, arguments: list[str]) -> str | None:
+    """The first argument that would make program ``pid`` run a script or another program,
+    or None."""
+    if _is_user_program(pid):
+        return None
+    options = SCRIPT_OPTIONS.get(pid, ())
+    for a in arguments:
+        text = str(a).strip()
+        if _option_runs_code(text, options):
+            return text
+        low = text.lower()
+        if low.startswith(SCRIPT_STARTS) or low.endswith(SCRIPT_ENDINGS):
+            return text
+    return None
+
+
+_ADDRESS = re.compile(r"(?<![A-Za-z0-9+.\-])[A-Za-z][A-Za-z0-9+.\-]+://[^\s\"'<>|]*")
+
+
+def network_addresses(arguments: list[str]) -> list[str]:
+    """Addresses of the form ``scheme://host…`` inside the arguments (web pages, streams,
+    shared folders). ``file:///path`` and Blender's ``//relative`` paths name no host and are
+    not network addresses."""
+    out: list[str] = []
+    for a in arguments:
+        for m in _ADDRESS.finditer(str(a)):
+            try:
+                host = urlsplit(m.group(0)).netloc
+            except ValueError:
+                host = "?"
+            if host:
+                out.append(m.group(0))
+    return out
+
+
+NOT_FILES = {"-", "/dev/null", "/dev/stdin", "/dev/stdout", "/dev/stderr", "nul", "con"}
+
+
+def outside_paths(pid: str, arguments: list[str], roots: list[Path], cwd: Path) -> list[str]:
+    """Arguments that name a file or folder outside ``roots`` (the folders the agent may use).
+    An argument counts when, read as a path — a relative one starts from ``cwd`` — it lands
+    outside those folders on something that exists, or in a folder that exists."""
+    if _is_user_program(pid):
+        return []
+    roots = [r.resolve() for r in roots]
+    out: list[str] = []
+    for a in arguments:
+        text = str(a).strip()
+        if "://" in text:  # an address, not a path (see network_addresses)
+            continue
+        value = text.split("=", 1)[1] if "=" in text else ""
+        candidates = [value] if text.startswith("-") else [text, value]
+        for c in candidates:
+            c = c.strip().strip("\"'")
+            if not c or c.lower() in NOT_FILES:
+                continue
+            if pid == "blender" and c.startswith("//"):  # Blender: "next to the .blend file"
+                continue
+            # "0:a", "00:01:00", "640:480": stream names, times and sizes, not files. (A
+            # letter and a colon — "D:notes.txt" — is a Windows drive and is checked.)
+            if ":" in c and not re.search(r"[\\/]", c) and not re.match(r"[A-Za-z]:", c):
+                continue
+            try:
+                p = Path(os.path.expanduser(c))
+                p = (p if p.is_absolute() else cwd / p).resolve()
+                if any(p == r or r in p.parents for r in roots):
+                    continue
+                real = p.exists() or p.parent.is_dir()
+            except (OSError, ValueError, RuntimeError):
+                continue
+            if real:
+                out.append(text)
+                break
+    return out
 
 
 def user_programs() -> list[dict]:

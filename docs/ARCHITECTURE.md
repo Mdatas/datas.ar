@@ -7,11 +7,12 @@ borrows everything else:
 2. **Deterministic recommendation** — which catalog file fits, where it should be placed,
    how fast it will feel.
 3. **A verified catalog** — model files with byte-exact sizes and licenses.
-4. **Glue & UX** — one-click install/run, a `/v1` proxy, pooling, a small agent runner.
+4. **Glue & UX** — one-click install/run, a `/v1` proxy, a small agent runner, and the
+   things built around the chat: helpers, documents, linked devices, Learn, updates.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  UI (single HTML, EN/ES)      CLI (typer)         any OpenAI-compatible app  │
+│  Window (plain JS, EN/ES)     CLI (typer)         any OpenAI-compatible app  │
 └──────────────┬───────────────────────┬────────────────────────┬──────────────┘
                │ /api/*                │ python                 │ /v1/*
 ┌──────────────▼───────────────────────▼────────────────────────▼──────────────┐
@@ -64,7 +65,10 @@ borrows everything else:
    4. `recommend.engine.llama_server_args` — flags including `--fit-target <headroom>`.
    5. `runtime.process.LlamaServer.start` — spawn, log to `logs/llama-server.log`, poll
       `/health`, store state; config remembers the model so the next launch is instant.
-4. Chat: UI → `POST /v1/chat/completions` (stream) → proxy → `127.0.0.1:8421/v1/...`.
+4. Chat: window → `POST /api/chat` (a stream of events) → `chat_engine` adds the notes, the
+   matching passages of attached documents, the helper and — if switched on — the internet
+   tools, then talks to the active provider (`127.0.0.1:8421/v1/...` for a local AI). Other
+   programs use `POST /v1/chat/completions`, proxied as is.
 
 ## Where things live
 
@@ -75,7 +79,12 @@ borrows everything else:
 | `~/.local/share/datas/models/<model_id>/*.gguf` | downloaded weights |
 | `~/.local/share/datas/catalog.json` | your additions/overrides to the catalog |
 | `~/.local/share/datas/logs/llama-server.log` | engine log |
-| `~/.local/share/datas/agent-workspace/` | agent sandbox |
+| `~/.local/share/datas/agent-workspace/` | the agent's own folder |
+| `~/.local/share/datas/chats/`, `memory.md`, `context/`, `assistants/`, `learn.json` | chats, notes, documents at hand, your helpers, Learn progress (Remember mode only) |
+| `~/.local/share/datas/link/` | this device's key and certificate, and the devices you linked |
+| `~/.local/share/datas/mcp.json`, `programs.json` | connections (MCP) and programs you listed |
+| `~/.local/share/datas/backups/` | the settings as each earlier version left them |
+| `~/Documents/Datas/` | files you saved from answers |
 
 `DATAS_HOME=/some/dir` relocates all of it (used by the tests).
 
@@ -85,46 +94,67 @@ borrows everything else:
 |---|---|
 | 8420 | Datas UI + API + `/v1` proxy |
 | 8421 | llama-server (local engine; also OpenAI-compatible) |
-| 50052 | `ggml-rpc-server` when this device is a pool worker |
+| 8424 | the encrypted link to your other devices (TLS 1.3; only when linking is on) |
+| 50052 | `ggml-rpc-server` when this device lends memory — on `127.0.0.1` for linked devices |
 
 ## Why Python
 
-The user base this targets already has Python on Linux/macOS and gets it in one step on
-Windows and Termux; the heavy lifting is in llama.cpp's native binaries, so Python's cost
-is only orchestration. A native shell (Tauri) wrapping the same local server is on the
-roadmap for app-store distribution; the HTTP API is the boundary that keeps that cheap.
+The heavy lifting is in llama.cpp's native binaries, so Python's cost is only orchestration,
+and the installers ship their own Python: nobody has to install it. The HTTP API is the
+boundary that keeps other shells cheap — the Android app and any future native shell talk to
+the same service.
 
 ## Code map
 
 ```
 datas/
-  __init__.py          version
-  config.py            Config dataclass, paths
-  cli.py               `datas` command (typer)
-  orchestrator.py      Datas class: detect→recommend→install→run, jobs
-  hardware/detect.py   DeviceSpec, GPU, detect()
-  recommend/engine.py  Budget, memory_need, evaluate, recommend, llama_server_args
-  catalog/__init__.py  pydantic schema, load/merge/add
-  catalog/models.json  the verified catalog
-  runtime/llamacpp.py  asset selection, download, extraction, pinning
+  __init__.py           version
+  config.py             Config dataclass, paths; a damaged settings file is set aside, not fatal
+  cli.py                `datas` command (typer)
+  orchestrator.py       Datas class: detect→recommend→install→run, jobs, sleep/wake, fallback
+  desktop.py            the native window (pywebview) + embedded server
+  selftest.py           `datas selftest`: this copy checks itself
+  hardware/detect.py    DeviceSpec, GPU, detect()
+  recommend/engine.py   Budget, memory_need, evaluate, recommend, llama_server_args
+  recommend/abilities.py what this device can do, per ability (yes / slow / no)
+  catalog/__init__.py   pydantic schema, load/merge/add
+  catalog/models.json   the verified list of AIs      catalog/media.json  voice + picture models
+  catalog/compare.py    paid-model class equivalents (plain language)
+  runtime/llamacpp.py   asset selection, download, extraction, pinning
   runtime/downloader.py HF download with resume + sha256
-  runtime/gguf_meta.py GGUF header facts
-  runtime/process.py   LlamaServer, bench
+  runtime/gguf_meta.py  GGUF header facts
+  runtime/process.py    LlamaServer, bench
+  engines/voice.py      hearing (whisper.cpp) and speaking (Kokoro)
+  engines/images.py     pictures and video (stable-diffusion.cpp)
   providers/__init__.py Provider, presets, config helpers
-  pool/discovery.py    zeroconf advertise/discover
-  pool/worker.py       run ggml-rpc-server as a worker
-  agents/tools.py      sandboxed tools
-  agents/runner.py     tool-calling loop
-  chat_engine.py       server-side chat: system prompt (memory, documents, skill) + internet tools, SSE
-  chats.py             chats, memory notes, documents, skills (no-ops in forget mode)
-  library.py           installed AIs, per-AI metadata, removal
-  shortcuts.py         Desktop icons (Win .lnk / Linux .desktop / mac .command)
-  desktop.py           the native window (pywebview) + embedded server
-  catalog/compare.py   paid-model class equivalents (plain language)
-  sources.json         everything credited on the About page
-  server/app.py        FastAPI app + /v1 proxy
-  server/ui/index.html the UI (EN/ES)
-  server/ui/agent.html the agent window
-tests/                 unit + integration (synthetic GGUF)
-docs/                  this folder
+  chat_engine.py        server-side chat: system prompt (notes, documents, helper) + internet tools, SSE
+  chats.py              chats, notes, documents at hand (no-ops in forget mode)
+  assistants/           helpers: the built-in catalog and the user's own
+  docs.py               text out of PDF, Word, Excel, PowerPoint, web pages; picking passages
+  export.py             answers written as Word, Excel, PowerPoint, PDF, web page, Markdown, text
+  tools.py              everyday tools: recording → text, text → audio, long documents
+  guide.py              the Datas guide (knows this device)
+  learn/                Learn: catalog.json (paths, links, glossary) + lessons in EN/ES
+  library.py            installed AIs, per-AI metadata, removal
+  link/__init__.py      linked devices: identity, pairing, mutual TLS, sync, shared memory
+  pool/discovery.py     nodes; workers listed by hand      pool/worker.py  ggml-rpc-server by hand
+  netguard.py           which addresses the AI may open (no private networks by default)
+  updates.py            updates and going back: app, engines, list of AIs
+  programs.py           programs found on the computer, conversions, ArtCraft
+  mcp.py                Model Context Protocol client (connections)
+  apps/                 bigger creative tools in isolated environments (uv)
+  agents/tools.py       the agent's tools, each checked against the allowed folders
+  agents/runner.py      tool-calling loop      agents/schedule.py  tasks on a schedule
+  agents/folders.py     well-known folders per system
+  shortcuts.py          Desktop icons (Win .lnk / Linux .desktop / mac .command)
+  sources.json          everything credited on the About page
+  fonts/                DejaVu, for the PDF files Datas writes
+  server/app.py         FastAPI app: /api, /v1 proxy, who may talk to it
+  server/ui/            the window: index.html, app.css, i18n.js, app.js, chat.js, screens.js,
+                        agent.html/.css/.js, fonts — see docs/UI.md
+tests/                  unit + integration (synthetic GGUF, two linked devices, a stand-in MCP server)
+scripts/ui_shot.py      screenshots of every screen without a display
+installer/              PyInstaller spec; Windows (Inno Setup), macOS (.dmg), Linux (.deb, Arch, tarball)
+android/                the Android app
+docs/                   this folder
 ```

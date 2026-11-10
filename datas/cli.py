@@ -11,6 +11,7 @@ datas pool worker     → offer this device's memory to a pool
 datas provider …      → manage API-key providers
 datas runtime …       → pin/update llama.cpp
 datas doctor          → diagnostics
+datas selftest        → check that every part of this copy is present and works
 """
 
 from __future__ import annotations
@@ -465,6 +466,31 @@ def doctor():
         con.print(tail)
 
 
+@app.command()
+def selftest(as_json: bool = typer.Option(False, "--json")):
+    """Check that every part of this copy of Datas is present and works: the window, the
+    lessons, writing and reading documents, the encrypted link between devices, the local
+    service. Changes nothing, downloads nothing, starts no AI."""
+    from datas.selftest import run
+
+    rows = run()
+    failed = [r for r in rows if not r[1]]
+    if as_json:
+        print(json.dumps([{"check": n, "ok": ok, "detail": d} for n, ok, d in rows]))
+    else:
+        for name, ok, detail in rows:
+            con.print(f"{'[green]ok    [/]' if ok else '[red]FAILED[/]'} {name}: {detail}")
+        con.print(
+            f"\nDatas {__version__}: "
+            + (
+                "everything is in place."
+                if not failed
+                else f"{len(failed)} part(s) need attention."
+            )
+        )
+    raise typer.Exit(1 if failed else 0)
+
+
 # ---------------------------------------------------------------------------
 # pool
 
@@ -513,14 +539,15 @@ def pool_discover(seconds: float = 3.0):
 
 @pool_app.command("nodes")
 def pool_nodes(
-    set_: str = typer.Option("", "--set", help="manual list host:port,host:port (empty to clear)"),
+    set_: str | None = typer.Option(
+        None, "--set", help='workers listed by hand: host:port,host:port ("" to clear)'
+    ),
 ):
-    """Show/set manually configured workers (in addition to mDNS)."""
+    """Show, or with --set change, the workers listed by hand (added to linked devices)."""
     cfg = Config.load()
-    if set_ or set_ == "":
-        if set_ != cfg.pool_nodes:
-            cfg.pool_nodes = set_
-            cfg.save()
+    if set_ is not None and set_ != cfg.pool_nodes:
+        cfg.pool_nodes = set_
+        cfg.save()
     con.print(f"manual workers: {cfg.pool_nodes or '(none)'}")
 
 

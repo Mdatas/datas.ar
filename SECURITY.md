@@ -1,30 +1,41 @@
 # Security
 
-## Threat model in one paragraph
+How Datas is protected, and what it does **not** protect against, is described in plain
+words in **[docs/SECURITY.md](docs/SECURITY.md)**. Linked devices have their own page:
+[docs/DEVICES.md](docs/DEVICES.md).
 
-Datas runs on your device and binds to `127.0.0.1`. It downloads two kinds of things:
-llama.cpp release archives from GitHub (`ggml-org/llama.cpp`, pinned by tag) and model
-files from Hugging Face (verified against the Hub's SHA-256; a mismatch deletes the
-file). API keys you add are stored in the local config file and sent only to the base URL
-you configured. There is no telemetry, no account, no auto-update that runs code.
+## In one paragraph
+
+Datas runs on your device and listens on `127.0.0.1` only. There is no account, no usage
+statistics, and nothing updates by itself. It downloads AI models from Hugging Face (checked
+against the SHA-256 published there; a mismatch deletes the file), the llama.cpp engine from
+its GitHub releases (a tested build, checked against the SHA-256 GitHub publishes with the
+release when that can be read), and — only when you press the button — its own installer
+(size and SHA-256 checked). Keys for paid services stay in the local settings file and are
+sent only to the service they belong to. Devices you link talk over TLS 1.3 with a pinned
+certificate on both sides.
 
 ## Things to know
 
-- `datas serve --host 0.0.0.0` exposes the UI and the `/v1` proxy — and therefore your
-  remote API keys' spending — to the network. Use a VPN or an authenticating reverse proxy.
-- `datas pool worker` runs `ggml-rpc-server`, which has **no authentication or
-  encryption**. LAN/VPN only.
-- The agent's `run_command` tool is off unless you pass `--allow-shell`, and then asks
-  before each command unless `--yes`. Files are confined to the workspace directory.
-- Model weights are data, but a malicious GGUF could exploit a parser bug in llama.cpp.
-  Stick to the curated catalog or repos you trust; `datas runtime update` tracks upstream
-  fixes.
-- Release archives are fetched over HTTPS from GitHub; we do not yet verify a signature
-  (upstream does not publish one). Pinning by tag + the integrity of HTTPS is the current
-  guarantee. Sigstore verification is on the roadmap when upstream offers it.
+- **The installers are not code-signed yet.** Windows and macOS warn on first start.
+- **The data folder is not encrypted.** Someone using your unlocked user account can read
+  your chats and settings. Use your system's disk encryption.
+- **A model file is read by the engine.** Prefer files from publishers you recognise;
+  engine updates bring upstream fixes (*Settings → Updates*).
+- **The agent** works only in its own folder and the folders you tick, asks before risky
+  steps, and runs commands only if you switch that on. A connection (MCP) or a "bigger
+  creative tool" is a program running with your rights: add only what you trust.
+- **`datas serve --host 0.0.0.0`** puts the window and the `/v1` address — and so the use of
+  your paid keys — on your network, without a password. It is an expert option and is not
+  needed for linking devices.
+- **`datas pool worker --host <address>`** starts llama.cpp's own worker, which has no
+  password and no encryption. Use linked devices instead (*Devices*), which wrap the same
+  thing in an encrypted tunnel.
 
-## Reporting
+## Reporting a problem
 
-Open a GitHub issue marked *security* or contact the maintainer privately through the
-address on the GitHub profile. Please include your OS, Datas version
-(`datas --version`) and `datas doctor` output with keys redacted.
+Open an issue at <https://github.com/Mdatas/datas.ar/issues>, or — for something that should
+not be public yet — use *Security → Report a vulnerability* on the repository page if it is
+available, or write to the maintainer through the GitHub profile. Please include your system,
+the Datas version (`datas-cli --version`) and the output of `datas-cli selftest` and
+`datas-cli doctor` with any keys removed.

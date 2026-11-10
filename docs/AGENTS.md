@@ -27,15 +27,20 @@ they happen.
 
 | Tool | Does | Gate |
 |---|---|---|
-| `list_dir(path)`, `find_files(pattern, path)` | list / search files | workspace + granted folders |
-| `read_file(path)` | read text; PDF and .docx converted to text (200k chars cap) | same |
+| `list_dir(path)`, `find_files(pattern, path)` | list / search files | the agent's folder + the folders you ticked |
+| `read_file(path)` | read text; PDF, Word, Excel, PowerPoint and web pages are turned into text (200k characters at most) | same |
 | `write_file(path, content)`, `make_dir(path)` | write text, create folders | same |
-| `move_file(src, dst)`, `copy_file(src, dst)` | move/rename/copy; a destination ending in `/` is a folder | same |
-| `delete_file(path)` | **never destroys**: moves to `<workspace>/_trash/<time>-<name>` | same; refuses to trash a granted folder itself |
-| `open_path(target)` | open a file, folder or URL with the user's usual app | same (URLs need internet on) |
+| `save_document(path, content)` | write Markdown `content` as a Word, Excel, PowerPoint, PDF, web page, Markdown or text file; the ending of the name picks the format | same |
+| `convert_file(source, to)` | convert between formats with the best program found (.docx → .pdf, .svg → .png, .mp4 → .mp3…) | same |
+| `move_file(src, dst)`, `copy_file(src, dst)` | move, rename, copy; a destination ending in `/` is a folder | same |
+| `delete_file(path)` | **never destroys**: moves to `<agent folder>/_trash/<time>-<name>` | same; refuses to trash a ticked folder itself |
+| `list_programs()` | which open programs were found on this computer and what each is for | — |
+| `run_program(program, arguments)` | run one of those programs | asks first; while commands are off it refuses script-running options, network addresses when internet is off, and files outside your folders — see [PROGRAMS.md](PROGRAMS.md) |
+| `open_path(target, program?)` | open a file, folder or web address with your usual program, or with a chosen one | asks; web addresses need internet on |
 | `web_search(query)` | DuckDuckGo results: title, link, snippet | internet switch |
-| `fetch_url(url)` | GET a page; HTML reduced to text (200k cap) | internet switch |
-| `run_command(command)` | shell in the workspace, 60 s timeout | **off by default**; switch in the window / `--allow-shell` |
+| `fetch_url(url)` | read a page; HTML reduced to text (200k at most); addresses inside your own network are refused | internet switch |
+| `run_command(command)` | a command in the agent's folder, 60 s at most | **off by default**; switch in the window / `--allow-shell` |
+| `connection__function(…)` | functions offered by programs that speak the Model Context Protocol (MCP), such as the ArtCraft apps | always asks; see [PROGRAMS.md](PROGRAMS.md) |
 
 **Folders.** The agent always has its own workspace (`<data>/agent-workspace`). In the agent
 window the user ticks which of their folders it may also use for this session — Desktop,
@@ -47,9 +52,12 @@ Every tool resolves paths against that list; anything outside answers `DENIED`.
 
 | Level | Asks before… | For whom |
 |---|---|---|
-| **Ask before risky actions** (default) | anything that writes, moves, copies or trashes inside *your* folders, runs a command, or opens a file/URL. Reading, searching and everything inside the agent's own workspace (reversible via `_trash`) run freely. | everyone |
+| **Ask before risky actions** (default) | anything that writes, converts, moves, copies or trashes inside *your* folders, runs a command or a program, uses a connection (MCP), or opens a file or web address. Reading, searching and everything inside the agent's own folder (reversible via `_trash`) run freely. | everyone |
 | **Ask before every action** | every single tool call, listings included | the first few runs, to see how it thinks |
 | **Never — just do it** | nothing; a **Stop** button and the Esc key halt it at the next step | people watching the log |
+
+Tasks on a schedule run with nobody watching, so they never ask; the folders and switches
+chosen for the task are their limits.
 
 The question appears as a card in the agent window (Allow / Deny / Allow everything for this
 task); unanswered questions are denied after 15 minutes. Approving every click exists in every
@@ -64,12 +72,14 @@ good default. Hence the risk-based default plus a stop key.
 A background thread in the server checks every 30 s and runs due tasks one at a time through the
 same runner; a task missed while the computer was off runs at the next start. Each run writes
 `<data>/agent/results/<task>-<time>.md` (summary + the list of tool calls), shown in the window's
-inbox. They run while Datas is open — a tray/background service is roadmap 0.3.
+inbox. They run while Datas is open; running in the background with the window closed is on
+the roadmap.
 
 ### What "do tasks on my computer by itself" means today
 
-Honest scope with the model sizes a normal laptop runs (4–14 B parameters): file and document
-work (sort, rename, summarise, convert text), web research saved to files, scripts when
+Honest scope with the AI sizes a normal laptop runs (4–14 billion parameters): file and
+document work (sort, rename, summarise, write Word / Excel / PowerPoint / PDF files, convert
+between formats with the programs installed), web research saved to files, scripts when
 commands are allowed, and all of that on a schedule.
 
 ### Driving other programs (screen control) — planned, device-gated
@@ -91,15 +101,17 @@ device can carry, and it comes after images. Why it is not in the first version:
 
 What will ship, in this order:
 
-- **Script-driven app control, no vision** (reliable today): open apps and files, fill documents
-  by writing the formats directly (.docx, .xlsx, .pdf), and drive programs through their own
-  automation hooks — AppleScript/Shortcuts on macOS, PowerShell/COM on Windows (Office, Explorer),
+- **Program control without looking at the screen** — *partly shipped*: the agent opens
+  programs and files, writes documents in their own formats (.docx, .xlsx, .pptx, .pdf),
+  converts with the programs it finds, and uses the functions a program offers through MCP
+  ([PROGRAMS.md](PROGRAMS.md)). Still to come: the system's own automation hooks —
+  AppleScript/Shortcuts on macOS, PowerShell/COM on Windows (Office, Explorer),
   D-Bus/xdotool on Linux. Deterministic, loggable, undoable where the program allows.
 - **"Look at my screen and help"**: a screenshot goes to the vision model, which explains what is
   on screen or what to click; the user clicks. Safe, useful, works on any device that runs a
   vision model.
-- **Screen control, experimental, device-gated**: offered only where the Run screen's verdict is
-  "yes" (a capable vision model on a real GPU), limited to one chosen window, with a dry-run
+- **Screen control, experimental, device-gated**: offered only where *What this device can do*
+  says "yes" (a capable vision model on a real GPU), limited to one chosen window, with a dry-run
   mode, confirm-before-click, a visible cursor and a panic key (Esc) that stops it. Off by
   default; the abilities panel reports "Screen control: yes / slow / no" like every other ability.
 
@@ -139,18 +151,37 @@ their settings; point them at the same address.
 
 ## Safety model, stated plainly
 
-- Nothing runs on your machine unless you pass `--allow-shell`, and then each command is
-  shown and confirmed unless you add `--yes`.
-- Files are confined to the workspace directory you chose.
-- Network access is on by default for `fetch_url` (reading pages); turn it off with
-  `--no-network`. There is no tool that sends data anywhere.
-- The model's claims are not trusted: the runner only reports tool results it actually
-  observed, and the system prompt tells the model the same.
-- A remote provider sees the task and tool results (that is what you asked for by
-  selecting it). Use `local` for anything private.
+- **Folders.** The agent works in its own folder and in the folders you tick for that
+  session. Every file tool checks every path; anything else answers `DENIED`. The whole home
+  folder or a disk root cannot be ticked.
+- **Nothing is destroyed.** "Delete" moves to the agent's trash folder.
+- **Commands are off** unless you switch them on (`--allow-shell`), and then each one is
+  shown and asked about unless you chose *Never ask* (`--yes`).
+- **Programs and connections ask first.** A program started with `run_program`, or a
+  function of a connection (MCP), runs with your user's rights — the question shows exactly
+  what will run. While commands are off, `run_program` also refuses script-running options,
+  network addresses when internet is off, and files outside your folders. A connection is a
+  program you added yourself: Datas cannot see inside it.
+- **Tasks on a schedule do not ask** — nobody is there to answer. They are bound by the
+  folders and the switches you chose for the task.
+- **Internet** is a switch per session. With it on, the agent can search and read pages; it
+  cannot open addresses inside your own network unless you allow that in Settings. Text on a
+  web page can be written to mislead an AI ("prompt injection") — one more reason risky
+  steps ask first.
+- **The AI's claims are not trusted.** The runner reports only the tool results it actually
+  observed, and tells the AI so.
+- **A paid online service sees the task and the tool results** — that is what choosing it
+  means. Use an AI on this device for anything private.
+
+The full picture, including what Datas does *not* protect against: [SECURITY.md](SECURITY.md).
 
 ## Roadmap for agents
 
-- Scheduled/background agents with a result inbox in the UI.
-- MCP client support so Datas agents can use MCP tool servers.
-- Per-tool allowlists in config (e.g. shell allowed only for `git`, `pytest`).
+- [x] Scheduled tasks with a results inbox in the window.
+- [x] MCP client: the agent uses the functions of programs that speak MCP.
+- [x] Open programs found on the computer (LibreOffice, FFmpeg, Inkscape, Blender, ArtCraft…).
+- [ ] The agent's own browser (above).
+- [ ] The system's automation hooks; "look at my screen and help"; screen control (above).
+- [ ] Per-tool allowlists in the settings (for example commands allowed only for `git` and
+      `pytest`), and a kept record of every tool call.
+- [ ] Running scheduled tasks with the window closed.
