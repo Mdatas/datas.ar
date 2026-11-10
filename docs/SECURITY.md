@@ -52,6 +52,7 @@ injection"). The AI reading a page should never become a way into your home netw
 | llama.cpp engine | SHA-256 published with the release; the downloaded archive is deleted after unpacking |
 | Datas installer (update) | size and SHA-256 published with the release, then the system's own installer is opened |
 | ArtCraft Launcher | SHA-256 from the `SHA256SUMS.txt` published beside it |
+| FFmpeg (only when the computer has none) | one fixed commit of the builds' repository, and the size and SHA-256 recorded in that commit; only the two programs are unpacked, by their bare names → [HARDWARE.md](HARDWARE.md#ffmpeg) |
 
 A new engine version is installed **beside** the old one and tested before it is used; if it
 fails, Datas goes back by itself. See [UPDATES.md](UPDATES.md).
@@ -73,12 +74,37 @@ warning on first start. Signing needs paid certificates and is on the roadmap.
   files outside the folders you gave the agent. These checks read the arguments only and a
   list of known tricks is never complete — which is why running a program asks first.
 - Tasks on a schedule run unattended: they do not ask. They are limited by the folders and
-  the two switches (internet, commands) you set when you created the task, and by the checks
-  above.
+  the three switches (internet, commands, hardware) you set when you created the task, and by
+  the checks above. They can never use the mouse and keyboard.
 - A connection (MCP) **starts a program on your computer**. Datas lists only the ones you
   added and the ones offered by programs it found installed. Add only programs you trust.
 
 Details: [AGENTS.md](AGENTS.md), [PROGRAMS.md](PROGRAMS.md).
+
+## Cameras, printers and other hardware
+
+- Nothing runs in the background. A photo or a picture of the screen is taken when you press
+  the button in a chat, or when the agent asks and you allow it.
+- The agent has no hardware tool at all until you switch *May use my camera, screen, printer
+  and other hardware* on for that task. Then looking and listing run freely; a photo, a
+  picture of the screen, printing, writing to a board, switching something through your hub
+  and writing to a machine ask first, in plain words.
+- The mouse and keyboard have their own switch, ask before every action, can only click
+  inside the picture of the screen the AI was shown, and stop when the mouse is moved into a
+  corner of the screen. A task on a schedule never gets them.
+- Home Assistant, your MQTT broker and Modbus devices are reached at the addresses you typed.
+  Their password and token are kept in `things.json` in Datas' data folder, readable only by
+  your user, and are never sent back to the window. **Modbus has no passwords at all**: on a
+  network where a PLC is reachable, anyone can write to it — that is the protocol, not Datas.
+  Keep such equipment on a network of its own.
+- Devices on the network are only listened to (their own announcements). Datas does not scan
+  addresses or try passwords.
+- A picture attached to a chat goes where that chat goes: nowhere with an AI on this device;
+  to the company you chose with a paid online service.
+- What text a camera or a screen shows can be written to mislead an AI, exactly like a web
+  page. This is why acting on the world asks first.
+
+Details: [HARDWARE.md](HARDWARE.md).
 
 ## Your devices
 
@@ -104,9 +130,11 @@ Details: [PRIVACY.md](PRIVACY.md).
 A phone linked to this computer (see [DEVICES.md](DEVICES.md#phones-and-tablets)) can open
 this computer's Datas through the encrypted link if you left that switch on. It is treated
 as you, with limits: requests that come from a phone are refused when they would reach the
-room (microphone, camera, screen), the computer beyond Datas (opening files and programs,
-commands for the agent, connections), other devices (linking, unlinking), or cannot be
-undone (erasing everything). The phone proves who it is with a secret that never leaves the
+room (microphone, camera, screen, printer, boards, your smart home), the computer beyond
+Datas (opening files and programs, commands for the agent, connections), other devices
+(linking, unlinking), or cannot be undone (erasing everything). A task that runs by itself is
+not a way around this: from a phone it cannot be given commands or hardware, and a task that
+has them can only be paused or resumed. The phone proves who it is with a secret that never leaves the
 encrypted connection; the computer keeps only its fingerprint.
 
 If a phone is lost or sold: *Devices → Unlink* on the computer. A phone that is unlocked in
@@ -121,7 +149,8 @@ What is signed and what is not — release files, Windows, macOS, Android — is
 
 `datas-cli selftest` checks that a copy of Datas is whole and behaves: the window files, the
 lessons, writing and reading documents, an encrypted link between two test identities (and
-the refusal of a third), and the two checks that keep other web pages out. It changes
+the refusal of a third), the two checks that keep other web pages out, and that the parts
+for cameras, serial ports, MQTT and the mouse and keyboard are present. It changes
 nothing and downloads nothing. Every installer is built only if the finished app passes it.
 
 ## What Datas does not protect against
@@ -133,5 +162,8 @@ nothing and downloads nothing. Every installer is built only if the finished app
 - A paid online service you choose: it sees what you send it.
 - The bigger creative tools (ComfyUI and others) and any program started through a
   connection: they run with your user's rights, like any program you install.
+- What your own devices do once told: a board runs whatever its program does with a line it
+  receives, a smart plug switches whatever is plugged into it, a PLC moves a machine. Datas
+  asks before sending; it cannot know what happens next.
 - Mistakes by the AI. An agent can still do the wrong thing inside the folders you allowed;
   that is why risky steps ask first and "delete" is a move to trash.

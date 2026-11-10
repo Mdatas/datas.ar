@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
+from dataclasses import fields as dataclass_fields
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -45,6 +46,7 @@ class Task:
     folders: list[str] = field(default_factory=list)
     internet: bool = True
     allow_shell: bool = False
+    devices: bool = False  # cameras, printers, boards, home devices (never mouse and keyboard)
     enabled: bool = True
     created: float = field(default_factory=time.time)
     last_run: float | None = None
@@ -102,9 +104,17 @@ class Scheduler:
         if not f.exists():
             return []
         try:
-            return [Task(**t) for t in json.loads(f.read_text(encoding="utf-8"))]
-        except (ValueError, TypeError):
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
             return []
+        known = {x.name for x in dataclass_fields(Task)}
+        out = []
+        for t in data if isinstance(data, list) else []:
+            try:  # a field this version does not know (written by a newer one) is left out
+                out.append(Task(**{k: v for k, v in t.items() if k in known}))
+            except (TypeError, AttributeError):
+                continue
+        return out
 
     def save(self) -> None:
         tasks_file().write_text(

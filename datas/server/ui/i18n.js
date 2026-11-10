@@ -12,7 +12,6 @@ const I18N = {
 "fmt_docx": "Word document", "fmt_pdf": "PDF", "fmt_xlsx": "Excel spreadsheet", "fmt_pptx": "PowerPoint presentation",
 "fmt_html": "Web page", "fmt_md": "Markdown text", "fmt_txt": "Plain text", "fmt_suggested": "Suggested for this helper",
 "read_aloud": "Read aloud", "reading": "Reading aloud. Press Read aloud again to stop.",
-
 "nav_library": "My AIs", "nav_create": "Create", "nav_tools": "Tools", "nav_devices": "Devices", "nav_learn": "Learn",
 "nav_settings": "Settings", "nav_setup": "Add an AI", "nav_about": "About Datas",
 "new_chat": "New chat", "new_chat_with": "New chat with another AI", "search_chats": "Search chats",
@@ -24,7 +23,6 @@ const I18N = {
 "chat_learn": "Remember what matters from this chat", "chat_learn_working": "The AI is reading the chat…", "chat_learn_done": "{n} new notes about you were added. Read or edit them in Settings.", "chat_learn_none": "Nothing new to remember in this chat.", "chat_learn_need_ai": "Start an AI first: it is the AI that reads the chat and writes the notes.", "chat_name": "Name of the chat",
 "delete_chat_title": "Delete this chat?",
 "delete_chat_text": "“{name}” will be removed from this device and from your linked devices.",
-
 "ai_none": "No AI yet", "ai_asleep": "{name} (asleep)", "ai_word": "AI",
 "ai_state_awake": "The AI is awake and ready",
 "ai_state_asleep": "The AI is asleep to free memory. It wakes with your next message.",
@@ -34,7 +32,6 @@ const I18N = {
 "ai_other_devices": "On your other devices", "ai_on": "on {device}", "ai_on_device": "AI on another device",
 "ai_sleep_now": "Put the AI to sleep",
 "speed_fast": "Fast", "speed_ok": "Good pace", "speed_slow": "Slow", "speed_crawl": "Very slow", "speed_nofit": "Does not fit",
-
 "speedl_fast": "Fast: answers appear quickly, like a paid chat service.",
 "speedl_ok": "Comfortable: a readable pace, a few words per second.",
 "speedl_slow": "Slow: expect to wait; fine for short questions.",
@@ -47,7 +44,6 @@ const I18N = {
 "dl_line": "{size} to download once; then it works without internet.", "mem_line": "Uses about {size} of memory while running.",
 "arch_moe": "Mixture of experts: only a part of the model works on each word, so it is faster than its size suggests.",
 "arch_dense": "Dense: the whole model works on every word.",
-
 "helper_none": "No helper", "helper_none_hint": "A plain chat: the AI answers as itself.", "helper_title": "Choose a helper",
 "helper_lead": "A helper is the same AI prepared for one kind of job. Pick one, or chat without any.",
 "helper_search": "Search helpers", "helper_none_found": "No helper matches that search.", "helper_make": "Make my own helper",
@@ -63,7 +59,6 @@ const I18N = {
 "he_docs": "Reference documents (optional)",
 "he_docs_hint": "Price lists, manuals, rules. The helper reads the parts that match each question.",
 "he_need": "Give it a name and say what it should do.", "he_delete_text": "“{name}” and its documents will be removed.",
-
 "net_on": "Internet on", "net_off": "Internet off",
 "net_hint": "Let the AI search the web and read pages in this chat",
 "net_on_note": "For this chat the AI may search the web and read pages. Only the search words leave this device.",
@@ -94,7 +89,6 @@ const I18N = {
 "getting_lead": "You can keep using the computer. The progress is at the bottom right; when it finishes you can chat here.",
 "learn_first": "Learn what AI is first",
 "starter_ready": "A small helper AI is ready: you can chat while your AI downloads.",
-
 "job_done": "Done.", "job_failed": "It did not work:",
 "job_keep_using": "You can keep using the computer. If the download is cut, it picks up where it left off.",
 "ph_runtime": "Preparing the engine", "ph_model": "Downloading the AI",
@@ -105,7 +99,6 @@ const I18N = {
 "notice_engine_stopped": "The AI stopped unexpectedly, often because the computer ran short of memory. It will start again with your next message.",
 "notice_fallback": "{lost} went offline. The chat continues on this device with {now}.",
 "notice_fallback_none": "{lost} went offline, and none of the AIs installed here fits this device alone. Open My AIs to add a lighter one.",
-
 "welcome_title": "Welcome to Datas",
 "welcome_text": "Datas runs artificial intelligence (AI) on your own device: private, free and open. First, two choices.",
 "welcome_memory": "Should Datas keep your chats?",
@@ -116,7 +109,6 @@ const I18N = {
 "welcome_change_later": "You can change both at any time in Settings.", "welcome_start": "Start",
 "hello_upgraded": "Datas was updated from {from} to {to}. Your AIs, chats and settings were kept.",
 "hello_kept": "Welcome back. Datas found what you had before and kept it: {models} AIs and {chats} chats.",
-
 "setup_title": "Add an AI",
 "setup_lead": "Tell Datas what you want to do. It checks this device and shows what runs well, what runs slowly and what does not fit.",
 "setup_what": "What do you want to do, besides chatting and writing?", "setup_what_sub": "Pick any. You can change this later.",
@@ -151,7 +143,6 @@ const I18N = {
 "f_like": "Roughly comparable to", "f_maker": "Made by", "f_licence": "Licence", "f_kind": "Type", "f_variant": "Variant",
 "f_page": "Its page", "f_speed": "Speed", "variant_of": "A version of {name} adjusted by another person or team",
 "open_page": "Open the model's page",
-
 "lib_title": "My AIs",
 "lib_lead": "The AIs on this device. Start a chat with any of them, see what each is good at, or get a lighter or stronger version.",
 "lib_own_file": "Use a model file I already have", "lib_empty": "No AI on this device yet. Add one to start.", "lib_chat": "Chat",
@@ -165,7 +156,6 @@ const I18N = {
 "own_choose": "Choose a file", "own_open_folder": "Open the AI folder", "own_path": "Where the file is",
 "own_path_example": "C:\\Users\\you\\Downloads\\model.gguf", "own_no_picker": "Type or paste where the file is.",
 "own_note": "Files ending in .gguf that you put in the AI folder also appear in My AIs.",
-
 "create_title": "Create pictures and video",
 "create_lead": "Made on this device with open models. It needs more power than chatting; Datas tells you what to expect.",
 "create_image": "Picture", "create_video": "Video", "create_gallery": "What you made", "create_empty": "Nothing yet.",
@@ -177,7 +167,6 @@ const I18N = {
 "create_consent": "This picture is mine to use, and the people in it agreed",
 "create_consent_hint": "Needed when you start from a picture.", "create_consent_need": "Tick the box about the picture first.",
 "create_go": "Make it",
-
 "tools_title": "Tools", "tools_lead": "Things the AI can do beyond chatting, and the programs it can work with.",
 "tools_agent": "The agent",
 "tools_agent_sub": "Give it a task and it works step by step: reads and writes files in the folders you allow, searches the web, uses your programs. It asks before anything risky.",
@@ -205,9 +194,28 @@ const I18N = {
 "conn_warn": "Only add programs you trust: a connection runs that program on your computer.",
 "tools_apps": "Bigger creative tools",
 "tools_apps_sub": "Separate open programs for demanding work. Datas installs them in their own folder and says plainly if this device is below what they need.",
+"cam_add": "Add a photo from the camera or a picture of your screen", "cam_photo": "A photo from the camera", "cam_screen": "A picture of my screen",
+"cam_screen_wait": "Taking the picture in 3 seconds. Bring up what you want the AI to see.", "cam_need_ffmpeg": "To use the camera, Datas needs FFmpeg, a free program ({size} MB, downloaded once and checked). Get it now?",
+"cam_get": "Get it", "print_paper": "Print on paper", "hw_title": "Cameras, printers and other hardware",
+"hw_sub": "What Datas found on this computer. Nothing is used unless you ask: in a chat, the camera button adds a photo or a picture of your screen; the agent can use these when you switch that on in its window.", "hw_again": "Look again", "hw_camera": "Camera",
+"hw_no_camera": "No camera was found.", "hw_try_photo": "Take a test photo", "hw_screen": "Screen",
+"hw_no_screen": "Datas cannot take a picture of the screen on this system.", "hw_try_screen": "Take a test picture", "hw_printer": "Printer",
+"hw_default": "the one used by default", "hw_no_printer": "No printer is set up on this computer.", "hw_board": "Board or instrument",
+"hw_no_board": "No board or instrument is plugged in (Arduino, ESP32, 3D printer…).", "hw_listen": "Listen for 3 seconds", "hw_listen_title": "What {port} says",
+"hw_listen_none": "Nothing arrived. The board may be silent, or it speaks at another speed.", "hw_speed": "Speed", "hw_ffmpeg_need": "To use a camera, Datas needs FFmpeg, a free program ({size} MB, downloaded once and checked).",
+"hw_ffmpeg_get": "Get FFmpeg", "hw_control": "Mouse and keyboard", "hw_control_yes": "The agent can use them when you switch that on in its window. It is experimental and asks before every action.",
+"hw_control_no": "Not available here: {why}.", "hw_home": "Home and industrial devices", "hw_home_sub": "If you have a smart home or industrial equipment, give Datas the address of your own hub once. The agent can then read sensors and switch things, and it asks before changing anything.",
+"hw_mqtt": "MQTT broker", "hw_mqtt_hint": "MQTT is the way many smart plugs, sensors and small boards pass short messages. The broker is the program that carries them (Mosquitto, or the one inside Home Assistant).", "hw_ha": "Home Assistant",
+"hw_ha_hint": "Home Assistant is a free program that runs a smart home and already knows thousands of devices. In it, open your profile → Security, make a “long-lived access token” and paste it here.", "hw_modbus": "Modbus devices", "hw_modbus_hint": "Modbus is the common language of industrial equipment: PLCs (the small computers that run machines), solar inverters, meters. Add each one by its address on your network.",
+"hw_address": "Address", "hw_port": "Port",
+"hw_user": "User, if it has one", "hw_password": "Password", "hw_token": "Access token",
+"hw_secret_kept": "saved; leave empty to keep it", "hw_tls": "Encrypted connection (TLS)", "hw_name": "Name",
+"hw_unit": "Unit number", "hw_add_device": "Add a device", "hw_remove": "Remove",
+"hw_check": "Check", "hw_checking": "Checking…", 
+"hw_around": "What is on my network", "hw_around_sub": "Printers, shared disks (NAS), Raspberry Pi and other computers, TVs and smart-home devices that announce themselves. Datas only listens; it does not probe anything.", "hw_around_go": "Look",
+"hw_around_looking": "Listening for a few seconds…", "hw_around_none": "No device announced itself.", "hw_doc": "How this works, and what stays safe",
 "app_install": "Install and open", "app_show": "Show its window",
 "app_remove_text": "{name} and everything it downloaded will be removed.",
-
 "dev_title": "Your devices",
 "dev_code_phone": "On a phone: open the Datas app, tap “My computers” and type this code.", "dev_phone": "Phone or tablet", "dev_phone_window": "May open Datas on this computer", "dev_phone_window_hint": "From the phone you chat with the AIs here and use helpers, documents and Learn. It cannot use this computer’s microphone, open programs, link other devices or let the agent run commands.", "dev_seen": "last here {when}", "remote_on": "You are using Datas on {device}", "remote_kept": "Chats are kept on {device}, not on this phone", "remote_saved": "Saved on {device}: {name}",
 "dev_lead": "Link your own computers so they share chats, lend each other memory for a bigger AI, or let one use the AI running on another. Only devices you pair yourself can connect.",
@@ -239,7 +247,6 @@ const I18N = {
 "dev_how_5": "Joining memory lets a bigger AI fit; it does not make answers faster, because every word passes through all the devices.",
 "dev_how_6": "If a device drops out in the middle of a chat, Datas continues on this device with the best AI that fits here. For now linking works between computers; the phone app cannot link yet.",
 "dev_doc": "Read the full explanation",
-
 "learn_title": "Learn about AI",
 "learn_lead": "From the first steps to expert material: short lessons written for Datas, a glossary, and a hand-checked list of courses, videos, reports and official texts from around the world.",
 "learn_paths": "Paths", "learn_glossary": "Glossary ({n})", "learn_search": "Search lessons, links and words",
@@ -252,7 +259,6 @@ const I18N = {
 "learn_forget": "In Forget mode, what you marked as done is not kept.",
 "kind_course": "course", "kind_video": "video", "kind_article": "article", "kind_book": "book", "kind_report": "report",
 "kind_paper": "research paper", "kind_law": "official text", "kind_guide": "guide", "kind_site": "website",
-
 "set_title": "Settings", "set_look": "Language and look", "set_language": "Language", "set_theme": "Look",
 "theme_auto": "Same as the device", "theme_day": "Day", "theme_night": "Night",
 "set_privacy": "Privacy",
@@ -307,7 +313,6 @@ const I18N = {
 "fmt_docx": "Documento de Word", "fmt_pdf": "PDF", "fmt_xlsx": "Planilla de Excel", "fmt_pptx": "Presentación de PowerPoint",
 "fmt_html": "Página web", "fmt_md": "Texto Markdown", "fmt_txt": "Texto simple", "fmt_suggested": "Sugerido para este ayudante",
 "read_aloud": "Leer en voz alta", "reading": "Leyendo en voz alta. Tocá de nuevo Leer en voz alta para detener.",
-
 "nav_library": "Mis IA", "nav_create": "Crear", "nav_tools": "Herramientas", "nav_devices": "Dispositivos", "nav_learn": "Aprender",
 "nav_settings": "Ajustes", "nav_setup": "Agregar una IA", "nav_about": "Acerca de Datas",
 "new_chat": "Nuevo chat", "new_chat_with": "Nuevo chat con otra IA", "search_chats": "Buscar en los chats",
@@ -319,7 +324,6 @@ const I18N = {
 "chat_learn": "Recordar lo importante de este chat", "chat_learn_working": "La IA está leyendo el chat…", "chat_learn_done": "Se agregaron {n} notas nuevas sobre vos. Podés leerlas o editarlas en Ajustes.", "chat_learn_none": "No hay nada nuevo para recordar en este chat.", "chat_learn_need_ai": "Primero iniciá una IA: es la IA la que lee el chat y escribe las notas.", "chat_name": "Nombre del chat",
 "delete_chat_title": "¿Borrar este chat?",
 "delete_chat_text": "«{name}» se va a borrar de este dispositivo y de tus dispositivos vinculados.",
-
 "ai_none": "Todavía sin IA", "ai_asleep": "{name} (dormida)", "ai_word": "IA",
 "ai_state_awake": "La IA está despierta y lista",
 "ai_state_asleep": "La IA está dormida para liberar memoria. Se despierta con tu próximo mensaje.",
@@ -329,7 +333,6 @@ const I18N = {
 "ai_other_devices": "En tus otros dispositivos", "ai_on": "en {device}", "ai_on_device": "IA en otro dispositivo",
 "ai_sleep_now": "Poner la IA a dormir",
 "speed_fast": "Rápida", "speed_ok": "Buen ritmo", "speed_slow": "Lenta", "speed_crawl": "Muy lenta", "speed_nofit": "No entra",
-
 "speedl_fast": "Rápida: las respuestas aparecen enseguida, como en un servicio de chat pago.",
 "speedl_ok": "Cómoda: un ritmo que se puede leer, unas pocas palabras por segundo.",
 "speedl_slow": "Lenta: hay que esperar; sirve para preguntas cortas.",
@@ -342,7 +345,6 @@ const I18N = {
 "dl_line": "{size} de descarga, una sola vez; después funciona sin internet.", "mem_line": "Usa unos {size} de memoria mientras está en marcha.",
 "arch_moe": "Mezcla de expertos: en cada palabra trabaja solo una parte del modelo, por eso es más rápida de lo que su tamaño sugiere.",
 "arch_dense": "Densa: todo el modelo trabaja en cada palabra.",
-
 "helper_none": "Sin ayudante", "helper_none_hint": "Un chat simple: la IA responde como es.", "helper_title": "Elegí un ayudante",
 "helper_lead": "Un ayudante es la misma IA preparada para un tipo de tarea. Elegí uno, o chateá sin ninguno.",
 "helper_search": "Buscar ayudantes", "helper_none_found": "Ningún ayudante coincide con esa búsqueda.", "helper_make": "Crear mi propio ayudante",
@@ -358,7 +360,6 @@ const I18N = {
 "he_docs": "Documentos de referencia (opcional)",
 "he_docs_hint": "Listas de precios, manuales, reglamentos. El ayudante lee las partes que tienen que ver con cada pregunta.",
 "he_need": "Ponele un nombre y decí qué tiene que hacer.", "he_delete_text": "Se van a borrar «{name}» y sus documentos.",
-
 "net_on": "Internet activado", "net_off": "Internet apagado",
 "net_hint": "Permitir que la IA busque en la web y lea páginas en este chat",
 "net_on_note": "En este chat la IA puede buscar en la web y leer páginas. Solo salen de este dispositivo las palabras de búsqueda.",
@@ -389,7 +390,6 @@ const I18N = {
 "getting_lead": "Podés seguir usando la computadora. El avance está abajo a la derecha; cuando termine vas a poder chatear acá.",
 "learn_first": "Primero, aprender qué es la IA",
 "starter_ready": "Ya hay una IA chica de ayuda: podés chatear mientras se descarga la tuya.",
-
 "job_done": "Listo.", "job_failed": "No funcionó:",
 "job_keep_using": "Podés seguir usando la computadora. Si la descarga se corta, sigue desde donde quedó.",
 "ph_runtime": "Preparando el motor", "ph_model": "Descargando la IA",
@@ -400,7 +400,6 @@ const I18N = {
 "notice_engine_stopped": "La IA se detuvo de golpe, muchas veces porque la computadora se quedó sin memoria. Se va a iniciar de nuevo con tu próximo mensaje.",
 "notice_fallback": "{lost} se desconectó. El chat sigue en este dispositivo con {now}.",
 "notice_fallback_none": "{lost} se desconectó, y ninguna de las IA instaladas entra en este dispositivo solo. Abrí Mis IA para agregar una más liviana.",
-
 "welcome_title": "Te damos la bienvenida a Datas",
 "welcome_text": "Datas hace funcionar inteligencia artificial (IA) en tu propio dispositivo: privada, gratuita y abierta. Primero, dos elecciones.",
 "welcome_memory": "¿Querés que Datas guarde tus chats?",
@@ -411,7 +410,6 @@ const I18N = {
 "welcome_change_later": "Podés cambiar las dos cosas cuando quieras en Ajustes.", "welcome_start": "Empezar",
 "hello_upgraded": "Datas se actualizó de {from} a {to}. Se conservaron tus IA, chats y ajustes.",
 "hello_kept": "Qué bueno verte de nuevo. Datas encontró lo que tenías y lo conservó: {models} IA y {chats} chats.",
-
 "setup_title": "Agregar una IA",
 "setup_lead": "Contale a Datas qué querés hacer. Revisa este dispositivo y te muestra qué anda bien, qué anda lento y qué no entra.",
 "setup_what": "¿Qué querés hacer, además de chatear y escribir?", "setup_what_sub": "Elegí las que quieras. Después lo podés cambiar.",
@@ -446,7 +444,6 @@ const I18N = {
 "f_like": "Comparable, a grandes rasgos, con", "f_maker": "Hecha por", "f_licence": "Licencia", "f_kind": "Tipo", "f_variant": "Variante",
 "f_page": "Su página", "f_speed": "Velocidad", "variant_of": "Una versión de {name} ajustada por otra persona o equipo",
 "open_page": "Abrir la página del modelo",
-
 "lib_title": "Mis IA",
 "lib_lead": "Las IA que hay en este dispositivo. Empezá un chat con cualquiera, mirá para qué sirve cada una, o conseguí una versión más liviana o más potente.",
 "lib_own_file": "Usar un archivo de modelo que ya tengo", "lib_empty": "Todavía no hay ninguna IA en este dispositivo. Agregá una para empezar.", "lib_chat": "Chatear",
@@ -460,7 +457,6 @@ const I18N = {
 "own_choose": "Elegir un archivo", "own_open_folder": "Abrir la carpeta de IA", "own_path": "Dónde está el archivo",
 "own_path_example": "C:\\Users\\vos\\Downloads\\modelo.gguf", "own_no_picker": "Escribí o pegá dónde está el archivo.",
 "own_note": "Los archivos .gguf que pongas en la carpeta de IA también aparecen en Mis IA.",
-
 "create_title": "Crear imágenes y video",
 "create_lead": "Se hacen en este dispositivo con modelos abiertos. Pide más potencia que chatear; Datas te dice qué esperar.",
 "create_image": "Imagen", "create_video": "Video", "create_gallery": "Lo que hiciste", "create_empty": "Todavía nada.",
@@ -472,7 +468,6 @@ const I18N = {
 "create_consent": "Puedo usar esta imagen, y las personas que aparecen están de acuerdo",
 "create_consent_hint": "Hace falta cuando partís de una imagen.", "create_consent_need": "Primero tildá la casilla sobre la imagen.",
 "create_go": "Crear",
-
 "tools_title": "Herramientas", "tools_lead": "Cosas que la IA puede hacer además de chatear, y los programas con los que puede trabajar.",
 "tools_agent": "El agente",
 "tools_agent_sub": "Dale una tarea y trabaja paso a paso: lee y escribe archivos en las carpetas que permitas, busca en la web, usa tus programas. Pregunta antes de cualquier cosa riesgosa.",
@@ -500,9 +495,28 @@ const I18N = {
 "conn_warn": "Agregá solo programas en los que confíes: una conexión ejecuta ese programa en tu computadora.",
 "tools_apps": "Herramientas creativas más grandes",
 "tools_apps_sub": "Programas abiertos aparte, para trabajo exigente. Datas los instala en su propia carpeta y dice claramente si este dispositivo está por debajo de lo que necesitan.",
+"cam_add": "Agregar una foto de la cámara o una imagen de tu pantalla", "cam_photo": "Una foto de la cámara", "cam_screen": "Una imagen de mi pantalla",
+"cam_screen_wait": "La imagen se saca en 3 segundos. Poné adelante lo que querés que vea la IA.", "cam_need_ffmpeg": "Para usar la cámara, Datas necesita FFmpeg, un programa libre ({size} MB, se baja una sola vez y se verifica). ¿Bajarlo ahora?",
+"cam_get": "Bajarlo", "print_paper": "Imprimir en papel", "hw_title": "Cámaras, impresoras y otros aparatos",
+"hw_sub": "Lo que Datas encontró en esta computadora. Nada se usa si no lo pedís: en un chat, el botón de la cámara agrega una foto o una imagen de tu pantalla; el agente puede usarlos cuando lo activás en su ventana.", "hw_again": "Buscar de nuevo", "hw_camera": "Cámara",
+"hw_no_camera": "No se encontró ninguna cámara.", "hw_try_photo": "Sacar una foto de prueba", "hw_screen": "Pantalla",
+"hw_no_screen": "Datas no puede sacar una imagen de la pantalla en este sistema.", "hw_try_screen": "Sacar una imagen de prueba", "hw_printer": "Impresora",
+"hw_default": "la que se usa si no elegís otra", "hw_no_printer": "No hay ninguna impresora configurada en esta computadora.", "hw_board": "Placa o instrumento",
+"hw_no_board": "No hay ninguna placa ni instrumento enchufado (Arduino, ESP32, impresora 3D…).", "hw_listen": "Escuchar 3 segundos", "hw_listen_title": "Lo que dice {port}",
+"hw_listen_none": "No llegó nada. Puede que la placa esté callada, o que hable a otra velocidad.", "hw_speed": "Velocidad", "hw_ffmpeg_need": "Para usar una cámara, Datas necesita FFmpeg, un programa libre ({size} MB, se baja una sola vez y se verifica).",
+"hw_ffmpeg_get": "Bajar FFmpeg", "hw_control": "Mouse y teclado", "hw_control_yes": "El agente puede usarlos cuando lo activás en su ventana. Es experimental y pregunta antes de cada acción.",
+"hw_control_no": "No disponible acá: {why}.", "hw_home": "Aparatos del hogar y de la industria", "hw_home_sub": "Si tenés una casa inteligente o equipos industriales, dale a Datas una sola vez la dirección de tu propia central. Después el agente puede leer sensores y prender o apagar cosas, y pregunta antes de cambiar algo.",
+"hw_mqtt": "Broker MQTT", "hw_mqtt_hint": "MQTT es la forma en que muchos enchufes inteligentes, sensores y placas chicas se pasan mensajes cortos. El broker es el programa que los lleva (Mosquitto, o el que trae Home Assistant).", "hw_ha": "Home Assistant",
+"hw_ha_hint": "Home Assistant es un programa libre que maneja una casa inteligente y ya conoce miles de aparatos. Ahí, abrí tu perfil → Seguridad, creá un «token de acceso de larga duración» y pegalo acá.", "hw_modbus": "Aparatos Modbus", "hw_modbus_hint": "Modbus es el idioma común de los equipos industriales: PLC (las computadoras chicas que manejan máquinas), inversores solares, medidores. Agregá cada uno por su dirección en tu red.",
+"hw_address": "Dirección", "hw_port": "Puerto",
+"hw_user": "Usuario, si tiene", "hw_password": "Contraseña", "hw_token": "Token de acceso",
+"hw_secret_kept": "guardado; dejalo vacío para conservarlo", "hw_tls": "Conexión cifrada (TLS)", "hw_name": "Nombre",
+"hw_unit": "Número de unidad", "hw_add_device": "Agregar un aparato", "hw_remove": "Quitar",
+"hw_check": "Probar", "hw_checking": "Probando…", 
+"hw_around": "Qué hay en mi red", "hw_around_sub": "Impresoras, discos compartidos (NAS), Raspberry Pi y otras computadoras, televisores y aparatos de casa inteligente que se anuncian. Datas solo escucha; no sondea nada.", "hw_around_go": "Buscar",
+"hw_around_looking": "Escuchando unos segundos…", "hw_around_none": "Ningún aparato se anunció.", "hw_doc": "Cómo funciona esto y qué queda protegido",
 "app_install": "Instalar y abrir", "app_show": "Mostrar su ventana",
 "app_remove_text": "Se van a quitar {name} y todo lo que descargó.",
-
 "dev_title": "Tus dispositivos",
 "dev_code_phone": "En un teléfono: abrí la app Datas, tocá «Mis computadoras» y escribí este código.", "dev_phone": "Teléfono o tableta", "dev_phone_window": "Puede abrir Datas de esta computadora", "dev_phone_window_hint": "Desde el teléfono chateás con las IA de acá y usás ayudantes, documentos y Aprender. No puede usar el micrófono de esta computadora, abrir programas, vincular otros dispositivos ni hacer que el agente ejecute comandos.", "dev_seen": "última vez {when}", "remote_on": "Estás usando Datas de {device}", "remote_kept": "Los chats se guardan en {device}, no en este teléfono", "remote_saved": "Guardado en {device}: {name}",
 "dev_lead": "Vinculá tus propias computadoras para que compartan chats, se presten memoria para una IA más grande, o una use la IA que corre en otra. Solo se conectan los dispositivos que emparejás vos.",
@@ -534,7 +548,6 @@ const I18N = {
 "dev_how_5": "Sumar memoria permite que entre una IA más grande; no hace más rápidas las respuestas, porque cada palabra pasa por todos los dispositivos.",
 "dev_how_6": "Si un dispositivo se cae en medio de un chat, Datas sigue en este dispositivo con la mejor IA que entre acá. Por ahora el vínculo funciona entre computadoras; la app del teléfono todavía no puede vincularse.",
 "dev_doc": "Leer la explicación completa",
-
 "learn_title": "Aprender sobre IA",
 "learn_lead": "Desde los primeros pasos hasta material experto: lecciones cortas escritas para Datas, un glosario, y una lista revisada a mano de cursos, videos, informes y textos oficiales de todo el mundo.",
 "learn_paths": "Caminos", "learn_glossary": "Glosario ({n})", "learn_search": "Buscar lecciones, enlaces y palabras",
@@ -547,7 +560,6 @@ const I18N = {
 "learn_forget": "En modo Olvidar no se guarda lo que marcaste como hecho.",
 "kind_course": "curso", "kind_video": "video", "kind_article": "artículo", "kind_book": "libro", "kind_report": "informe",
 "kind_paper": "artículo científico", "kind_law": "texto oficial", "kind_guide": "guía", "kind_site": "sitio web",
-
 "set_title": "Ajustes", "set_look": "Idioma y aspecto", "set_language": "Idioma", "set_theme": "Aspecto",
 "theme_auto": "Igual que el dispositivo", "theme_day": "Día", "theme_night": "Noche",
 "set_privacy": "Privacidad",

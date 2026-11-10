@@ -195,6 +195,83 @@ def _service() -> str:
     return "window, lessons and status answer; other web pages are refused"
 
 
+def _hardware() -> str:
+    """The parts that reach cameras, printers, boards and home devices are all in this copy,
+    and their pure logic works. Nothing is switched on, photographed, printed or sent."""
+    import importlib
+    import importlib.util
+    import io
+    import platform
+
+    from datas import things, words
+    from datas.things import control, local, net
+
+    for mod in (
+        "serial",
+        "serial.tools.list_ports",
+        "paho.mqtt.client",
+        "PIL.Image",
+        "PIL.ImageGrab",
+    ):
+        importlib.import_module(mod)
+    # the mouse and keyboard part is only looked for, not started: starting it needs a screen
+    # (and merely asking for one of its inner files would start it)
+    import pkgutil
+
+    spec = importlib.util.find_spec("pyautogui")
+    if spec is None:
+        raise RuntimeError("the mouse and keyboard part (PyAutoGUI) is missing")
+    backend = {"Windows": "_pyautogui_win", "Darwin": "_pyautogui_osx"}.get(
+        platform.system(), "_pyautogui_x11"
+    )
+    inside = {m.name for m in pkgutil.iter_modules(spec.submodule_search_locations or [])}
+    if backend not in inside:
+        raise RuntimeError(f"the mouse and keyboard part is incomplete ({backend} is missing)")
+    for mod in ("pyscreeze", "pymsgbox", "pytweening"):
+        if importlib.util.find_spec(mod) is None:
+            raise RuntimeError(f"the mouse and keyboard part is incomplete ({mod} is missing)")
+    inv = things.inventory()
+    for key in ("cameras", "screens", "printers", "serial", "control", "ffmpeg", "connections"):
+        if key not in inv:
+            raise RuntimeError(f"the list of hardware has no {key}")
+    # settings keep their secrets to themselves
+    shown = things.save_settings({"mqtt": {"host": "192.0.2.1", "password": "selftest"}})
+    if "password" in shown["mqtt"] or not shown["mqtt"]["password_set"]:
+        raise RuntimeError("a saved password was shown")
+    things.settings_path().unlink(missing_ok=True)
+    # pictures, positions on the screen, names of devices, Spanish
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 36), "white").save(buf, "JPEG")
+    if local.picture_size(buf.getvalue()) != (64, 36):
+        raise RuntimeError("a picture came back with the wrong size")
+    if control.to_screen(800, 450, (1600, 900), (1920, 1080)) != (960, 540):
+        raise RuntimeError("a place on the screen was worked out wrong")
+    if net.kind_of("_ipp._tcp.local.") != "printer" or not local.parse_lpstat("HP\n", ""):
+        raise RuntimeError("devices are not recognised by what they announce")
+    problem = things.ThingError(
+        "There is no printer called {name}. Found: {names}", name="X", names="Y"
+    )
+    if problem.say("es") == str(problem) or "{" in problem.say("es"):
+        raise RuntimeError("a message did not come out in Spanish")
+    if len(words.ES) < 100:
+        raise RuntimeError("the Spanish sentences are missing")
+    from starlette.testclient import TestClient
+
+    from datas.server import app as appmod
+
+    r = TestClient(appmod.app, base_url="http://127.0.0.1:8420").get("/api/things")
+    if r.status_code != 200 or "cameras" not in r.json():
+        raise RuntimeError(f"the window cannot ask for the hardware ({r.status_code})")
+    seen = (
+        f"{len(inv['cameras'])} camera(s), {len(inv['printers'])} printer(s), "
+        f"{len(inv['serial'])} board(s) seen"
+    )
+    ffmpeg = "FFmpeg is here" if inv["ffmpeg"]["found"] else "FFmpeg not fetched yet"
+    return f"serial ports, MQTT, pictures, mouse and keyboard parts are present; {seen}; {ffmpeg}"
+
+
 def run() -> list[tuple[str, bool, str]]:
     """[(what, ok, detail)] — never raises."""
     tmp = Path(tempfile.mkdtemp(prefix="datas-selftest-"))
@@ -207,6 +284,7 @@ def run() -> list[tuple[str, bool, str]]:
         ("Documents (Word, Excel, PowerPoint, PDF and others)", lambda: _documents(tmp)),
         ("Link between devices", lambda: _devices(tmp)),
         ("Local service", _service),
+        ("Cameras, printers, boards and home devices", _hardware),
     ]
     out: list[tuple[str, bool, str]] = []
     try:

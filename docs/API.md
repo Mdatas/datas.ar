@@ -148,14 +148,31 @@ d.stop()
 | POST | `/api/mcp/{name}/test` | start it, list its tools, stop it |
 | GET · POST | `/api/apps` · `/api/apps/{id}/open` · `/api/apps/{id}/stop` · DELETE `/api/apps/{id}` | bigger creative tools |
 
+### Hardware (cameras, the screen, printers, boards, home and industrial devices)
+
+All of it is refused from a linked phone. Problems come back as `409` with a sentence in the
+language Datas is set to. → [HARDWARE.md](HARDWARE.md)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/things` | `{cameras, screens, printers, serial, control: {ok, why}, ffmpeg: {found, bytes}, connections, problems, settings, vision}` — what is plugged in, the saved connections without their secrets, whether the AI in use understands pictures |
+| GET · POST | `/api/things/ffmpeg` | `{found, bytes}` · fetch FFmpeg once, checked against its SHA-256 → `Job` |
+| POST | `/api/things/camera/photo` | `{camera?}` → `{image: "data:image/jpeg;base64,…", width, height, bytes}` |
+| POST | `/api/things/screen` | `{hide?, wait?}` → the same shape; `hide` moves Datas' own window aside first |
+| POST | `/api/things/print` | `{markdown, title?}` (becomes a PDF; plain text on Windows without LibreOffice) or `{path}` (a file Datas saved), `printer?`, `copies?` → `{said, path, name}` |
+| POST | `/api/things/serial` | `{port, seconds?, baud?}` → `{text}` — listens only; writing is the agent's |
+| GET | `/api/things/around?seconds=` | devices that announce themselves on the network |
+| POST | `/api/things/settings` | `{mqtt?: {host, port, username, password, tls}, home_assistant?: {url, token}, modbus?: [{name, host, port, unit}]}`; an empty secret keeps the saved one, `-` removes it |
+| POST | `/api/things/check` | `{what: mqtt\|home_assistant\|modbus, name?}` → `{ok, detail}` |
+
 ### Agent
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/agent/run` (SSE) · `/api/agent/stop` | run a task; stop at the next step |
+| POST | `/api/agent/run` (SSE) · `/api/agent/stop` | run a task `{task, folders?, internet?, allow_shell?, devices?, control?, ask?}`; stop at the next step. Events: `assistant`, `tool_call`, `tool_result`, `picture`, `final`, `error` |
 | GET · POST | `/api/agent/approvals` · `/api/agent/approvals/{id}` `{ok}` | questions waiting for an answer; answer one |
 | GET · POST | `/api/agent/folders` · `/api/agent/folders/check` `{path}` | folders that can be granted; check a typed path |
-| GET · POST · PATCH · DELETE | `/api/agent/tasks[/{id}]` · POST `/api/agent/tasks/{id}/run` | tasks on a schedule `{title, task, every?, at?, weekday?, folders?, internet?, allow_shell?, enabled?}` |
+| GET · POST · PATCH · DELETE | `/api/agent/tasks[/{id}]` · POST `/api/agent/tasks/{id}/run` | tasks on a schedule `{title, task, every?, at?, weekday?, folders?, internet?, allow_shell?, devices?, enabled?}` |
 | GET | `/api/agent/results` | the inbox of finished scheduled runs |
 
 ### Voice, pictures, video
@@ -187,11 +204,19 @@ d.stop()
 
 Requests that arrive from a linked phone through the link are answered like any other, except
 the ones listed in `REMOTE_REFUSED` (`datas/server/app.py`), which get `403`; `/api/status`
-then carries `remote: {device, phone}`.
+then carries `remote: {device, phone}`. A phone also cannot start the agent with `allow_shell`,
+`devices` or `control`, give those to a scheduled task, or change a task that has them.
+
+Refusals and hardware problems are written once in English and said in the language Datas is
+set to (`datas/words.py`).
 
 ## Command line
 
 `datas-cli --help` lists everything; the ones added in 0.3: `datas link status | code |
 pair <address> <code> | unlink <name> | sync`, and `datas selftest`, which checks that a
-copy of Datas is whole (window files, lessons, documents, device link, local service) and
-exits with 1 if a part is missing.
+copy of Datas is whole (window files, lessons, documents, device link, local service,
+hardware parts) and exits with 1 if a part is missing.
+
+Added in 0.4: `datas things list | around | ffmpeg | photo [file] | screen [file] | print
+<file> | serial <port> [--send text] [--baud n] | check <mqtt|home_assistant|modbus>
+[--name device]`, and `datas agent … --devices [--control]`.

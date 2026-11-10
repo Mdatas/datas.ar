@@ -79,10 +79,11 @@ connections are:
 | To | When | What is sent |
 |---|---|---|
 | Hugging Face | you add an AI, voice or picture model | the request for that file (your internet address, like any download) |
-| GitHub | the AI engine is downloaded; you press *Check for updates* or *Get ArtCraft* | the request for the file or for the public list of versions |
+| GitHub | the AI engine is downloaded; you press *Check for updates* or *Get ArtCraft*; FFmpeg is fetched because a camera or a recording needs it and the computer has none | the request for the file or for the public list of versions |
 | A paid service | you added its key and chat through it | the conversation |
 | The web | you switched internet on in a chat or for the agent | search words and page addresses |
 | Your other devices | you linked them | see above |
+| Your own hub and devices (MQTT broker, Home Assistant, Modbus devices) | you typed their address and the agent uses them | the message, request or value, to that address on your network |
 | PyPI and the tool's own sources | you open a "bigger creative tool" | the download of that tool |
 
 Nothing about you, your device or your use of Datas is sent to the project.
@@ -95,6 +96,27 @@ memory while it is being understood and is dropped afterwards; the spoken answer
 the window and never written to disk. Nothing about voice changes between Remember and Forget
 modes — there is nothing to store either way. The only downloads are the model files, from
 Hugging Face (whisper) and GitHub (Kokoro), with exact sizes and checksums in `datas/catalog/media.json`.
+
+## Camera, screen and other hardware
+
+Datas does not watch or listen in the background. A photo is taken when you press the camera
+button in a chat or when the agent asks and you allow it; the same for a picture of your
+screen. → [HARDWARE.md](HARDWARE.md)
+
+- A picture attached to a chat is part of that chat: it is kept with the chat in Remember
+  mode (so you can read the chat again) and not kept in Forget mode. With an AI on this
+  device it goes nowhere; with a paid online service it is sent to that company like the rest
+  of the conversation.
+- Pictures the agent takes are saved in the agent's folder (`photos/`, `screens/`) so you can
+  see what it saw. Delete them there like any file.
+- An answer you print becomes a PDF in your Documents/Datas folder first, like *Save as PDF*.
+- The list of devices on your network is made by listening to what they announce and is
+  shown, not stored.
+- The address, user and password of your broker and the address and token of your Home
+  Assistant are in `things.json` in Datas' data folder, readable only by your user. To make
+  Datas forget one, save that connection with an empty address (or delete the file). *Erase
+  everything* in Settings removes chats, notes and documents — not these, and not the keys of
+  paid services.
 
 ## Images
 

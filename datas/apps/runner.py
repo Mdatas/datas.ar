@@ -325,21 +325,15 @@ class AppManager:
                 args = [x.format(**(vars_ or {})) for x in step["python"]]
                 self._run([py, *args], src, job, env)
         if a.get("needs_ffmpeg") and not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+            # the same checked copy the rest of Datas uses (datas.programs.fetch_ffmpeg)
+            from datas import programs
+
             say("Adding FFmpeg (video reading/writing) for this app")
-            self._run([str(uv), "pip", "install", "--python", py, "static-ffmpeg"], src, job, env)
-            out = subprocess.run(
-                [
-                    py,
-                    "-c",
-                    "from static_ffmpeg import run; import os; print(os.path.dirname(run.get_or_fetch_platform_executables_else_raise()[0]))",
-                ],
-                capture_output=True,
-                text=True,
-                env=env,
-                cwd=str(src),
-            )
-            if out.returncode == 0 and out.stdout.strip():
-                (d / ".ffmpeg-dir").write_text(out.stdout.strip().splitlines()[-1])
+            try:
+                exe = programs.fetch_ffmpeg(job.progress if job else None)
+                (d / ".ffmpeg-dir").write_text(str(Path(exe).parent))
+            except RuntimeError as e:
+                say(f"FFmpeg was not added: {e}")
         (d / ".datas-installed").write_text(tag)
         say(f"{a['name']} installed.")
         return {"id": app_id, "tag": tag}

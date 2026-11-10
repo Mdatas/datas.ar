@@ -11,6 +11,8 @@ datas agent --allow-shell "clone https://github.com/… and run its tests"    # 
 datas agent --allow-shell --yes "…"                                         # don't ask
 datas agent --no-network "…"                                                # no fetch_url
 datas agent --workspace ~/Projects/foo "…"                                  # sandbox elsewhere
+datas agent --devices "take a photo and tell me what plant this is"         # camera, printer, boards…
+datas agent --devices --control "…"                                         # + mouse and keyboard (experimental)
 ```
 
 `datas/agents/runner.py` is a plain tool-calling loop over the active provider's
@@ -20,8 +22,9 @@ datas agent --workspace ~/Projects/foo "…"                                  # 
 2. if the reply contains `tool_calls`, run each tool, append results, go to 1
 3. else stop and print the final answer (max 40 steps by default)
 
-Events (`assistant`, `tool_call`, `tool_result`, `final`, `error`) stream to the CLI as
-they happen.
+Events (`assistant`, `tool_call`, `tool_result`, `picture`, `final`, `error`) stream to the
+CLI and to the agent window as they happen. A `picture` is a photo or a picture of the screen
+that a tool took: the window shows it, and an AI that understands pictures receives it.
 
 ### Tools
 
@@ -41,6 +44,16 @@ they happen.
 | `fetch_url(url)` | read a page; HTML reduced to text (200k at most); addresses inside your own network are refused | internet switch |
 | `run_command(command)` | a command in the agent's folder, 60 s at most | **off by default**; switch in the window / `--allow-shell` |
 | `connection__function(…)` | functions offered by programs that speak the Model Context Protocol (MCP), such as the ArtCraft apps | always asks; see [PROGRAMS.md](PROGRAMS.md) |
+| `list_devices()`, `network_devices()` | what is plugged into this computer; what announces itself on the network | hardware switch |
+| `take_photo()`, `look_at_screen()` | one picture from a camera / of the screen, saved in the agent's folder and shown to an AI that understands pictures | hardware switch; asks |
+| `print_file(path)` | print a file on paper | hardware switch; asks |
+| `serial_read(port)`, `serial_send(port, text)` | listen to / write a line to a board or instrument (Arduino, ESP32, 3D printer) | hardware switch; writing asks |
+| `mqtt_read(topic)`, `mqtt_publish(topic, message)` | smart-home messages through your own broker | hardware switch; sending asks |
+| `home_list(domain)`, `home_do(service, entity)` | what your Home Assistant knows; ask it to do something | hardware switch; doing asks |
+| `modbus_read(…)`, `modbus_write(…)` | values of industrial devices (PLC, inverter, meter) | hardware switch; writing asks |
+| `mouse_keyboard(action, …)` | move, click, type, press keys (experimental) | its own switch on top; every action asks |
+
+The hardware tools are explained for everyone in [HARDWARE.md](HARDWARE.md).
 
 **Folders.** The agent always has its own workspace (`<data>/agent-workspace`). In the agent
 window the user ticks which of their folders it may also use for this session — Desktop,
@@ -52,7 +65,7 @@ Every tool resolves paths against that list; anything outside answers `DENIED`.
 
 | Level | Asks before… | For whom |
 |---|---|---|
-| **Ask before risky actions** (default) | anything that writes, converts, moves, copies or trashes inside *your* folders, runs a command or a program, uses a connection (MCP), or opens a file or web address. Reading, searching and everything inside the agent's own folder (reversible via `_trash`) run freely. | everyone |
+| **Ask before risky actions** (default) | anything that writes, converts, moves, copies or trashes inside *your* folders, runs a command or a program, uses a connection (MCP), opens a file or web address, or uses hardware in a way that looks at you or acts on the world (a photo, a picture of the screen, printing, writing to a board, switching something, the mouse and keyboard). Reading, searching, listing devices, reading sensors and everything inside the agent's own folder (reversible via `_trash`) run freely. | everyone |
 | **Ask before every action** | every single tool call, listings included | the first few runs, to see how it thinks |
 | **Never — just do it** | nothing; a **Stop** button and the Esc key halt it at the next step | people watching the log |
 
@@ -60,7 +73,9 @@ Tasks on a schedule run with nobody watching, so they never ask; the folders and
 chosen for the task are their limits.
 
 The question appears as a card in the agent window (Allow / Deny / Allow everything for this
-task); unanswered questions are denied after 15 minutes. Approving every click exists in every
+task); unanswered questions are denied after 15 minutes. For hardware the question is in
+plain words and in your language — *Print report.pdf on paper (2 copies)*, *Ask Home Assistant
+to do light.turn_on on light.kitchen* — instead of the tool's name and raw arguments. Approving every click exists in every
 serious agent product and is useful as a learning mode — but as a permanent setting it fails in
 practice: after a dozen "OK"s people stop reading and rubber-stamp, which is less safe than a
 good default. Hence the risk-based default plus a stop key.
@@ -68,7 +83,8 @@ good default. Hence the risk-based default plus a stop key.
 ### Tasks it does by itself (scheduled)
 
 `datas/agents/schedule.py`: tasks live in `<data>/agent/tasks.json` with a job text, a cadence
-(`hour` / `day` / `week` + weekday / `once`), a time, the granted folders and the two switches.
+(`hour` / `day` / `week` + weekday / `once`), a time, the granted folders and three switches
+(internet, commands, hardware — never the mouse and keyboard).
 A background thread in the server checks every 30 s and runs due tasks one at a time through the
 same runner; a task missed while the computer was off runs at the next start. Each run writes
 `<data>/agent/results/<task>-<time>.md` (summary + the list of tool calls), shown in the window's
@@ -80,40 +96,50 @@ the roadmap.
 Honest scope with the AI sizes a normal laptop runs (4–14 billion parameters): file and
 document work (sort, rename, summarise, write Word / Excel / PowerPoint / PDF files, convert
 between formats with the programs installed), web research saved to files, scripts when
-commands are allowed, and all of that on a schedule.
+commands are allowed, simple hardware jobs when that switch is on (a photo, a printout, a
+reading from a board or a sensor, switching a light through your hub), and all of that on a
+schedule.
 
-### Driving other programs (screen control) — planned, device-gated
+### Looking at the screen and driving other programs — experimental, behind its own switch
 
-Clicking around other programs is not ruled out; it is gated like everything else, by what the
-device can carry, and it comes after images. Why it is not in the first version:
+Two things exist today:
 
-1. **Reliability.** Screen control means: screenshot → a vision model finds the button → click
-   at coordinates → screenshot again → verify → repeat. Every step can go wrong, and even the
-   best paid models fail a large share of such tasks; the small local models that fit a normal
+- **"Look at my screen and help"** — in a chat, the camera button → *A picture of my screen*
+  attaches what is on the screen to your question; the AI explains it or says what to click,
+  and you click. Safe, and it works with any AI that understands pictures.
+- **Mouse and keyboard** — with the agent's second switch on, the agent looks at the screen
+  (`look_at_screen`) and then moves, clicks, types and presses keys (`mouse_keyboard`).
+
+The second one is experimental and guarded, for four reasons that have not gone away:
+
+1. **Reliability.** Screen control means: picture of the screen → the AI finds the button →
+   click at that place → picture again → check → repeat. Every step can go wrong, and even
+   the best paid models fail a large share of such tasks; the small AIs that fit a normal
    laptop fail far more often.
-2. **Speed.** Each step pushes a screenshot through a vision model. On a CPU-only laptop that is
-   tens of seconds per step; a 20-step task becomes many minutes, and when it derails you only
-   find out at the end.
-3. **Reversibility.** A trashed file comes back; a click that sends an email, confirms a payment
-   or deletes something in another program does not. Datas cannot undo other programs.
-4. **Exposure.** The model sees the whole screen — other windows, passwords, banking — and text
-   on screen can carry instructions that hijack it (prompt injection).
+2. **Speed.** Each step pushes a picture through the AI. On a laptop without a graphics card
+   that is tens of seconds per step; a 20-step task becomes many minutes.
+3. **Reversibility.** A trashed file comes back; a click that sends an email, confirms a
+   payment or deletes something in another program does not. Datas cannot undo other programs.
+4. **Exposure.** The AI sees the whole screen — other windows, passwords, banking — and text
+   on screen can carry instructions meant to mislead it (prompt injection).
 
-What will ship, in this order:
+So: its own switch, off for every new task; every action asks first unless you chose *never*;
+the agent must look before it may click, and can only click inside the picture it was shown
+(its positions are converted to the mouse's own, also on screens that count dots differently);
+**moving the mouse into a corner of the screen stops it at once**; it is never available to a
+task that runs by itself, nor from a linked phone. It is not held back on weaker devices —
+Datas says plainly where it cannot work (Linux with Wayland) and leaves the choice to you.
 
-- **Program control without looking at the screen** — *partly shipped*: the agent opens
+Still to come:
+
+- **Program control without looking at the screen** — *partly there*: the agent opens
   programs and files, writes documents in their own formats (.docx, .xlsx, .pptx, .pdf),
   converts with the programs it finds, and uses the functions a program offers through MCP
-  ([PROGRAMS.md](PROGRAMS.md)). Still to come: the system's own automation hooks —
+  ([PROGRAMS.md](PROGRAMS.md)). Not yet: the system's own automation hooks —
   AppleScript/Shortcuts on macOS, PowerShell/COM on Windows (Office, Explorer),
   D-Bus/xdotool on Linux. Deterministic, loggable, undoable where the program allows.
-- **"Look at my screen and help"**: a screenshot goes to the vision model, which explains what is
-  on screen or what to click; the user clicks. Safe, useful, works on any device that runs a
-  vision model.
-- **Screen control, experimental, device-gated**: offered only where *What this device can do*
-  says "yes" (a capable vision model on a real GPU), limited to one chosen window, with a dry-run
-  mode, confirm-before-click, a visible cursor and a panic key (Esc) that stops it. Off by
-  default; the abilities panel reports "Screen control: yes / slow / no" like every other ability.
+- For the mouse and keyboard: limiting it to one chosen window, a dry-run mode that only says
+  what it would do, and a visible marker where it is about to click.
 
 ### Planned: the agent's own browser
 
@@ -164,6 +190,11 @@ their settings; point them at the same address.
   program you added yourself: Datas cannot see inside it.
 - **Tasks on a schedule do not ask** — nobody is there to answer. They are bound by the
   folders and the switches you chose for the task.
+- **Hardware is off** unless you switch it on for the task, and what looks at you or acts
+  on the world asks first: a photo, a picture of the screen, printing, writing to a board,
+  switching something at home, writing to a machine. The mouse and keyboard have a second
+  switch, ask before every action, and stop when the mouse reaches a corner of the screen.
+  None of it can be reached from a linked phone. Details: [HARDWARE.md](HARDWARE.md).
 - **Internet** is a switch per session. With it on, the agent can search and read pages; it
   cannot open addresses inside your own network unless you allow that in Settings. Text on a
   web page can be written to mislead an AI ("prompt injection") — one more reason risky
@@ -180,8 +211,11 @@ The full picture, including what Datas does *not* protect against: [SECURITY.md]
 - [x] Scheduled tasks with a results inbox in the window.
 - [x] MCP client: the agent uses the functions of programs that speak MCP.
 - [x] Open programs found on the computer (LibreOffice, FFmpeg, Inkscape, Blender, ArtCraft…).
+- [x] Hardware: camera, screen, printer, boards on serial ports, MQTT, Home Assistant,
+      Modbus, devices on the network ([HARDWARE.md](HARDWARE.md)).
+- [x] "Look at my screen and help" (chat); mouse and keyboard, experimental (agent).
 - [ ] The agent's own browser (above).
-- [ ] The system's automation hooks; "look at my screen and help"; screen control (above).
+- [ ] The system's automation hooks; one-window limit and dry run for the mouse and keyboard.
 - [ ] Per-tool allowlists in the settings (for example commands allowed only for `git` and
       `pytest`), and a kept record of every tool call.
 - [ ] Running scheduled tasks with the window closed.

@@ -31,7 +31,7 @@ device can and cannot do, and the choices are yours.
 | **My AIs** | The AIs on this device, each with a plain summary (good for, keep in mind, memory and disk used), lighter and stronger versions, a desktop shortcut, and *Use a model file I already have*. |
 | **Add an AI** | The recommendation, plus *What this device can do*: a plain yes / slow / no for each kind of task. Nothing is hidden or greyed out. |
 | **Create** | Pictures and short videos made on this device. |
-| **Tools** | Recording → text with subtitles, text → audio, summarise or translate long documents; the agent; the open programs found on this computer; connections; bigger creative tools. |
+| **Tools** | Recording → text with subtitles, text → audio, summarise or translate long documents; the agent; cameras, printers and other hardware; the open programs found on this computer; connections; bigger creative tools. |
 | **Devices** | Link your own computers with a one-time code. |
 | **Learn** | AI from zero to expert, in English and Spanish. |
 | **Settings** | Privacy, language and look (day or night), the AI, voice, paid online services, updates. |
@@ -43,7 +43,10 @@ device can and cannot do, and the choices are yours.
   explain a contract, plan a week, review code…) — and you can make your own.
 - **Documents.** Attach PDF, Word, Excel, PowerPoint, web pages or text and ask about them;
   pictures too when the AI can see. → [docs/EVERYDAY.md](docs/EVERYDAY.md)
-- **Save an answer** as Word, Excel, PowerPoint, PDF, web page, Markdown or plain text.
+- **A photo or your screen.** The camera button adds a photo from the camera or a picture of
+  what is on your screen, for an AI that understands pictures.
+- **Save an answer** as Word, Excel, PowerPoint, PDF, web page, Markdown or plain text — or
+  print it on paper.
 - **Internet, per chat.** Off until you switch it on; the AI shows which pages it used.
 - **Voice.** Talk to it and have answers read aloud, all on this device.
 - **Paid AIs, optionally.** Paste an API key (Application Programming Interface key: a
@@ -76,6 +79,16 @@ before anything risky and "delete" is a move to a trash folder. It can use the o
 already on your computer (LibreOffice, FFmpeg, Inkscape, Blender, ArtCraft…) and any program
 that speaks the Model Context Protocol (MCP), an open standard for giving tools to an AI.
 → [docs/AGENTS.md](docs/AGENTS.md) · [docs/PROGRAMS.md](docs/PROGRAMS.md)
+
+### Cameras, printers and the things around you
+
+When you ask, Datas can take a photo, look at your screen, print, talk to a board on a USB
+cable (Arduino, ESP32, a 3D printer), read sensors and switch things through your own
+smart-home hub (MQTT, Home Assistant), read and write industrial devices (Modbus), and list
+what is on your network (printers, NAS, Raspberry Pi). For the agent it is one switch, off
+until you turn it on; anything that looks at you or acts on the world asks first. The mouse
+and keyboard are a second, experimental switch. None of it can be reached from a linked
+phone. → [docs/HARDWARE.md](docs/HARDWARE.md)
 
 ### Updates you can undo
 
@@ -110,8 +123,12 @@ Until a release is published, the installers are produced by the project's GitHu
   reach a phone.
 - **Linked devices make a bigger AI fit, not a faster one.** Splitting many tasks across
   devices is planned.
-- **Some texts are English only**: the limits and comparisons written for each AI, and
-  technical messages. The window itself is fully in English and Spanish.
+- **Hardware has been tested against stand-ins, not the real things**: the test machines
+  have no camera, printer, Arduino, Home Assistant or PLC. See what was and was not tested in
+  [docs/HARDWARE.md](docs/HARDWARE.md#how-it-was-tested-and-what-was-not).
+- **Some texts are English only**: the limits and comparisons written for each AI, and many
+  technical messages. The window itself is fully in English and Spanish, and so are the
+  hardware messages and the refusals.
 
 More in [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -132,16 +149,17 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | [DEVICES.md](docs/DEVICES.md) · [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | linked devices; the older manual pooling; why strangers' devices are ruled out |
 | [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
 | [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
+| [HARDWARE.md](docs/HARDWARE.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard |
 | [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; paid services and the `/v1` address; phones |
 | [API.md](docs/API.md) | the local HTTP interface |
 | [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | what is next; who Datas is built on; how to help |
 
 ```bash
 git clone https://github.com/Mdatas/datas.ar && cd datas.ar
-pip install -e ".[dev]" && pytest   # about 120 tests, under a minute; one runs a real llama-server on a tiny model
-datas selftest                      # checks this copy: window files, lessons, documents, device link, local service
+pip install -e ".[dev]" && pytest   # about 170 tests, about a minute; one runs a real llama-server on a tiny model
+datas selftest                      # checks this copy: window files, lessons, documents, device link, local service, hardware parts
 datas open --selfcheck out.json     # opens the real window, checks every screen shows, writes a report
-datas-cli --help                    # scan | recommend | run | chat | agent | link | provider | runtime | catalog | doctor …
+datas-cli --help                    # scan | recommend | run | chat | agent | link | things | provider | runtime | catalog | doctor …
 ```
 
 A command line, a local interface (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatible

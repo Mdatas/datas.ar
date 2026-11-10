@@ -144,6 +144,11 @@ def _judge(seen: dict) -> list[str]:
         got = screens.get(name) or {}
         if not got.get("parts") or (got.get("letters") or 0) < 20:
             bad.append(f"the {name} screen is empty")
+        for said in got.get("problems") or []:  # a part of the screen that failed to load
+            bad.append(f"the {name} screen shows a problem: {said}")
+    # Tools: the agent, everyday tools, hardware, programs, connections, bigger tools
+    if "sections" in (screens.get("tools") or {}) and screens["tools"]["sections"] < 6:
+        bad.append(f"the tools screen shows {screens['tools']['sections']} of its 6 parts")
     titles = {(screens.get(n) or {}).get("heading") for n in ("learn", "settings", "about")}
     if len(titles) < 3 or "" in titles:
         bad.append("moving between screens did not change what is shown")
@@ -264,6 +269,13 @@ def open_window(
         def switch_when_ready():
             state["ok"] = wait_for_server(180)
             _log(f"server up={state['ok']}")
+            if state["ok"] and started_here and path == "/":
+                try:  # the service may move this window aside for a picture of the screen
+                    from datas.server.app import core
+
+                    core.window = win
+                except Exception as e:  # noqa: BLE001 - a nicety, never a reason to fail
+                    _log(f"window not registered: {e}")
             win.load_url(url if state["ok"] else _error_page(port, logs_dir().parent))
             if selfcheck is not None:
                 state["checked"] = _selfcheck(selfcheck, port, state["ok"])

@@ -53,12 +53,18 @@ def _to_pcm(path: Path, job=None):  # noqa: ANN001, ANN202
             return voice.pcm_from_wav(data)
         except (ValueError, wave.Error, EOFError):
             pass  # not plain 16-bit PCM: let FFmpeg handle it
-    exe = programs.ffmpeg(fetch=True)
-    if not exe:
-        raise RuntimeError(
-            "This recording needs FFmpeg to be read and it could not be found or downloaded. "
-            "Install it from https://ffmpeg.org, or give a .wav file."
-        )
+    exe = programs.ffmpeg()
+    if not exe:  # fetched once, checked against its published checksum (datas.programs)
+        if job:
+            dl = programs.ffmpeg_download()
+            job.say(
+                "Getting FFmpeg, the free program that reads recordings"
+                + (f" (about {dl['bytes'] // 1_000_000} MB, once)…" if dl else "…")
+            )
+        try:
+            exe = programs.fetch_ffmpeg(job.progress if job else None)
+        except RuntimeError as e:
+            raise RuntimeError(f"This recording needs FFmpeg to be read. {e}") from e
     if job:
         job.say("Preparing the audio…")
     with tempfile.TemporaryDirectory(prefix="datas-audio-") as tmp:

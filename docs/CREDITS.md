@@ -55,6 +55,10 @@ via `huggingface_hub` (Apache-2.0).
 | fpdf2 | LGPL-3.0-only | writing PDF |
 | markdown-it-py | MIT | reading the structure of an answer to save it as a document |
 | cryptography | Apache-2.0 OR BSD-3-Clause | each device's key and certificate for the encrypted link |
+| Pillow | MIT-CMU | pictures: the picture of the screen, photo sizes |
+| pySerial | BSD | boards and instruments on a serial cable (Arduino, ESP32, 3D printers) |
+| Eclipse Paho MQTT | EPL-2.0 OR BSD-3-Clause | messages of smart-home devices through your own broker |
+| PyAutoGUI (with PyScreeze, PyTweening, PyGetWindow, PyMsgBox, MouseInfo; python-xlib on Linux) | BSD; MIT; GPL-3.0-or-later (MouseInfo, PyMsgBox); GPL-2.0-or-later (python-xlib) | the mouse and keyboard, when you let the agent use them |
 | uv | Apache-2.0 / MIT | isolated environments for the bigger creative tools |
 | PyInstaller, Inno Setup | GPL with exception; Inno Setup License | building the installers |
 
@@ -77,6 +81,8 @@ Argentine flag.
 | OpenAI-compatible HTTP interface | the common shape of `/v1`, so any tool that speaks it works with Datas |
 | TLS 1.3 | the encrypted link between your devices |
 | [DuckDuckGo](https://duckduckgo.com) | web search results, only when you switch internet on |
+| MQTT (OASIS standard), [Home Assistant](https://www.home-assistant.io)'s web interface, Modbus TCP (Modbus Organization) | how Datas talks to your own smart-home hub and industrial devices; the Modbus part is Datas' own code (`datas/things/net.py`) → [HARDWARE.md](HARDWARE.md) |
+| mDNS / DNS-SD ("Bonjour") and UPnP/SSDP | how devices on your network announce themselves; Datas only listens |
 
 ## Programs Datas can work with when you have them
 
@@ -110,7 +116,7 @@ authors and publishers; each entry names who made it. → [LEARN.md](LEARN.md)
 
 - **Voice**: whisper.cpp (ggml-org, MIT; Whisper weights by OpenAI, MIT) via pywhispercpp (absadiki, MIT); Kokoro-82M (hexgrad, Apache-2.0) via kokoro-onnx (thewh1teagle, MIT) on ONNX Runtime (Microsoft, MIT); espeak-ng (GPL-3.0-or-later) for phonemes; python-sounddevice / PortAudio (MIT) for the microphone
 - **Pictures**: stable-diffusion.cpp (leejet, MIT) running Z-Image-Turbo (Tongyi-MAI, Apache-2.0; GGUF by leejet) with the Qwen3-4B-Instruct-2507 text encoder (Qwen, Apache-2.0; GGUF by Unsloth) and the FLUX.1 autoencoder (Black Forest Labs, Apache-2.0)
-- **Video**: Wan 2.2 TI2V 5B (Wan-AI, Apache-2.0 as stated on the model card) through the same engine; FFmpeg through static-ffmpeg (zackees, MIT wrapper; FFmpeg itself LGPL/GPL) when none is installed
+- **Video**: Wan 2.2 TI2V 5B (Wan-AI, Apache-2.0 as stated on the model card) through the same engine; FFmpeg (LGPL/GPL, as published by each builder) for video, recordings and cameras — when none is installed, Datas fetches one build, checked against its SHA-256, from a fixed commit of [zackees/ffmpeg_bins](https://github.com/zackees/ffmpeg_bins), where the [static-ffmpeg](https://github.com/zackees/static_ffmpeg) project (MIT) gathers the builds of BtbN, gyan.dev, evermeet.cx and osxexperts.net → [HARDWARE.md](HARDWARE.md)
 - **Bigger creative tools**: ComfyUI (GPL-3.0), FaceFusion (OpenRAIL-AS) — installed only when you open them → [APPS.md](APPS.md)
 
 ## Not reused, by choice

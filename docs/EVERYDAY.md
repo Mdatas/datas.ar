@@ -50,7 +50,7 @@ file*, with the right ending for the language.
 
 | Tool | Does | Needs |
 |---|---|---|
-| Recording to text | a meeting, class, voice note or video becomes text with timestamps, plus a subtitles file (.srt) | voice installed; FFmpeg for formats other than WAV (Datas fetches a copy if none is found) |
+| Recording to text | a meeting, class, voice note or video becomes text with timestamps, plus a subtitles file (.srt) | voice installed; FFmpeg for formats other than WAV (Datas fetches a checked copy if none is found) |
 | Text to audio | a text becomes a WAV file, and an MP3 when FFmpeg is available | voice installed |
 | Long documents | summary or translation of a document of any length, piece by piece, then joined | an AI running |
 

@@ -13,6 +13,7 @@ requests for anyone who can reach it.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 from importlib import resources
@@ -24,8 +25,19 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from datas import __version__, assistants, chat_engine, chats, docs, learn, library, shortcuts
+from datas import (
+    __version__,
+    assistants,
+    chat_engine,
+    chats,
+    docs,
+    learn,
+    library,
+    shortcuts,
+    words,
+)
 from datas import export as exporter
 from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
@@ -107,7 +119,12 @@ async def local_only(request: Request, call_next):
     ok = LOCAL_HOSTS | ALLOWED_HOSTS
     if _hostname(request.headers.get("host", "")) not in ok:
         return JSONResponse(
-            {"detail": "This address is not one Datas answers to (see docs/SECURITY.md)."},
+            {
+                "detail": words.tr(
+                    "This address is not one Datas answers to (see docs/SECURITY.md).",
+                    core.cfg.lang,
+                )
+            },
             status_code=403,
         )
     if request.method not in ("GET", "HEAD", "OPTIONS"):
@@ -118,12 +135,17 @@ async def local_only(request: Request, call_next):
         )
         if bad_origin or (site and site not in ("same-origin", "none")):
             return JSONResponse(
-                {"detail": "Requests from other web pages are not accepted."}, status_code=403
+                {
+                    "detail": words.tr(
+                        "Requests from other web pages are not accepted.", core.cfg.lang
+                    )
+                },
+                status_code=403,
             )
     if remote_peer(request):
         why = remote_refusal(request.method, request.url.path)
         if why:
-            return JSONResponse({"detail": why}, status_code=403)
+            return JSONResponse({"detail": words.tr(why, core.cfg.lang)}, status_code=403)
     resp = await call_next(request)
     resp.headers.setdefault("X-Content-Type-Options", "nosniff")
     resp.headers.setdefault("Referrer-Policy", "no-referrer")
@@ -138,6 +160,18 @@ async def local_only(request: Request, call_next):
             "form-action 'none'",
         )
     return resp
+
+
+@app.exception_handler(StarletteHTTPException)
+async def say_it_in_their_language(request: Request, exc: StarletteHTTPException):
+    """A refusal or a problem that has a Spanish wording (datas.words) is given in the
+    language Datas is set to; everything else goes out as it was written."""
+    detail = exc.detail
+    if isinstance(detail, str):
+        detail = words.tr(detail, core.cfg.lang)
+    return JSONResponse(
+        {"detail": detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None)
+    )
 
 
 def ui_dir() -> Path:
@@ -213,6 +247,8 @@ def status(request: Request) -> dict:
             "device": core.link_manager().name,
             "phone": core.link_manager().peer_public(pid)["name"],
         }
+    else:  # Datas opened its own window here and can move it aside for a picture of the screen
+        st["own_window"] = core.window is not None
     return st
 
 
@@ -856,6 +892,212 @@ def programs_get_artcraft() -> dict:
         }
 
     return _update_job("ArtCraft Launcher", run)
+
+
+# ---------------------------------------------------------------------------
+# Hardware around this computer and on its network (datas.things, docs/HARDWARE.md):
+# cameras, the screen, printers, boards on serial ports, MQTT, Home Assistant, Modbus.
+# Everything under /api/things is refused from a linked phone (REMOTE_REFUSED).
+# ---------------------------------------------------------------------------
+
+
+def _thing(fn, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+    """Run a hardware call; a problem becomes a sentence the window can show."""
+    from datas.things import ThingError
+
+    try:
+        return fn(*args, **kwargs)
+    except ThingError as e:
+        raise HTTPException(409, e.say(core.cfg.lang)) from e
+
+
+def _picture_out(data: bytes) -> dict:
+    from datas.things import local
+
+    w, h = local.picture_size(data)
+    return {
+        "image": "data:image/jpeg;base64," + base64.b64encode(data).decode(),
+        "width": w,
+        "height": h,
+        "bytes": len(data),
+    }
+
+
+@app.get("/api/things")
+def things_list() -> dict:
+    """What is plugged into this computer, the connections that are set up (without their
+    secrets), and whether the AI in use can look at pictures."""
+    from datas import things
+
+    return things.inventory(core.cfg.lang) | {
+        "settings": things.public_settings(),
+        "vision": core.ai_sees(),
+    }
+
+
+@app.get("/api/things/ffmpeg")
+def things_ffmpeg_state() -> dict:
+    """Is FFmpeg here, and how big is the download if it is not (a quick answer, for the
+    camera button of a chat)."""
+    from datas import things
+
+    return things.ffmpeg_state()
+
+
+@app.post("/api/things/ffmpeg")
+def things_get_ffmpeg() -> dict:
+    """Fetch FFmpeg once (it reads cameras and recordings); checked against its checksum."""
+    from datas import programs
+
+    def run(j) -> dict:  # noqa: ANN001
+        j.say(
+            words.tr(
+                "Getting FFmpeg, the free program that reads cameras and recordings…",
+                core.cfg.lang,
+            )
+        )
+        return {"path": programs.fetch_ffmpeg(j.progress)}
+
+    return _update_job("FFmpeg", run) | {"kind": "tool"}
+
+
+class PhotoBody(BaseModel):
+    camera: str | None = None
+
+
+@app.post("/api/things/camera/photo")
+def things_photo(body: PhotoBody) -> dict:
+    """One picture from a camera of this computer, for the person to look at or attach."""
+    from datas.things import local
+
+    return _picture_out(_thing(local.photo, body.camera))
+
+
+class ScreenBody(BaseModel):
+    hide: bool = False  # take Datas' own window out of the way first
+    wait: float = 0.0  # seconds to wait before the picture (when the window cannot be hidden)
+
+
+@app.post("/api/things/screen")
+def things_screen(body: ScreenBody | None = None) -> dict:
+    """A picture of what is on the screen right now. For a chat the person wants what is
+    *behind* Datas: the window steps aside for a moment when Datas opened it itself."""
+    import time
+
+    from datas.things import local
+
+    body = body or ScreenBody()
+    win = core.window if body.hide else None
+    if win is not None:
+        try:
+            win.hide()
+            time.sleep(0.7)  # let the system redraw what was underneath
+        except Exception:  # noqa: BLE001 - a window that cannot hide: take the picture anyway
+            win = None
+    elif body.wait > 0:
+        time.sleep(min(body.wait, 5.0))
+    try:
+        return _picture_out(_thing(local.screenshot))
+    finally:
+        if win is not None:
+            try:
+                win.show()
+            except Exception:  # noqa: BLE001
+                pass
+
+
+class PrintBody(BaseModel):
+    markdown: str | None = None  # an answer: it becomes a PDF first
+    title: str = ""
+    path: str | None = None  # or a file Datas saved earlier
+    printer: str | None = None
+    copies: int = 1
+    lang: str | None = None
+
+
+@app.post("/api/things/print")
+def things_print(body: PrintBody) -> dict:
+    """Print an answer or a file Datas saved. The answer becomes a PDF first (plain text on a
+    Windows computer without LibreOffice, which cannot print a PDF by itself); that file is
+    kept in the Datas folder like any saved answer."""
+    from datas.things import local
+
+    try:
+        if body.markdown and body.markdown.strip():
+            path = exporter.export(
+                body.markdown, local.answer_format(), body.title, body.lang or core.cfg.lang
+            )
+        elif body.path:
+            path = exporter.allowed(body.path)
+        else:
+            raise ValueError("There is nothing to print.")
+    except (ValueError, OSError) as e:
+        raise HTTPException(400, str(e)) from e
+    said = _thing(local.print_file, path, body.printer, body.copies)
+    return {"said": words.say(said, core.cfg.lang), "path": str(path), "name": path.name}
+
+
+class SerialBody(BaseModel):
+    port: str
+    seconds: float = 3.0
+    baud: int = 9600
+
+
+@app.post("/api/things/serial")
+def things_serial(body: SerialBody) -> dict:
+    """Listen to a board or instrument on a serial port for a few seconds (nothing is sent;
+    sending is the agent's, with its own switch and question)."""
+    from datas.things import local
+
+    seconds = max(0.5, min(body.seconds, 15.0))
+    return {"text": _thing(local.serial_talk, body.port, None, seconds, body.baud)}
+
+
+@app.get("/api/things/around")
+def things_around(seconds: float = 3.0) -> dict:
+    """Devices on this network that announce themselves (nothing is probed)."""
+    from datas.things import net
+
+    found = net.around(seconds)
+    for d in found:
+        d["kind"] = words.tr(d["kind"], core.cfg.lang)
+    return {"devices": found}
+
+
+class ThingsSettingsBody(BaseModel):
+    mqtt: dict[str, Any] | None = None
+    home_assistant: dict[str, Any] | None = None
+    modbus: list[dict[str, Any]] | None = None
+
+
+@app.post("/api/things/settings")
+def things_settings(body: ThingsSettingsBody) -> dict:
+    """Save the addresses of the person's own broker, Home Assistant and Modbus devices. A
+    password or token left empty keeps the one already saved; "-" removes it."""
+    from datas import things
+
+    try:
+        return things.save_settings(body.model_dump(exclude_none=True))
+    except (TypeError, ValueError) as e:
+        raise HTTPException(
+            400, words.tr("That could not be saved: {why}", core.cfg.lang, why=str(e))
+        ) from e
+
+
+class ThingsCheckBody(BaseModel):
+    what: str  # mqtt | home_assistant | modbus
+    name: str | None = None  # which Modbus device
+
+
+@app.post("/api/things/check")
+def things_check(body: ThingsCheckBody) -> dict:
+    """Try a connection that was set up and say in a sentence how it went."""
+    from datas.things import ThingError, net
+
+    try:
+        return {"ok": True, "detail": net.check(body.what, body.name).say(core.cfg.lang)}
+    except ThingError as e:
+        return {"ok": False, "detail": e.say(core.cfg.lang)}
 
 
 # ---------------------------------------------------------------------------
@@ -1894,6 +2136,8 @@ class AgentBody(BaseModel):
     max_steps: int = 40
     folders: list[str] = []
     ask: str = "risky"  # all | risky | none
+    devices: bool = False  # may use cameras, printers, boards, home and industrial devices
+    control: bool = False  # may use the mouse and keyboard (experimental; needs devices)
 
 
 @app.post("/api/agent/run")
@@ -1901,7 +2145,7 @@ def agent_run(body: AgentBody, request: Request):
     from datas.agents import AgentConfig, run_agent
     from datas.agents.folders import resolve_grant
 
-    if remote_peer(request) and (body.allow_shell or getattr(body, "devices", False)):
+    if remote_peer(request) and (body.allow_shell or body.devices or body.control):
         raise HTTPException(
             403,
             "From a linked phone the agent cannot run commands or use the computer's devices. "
@@ -1925,6 +2169,9 @@ def agent_run(body: AgentBody, request: Request):
         should_stop=core.agent_stop.is_set,
         lang=core.cfg.lang,
         allow_local=core.cfg.allow_local_fetch,
+        allow_things=body.devices,
+        allow_control=body.devices and body.control,
+        vision=core.ai_sees(),
     )
 
     def gen():
@@ -2026,6 +2273,7 @@ class TaskBody(BaseModel):
     folders: list[str] = []
     internet: bool = True
     allow_shell: bool = False
+    devices: bool = False  # may use cameras, printers, boards, home and industrial devices
     enabled: bool = True
 
 
@@ -2038,6 +2286,7 @@ class TaskPatch(BaseModel):
     folders: list[str] | None = None
     internet: bool | None = None
     allow_shell: bool | None = None
+    devices: bool | None = None
     enabled: bool | None = None
 
 
@@ -2057,10 +2306,18 @@ def agent_tasks() -> dict:
     return {"tasks": [_task_dict(t) for t in sch.tasks]}
 
 
+PHONE_TASK = (
+    "From a linked phone, a task that runs by itself cannot be given commands or the "
+    "computer's devices, and one that has them cannot be changed. Do that at the computer."
+)
+
+
 @app.post("/api/agent/tasks")
-def agent_task_add(body: TaskBody) -> dict:
+def agent_task_add(body: TaskBody, request: Request) -> dict:
     from datas.agents.folders import resolve_grant
 
+    if remote_peer(request) and (body.allow_shell or body.devices):
+        raise HTTPException(403, PHONE_TASK)
     try:
         folders = [str(resolve_grant(f)) for f in body.folders]
         if body.every not in ("hour", "day", "week", "once"):
@@ -2074,7 +2331,15 @@ def agent_task_add(body: TaskBody) -> dict:
 
 
 @app.patch("/api/agent/tasks/{task_id}")
-def agent_task_patch(task_id: str, body: TaskPatch) -> dict:
+def agent_task_patch(task_id: str, body: TaskPatch, request: Request) -> dict:
+    if remote_peer(request):
+        # a task with commands or devices was given its limits at the computer: from a phone
+        # it can be paused or started again, nothing else
+        cur = core.start_scheduler().get(task_id)
+        powerful = bool(cur and (cur.allow_shell or getattr(cur, "devices", False)))
+        changes = {k for k, v in body.model_dump().items() if v is not None} - {"enabled"}
+        if body.allow_shell or body.devices or (powerful and changes):
+            raise HTTPException(403, PHONE_TASK)
     t = core.start_scheduler().update(task_id, **body.model_dump())
     if not t:
         raise HTTPException(404, "no such task")

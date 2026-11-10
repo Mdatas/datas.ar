@@ -1,7 +1,9 @@
 name: e2e
 # The test that downloads: the AI engine from GitHub, a real small AI and the voice parts
 # from Hugging Face, then a streamed answer, a question about a document, and speech turned
-# into text. Everything goes through the same local interface the window uses.
+# into text; FFmpeg from its pinned address (checked against its checksum) reading an MP3,
+# and the camera and screen requests. Everything goes through the same local interface the
+# window uses.
 # Runs when asked (Actions -> e2e -> Run workflow), every Monday, and for each release.
 
 on:
@@ -31,11 +33,11 @@ jobs:
         run: sudo apt-get update -q && sudo apt-get install -y -q libportaudio2
       - name: install as a user would, with voice
         run: pip install ".[voice]"
-      - name: a real AI, a real answer, a document, voice
+      - name: a real AI, a real answer, a document, voice, FFmpeg and hardware
         shell: bash
         run: |
           export DATAS_HOME="$RUNNER_TEMP/datas-e2e"
-          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" --voice --report "$RUNNER_TEMP/e2e.json"
+          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" --voice --hardware --report "$RUNNER_TEMP/e2e.json"
       - name: logs
         if: always()
         shell: bash

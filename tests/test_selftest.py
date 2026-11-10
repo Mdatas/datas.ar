@@ -12,7 +12,7 @@ def test_a_healthy_copy_passes_and_nothing_of_the_user_is_touched():
     home = os.environ["DATAS_HOME"]
     rows = selftest.run()
     assert [name for name, ok, _ in rows if not ok] == [], rows
-    assert len(rows) == 6
+    assert len(rows) == 7
     assert os.environ["DATAS_HOME"] == home  # put back as it was
 
 
@@ -21,7 +21,7 @@ def test_a_missing_part_is_reported_and_the_rest_still_runs(monkeypatch):
     rows = selftest.run()
     bad = [(name, detail) for name, ok, detail in rows if not ok]
     assert len(bad) == 1 and "not-there.js" in bad[0][1]
-    assert len(rows) == 6
+    assert len(rows) == 7
 
 
 def test_the_command_says_so_with_its_exit_code(monkeypatch):

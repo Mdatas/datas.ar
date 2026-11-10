@@ -11,7 +11,7 @@ usual places (the system's program list and standard install folders):
 | Kind | Programs looked for |
 |---|---|
 | Office and documents | LibreOffice, Pandoc, Tesseract (text recognition) |
-| Sound and video | FFmpeg (if none is installed, Datas can fetch a copy for its own use) |
+| Sound and video | FFmpeg (if none is installed, Datas fetches one copy for its own use, from a fixed address and checked against its SHA-256 — see [HARDWARE.md](HARDWARE.md#ffmpeg)) |
 | Pictures and design | ImageMagick, Inkscape, GIMP, Krita |
 | 3D and technical drawing | Blender, OpenSCAD, FreeCAD |
 | ArtCraft | the Craft apps (see below) |

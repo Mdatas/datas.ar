@@ -31,6 +31,10 @@ certificate on both sides.
 - **`datas pool worker --host <address>`** starts llama.cpp's own worker, which has no
   password and no encryption. Use linked devices instead (*Devices*), which wrap the same
   thing in an encrypted tunnel.
+- **Cameras, printers, boards and your smart home** are used only when you ask, or when the
+  agent asks you and you allow it. All of it is off for the agent until you switch it on for
+  a task, and none of it can be reached from a linked phone.
+  → [docs/HARDWARE.md](docs/HARDWARE.md)
 
 ## Reporting a problem
 

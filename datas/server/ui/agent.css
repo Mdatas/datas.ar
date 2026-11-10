@@ -36,3 +36,5 @@ body.agent { overflow: auto; font-size: 15.5px; }
 .agent ul { margin: 8px 0 0; padding-left: 20px; }
 .agent .res { white-space: pre-wrap; font: 12.5px/1.45 var(--mono); color: var(--muted); max-height: 230px; overflow: auto; background: var(--bg); border-radius: 10px; padding: 9px; }
 .agent details > summary { cursor: pointer; }
+.agent .step img { display: block; max-width: min(100%, 420px); max-height: 260px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 6px; }
+.agent .step.result:has(img) { max-height: none; }

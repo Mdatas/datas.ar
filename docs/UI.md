@@ -10,7 +10,7 @@ One window, a few screens, nothing loaded from outside the computer.
 | **Add an AI** | What do you want to do, how much of the device may be used; a verdict for every AI — runs well, slowly, or does not fit. |
 | **My AIs** | What each installed AI is good for, its limits, maker, licence, cost on this device, lighter and stronger versions; use a model file you already have. |
 | **Create** | Pictures and video. |
-| **Tools** | The agent, everyday tools, programs found, connections, bigger creative tools. |
+| **Tools** | The agent, everyday tools, cameras, printers and other hardware, programs found, connections, bigger creative tools. |
 | **Devices** | Link your own computers. |
 | **Learn** | Lessons, glossary and checked outside material. |
 | **Settings** | Language, look, privacy, the AI, paid services, voice, updates with "go back". |
@@ -46,6 +46,9 @@ and Spanish, as plain JSON), `app.js` (shared pieces: page building, server call
 jobs, safe Markdown), `chat.js`, `screens.js`; `agent.html`, `agent.css`, `agent.js` for the
 agent's own window; `fonts/`.
 
+- Sentences that come from the backend (why a camera could not be used, why a request was
+  refused) are not in `i18n.js`: they are written once in English in the code and have their
+  Spanish in `datas/words.py`; `tests/test_words.py` fails when one is missing.
 - Pages are built from elements, never from HTML strings with user or AI text in them.
 - The pages may run only their own script files (`script-src 'self'`).
 - The window keeps nothing in the browser's own storage; state lives in the local service.

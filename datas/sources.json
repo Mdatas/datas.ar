@@ -133,6 +133,41 @@
       "url": "https://github.com/python-zeroconf/python-zeroconf"
     },
     {
+      "name": "Pillow",
+      "role": "Pictures: the picture of the screen, sizes and formats of photos.",
+      "by": "Jeffrey A. Clark and contributors",
+      "license": "MIT-CMU",
+      "url": "https://python-pillow.org"
+    },
+    {
+      "name": "pySerial",
+      "role": "Talks to boards and instruments on a serial cable (Arduino, ESP32, 3D printers).",
+      "by": "Chris Liechti and contributors",
+      "license": "BSD",
+      "url": "https://github.com/pyserial/pyserial"
+    },
+    {
+      "name": "Eclipse Paho MQTT",
+      "role": "Sends and reads the short messages of smart-home devices through your own broker (MQTT).",
+      "by": "Eclipse Foundation, Roger Light and contributors",
+      "license": "EPL-2.0 OR BSD-3-Clause",
+      "url": "https://github.com/eclipse-paho/paho.mqtt.python"
+    },
+    {
+      "name": "PyAutoGUI",
+      "role": "Moves the mouse and types when you let the agent do so (experimental). Comes with PyScreeze, PyTweening, PyGetWindow, PyMsgBox, MouseInfo and, on Linux, python-xlib.",
+      "by": "Al Sweigart; python-xlib by Peter Liljenberg and contributors",
+      "license": "BSD (PyAutoGUI, PyGetWindow); MIT (PyScreeze, PyTweening); GPL-3.0-or-later (MouseInfo, PyMsgBox); GPL-2.0-or-later (python-xlib)",
+      "url": "https://github.com/asweigart/pyautogui"
+    },
+    {
+      "name": "Home Assistant, MQTT and Modbus",
+      "role": "Open ways of talking to home and industrial devices. Datas speaks them to your own hub and devices; nothing of theirs is included.",
+      "by": "Home Assistant project; OASIS (MQTT); Modbus Organization",
+      "license": "open specifications and interfaces",
+      "url": "https://www.home-assistant.io"
+    },
+    {
       "name": "typer + rich",
       "role": "The command-line version for advanced users.",
       "by": "Sebastián Ramírez, Will McGugan",
@@ -287,11 +322,11 @@
       "url": "https://huggingface.co/bartowski/Qwen2.5-Math-7B-Instruct-GGUF"
     },
     {
-      "name": "static-ffmpeg / FFmpeg",
-      "role": "Video reading and writing for tools that need it, when FFmpeg is not already on the computer.",
-      "by": "zackees; FFmpeg project",
-      "license": "MIT (wrapper); LGPL/GPL (FFmpeg)",
-      "url": "https://github.com/zackees/static_ffmpeg"
+      "name": "FFmpeg (builds gathered by static-ffmpeg)",
+      "role": "Reads cameras, recordings and video. Fetched once when it is not already on the computer, from one fixed commit and checked against its SHA-256.",
+      "by": "FFmpeg project; builds by BtbN, gyan.dev, evermeet.cx and osxexperts.net, gathered by zackees",
+      "license": "LGPL/GPL (FFmpeg, as published by each builder); MIT (static-ffmpeg)",
+      "url": "https://github.com/zackees/ffmpeg_bins"
     },
     {
       "name": "Hermes 4 (14B, 4.3 36B, 70B)",

@@ -285,6 +285,35 @@ function savedToast(r) {
   });
 }
 
+/* ---------- hardware of this computer (cameras, the screen, printers…) ---------- */
+const Things = {
+  /* The camera is read with FFmpeg. If it is missing, offer to fetch it once. */
+  async ensureFfmpeg() {
+    if ((await api("/api/things/ffmpeg")).found) return true;
+    const th = await api("/api/things");
+    if (th.ffmpeg.found) return true;
+    if (!th.cameras.length && !th.problems.cameras) { toast(t("hw_no_camera")); return false; }
+    if (!th.ffmpeg.bytes) { toast(th.problems.cameras || t("hw_no_camera"), { bad: true, ms: 9000 }); return false; }
+    if (!await confirmDialog("FFmpeg", t("cam_need_ffmpeg", { size: Math.round(th.ffmpeg.bytes / 1e6) }), t("cam_get"))) return false;
+    const x = await Jobs.track(await api("/api/things/ffmpeg", { method: "POST" }), { title: "FFmpeg" });
+    return x.state === "done";
+  },
+  async photo(camera) {
+    if (!await Things.ensureFfmpeg()) return null;
+    return api("/api/things/camera/photo", { body: camera ? { camera } : {} });
+  },
+  /* aside: Datas gets out of the way first, so the picture shows what is behind it */
+  async screen(aside) {
+    const own = S.status && S.status.own_window;
+    if (aside && !own) toast(t("cam_screen_wait"), { ms: 3200 });
+    return api("/api/things/screen", { body: { hide: !!aside, wait: aside && !own ? 3 : 0 } });
+  },
+  show(title, r) {
+    openDialog({ title, wide: true, body: [h("img", { class: "shot", src: r.image, alt: title }), h("p", { class: "small muted", text: r.width + " × " + r.height })],
+      actions: close => [h("button", { class: "btn primary", onclick: close }, t("close"))] });
+  },
+};
+
 /* ---------- Markdown, read safely: text becomes page elements, never markup ---------- */
 function mdInline(text, into) {
   const re = /(`[^`\n]+`)|(\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\))|(\*\*([^*\n]+)\*\*)|(__([^_\n]+)__)|(\*([^*\s][^*\n]*?)\*)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?'"])/g;
@@ -580,7 +609,9 @@ async function selfcheck() {
     try {
       go(name);
       await wait(1500);
-      seen.screens[name] = { parts: $("#view").children.length, heading: (($("#view h1") || {}).textContent || "").slice(0, 80), letters: $("#view").textContent.length };
+      seen.screens[name] = { parts: $("#view").children.length, heading: (($("#view h1") || {}).textContent || "").slice(0, 80), letters: $("#view").textContent.length,
+        sections: document.querySelectorAll("#view .section").length,
+        problems: [...document.querySelectorAll("#view .note.bad")].map(n => n.textContent.slice(0, 160)) };
     } catch (e) { errors.push(name + ": " + e); }
   }
   seen.errors = errors;

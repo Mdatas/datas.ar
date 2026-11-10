@@ -28,10 +28,12 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from datas.config import home
+from datas.words import Problem
 
 SYSTEM = platform.system()  # Windows | Darwin | Linux
 
@@ -500,6 +502,8 @@ def detect() -> list[dict]:
     out = []
     for p in PROGRAMS:
         path = _find(p["names"], p.get("paths", {}).get(SYSTEM, []))
+        if not path and p["id"] == "ffmpeg":
+            path = ffmpeg_fetched()  # the copy Datas fetched (see fetch_ffmpeg)
         out.append(
             {k: p[k] for k in ("id", "name", "group", "site", "does")}
             | {"found": bool(path), "path": path}
@@ -525,25 +529,159 @@ def detect() -> list[dict]:
 
 
 def find(pid: str) -> str | None:
-    """Path of an installed program by id (``ffmpeg`` falls back to a bundled download)."""
+    """Path of an installed program by id (for ``ffmpeg`` also the copy Datas fetched)."""
     for p in detect():
         if p["id"] == pid and p.get("found"):
             return p.get("cli") if p.get("group") == "artcraft" and p.get("cli") else p["path"]
     return None
 
 
-def ffmpeg(fetch: bool = False) -> str | None:
-    """The system's FFmpeg, else (with ``fetch``) a static build downloaded once into the
-    Datas folder by the ``static-ffmpeg`` package."""
-    exe = find("ffmpeg")
+# ---------------------------------------------------------------------------
+# FFmpeg: the system's copy, or one fetched once and checked
+# ---------------------------------------------------------------------------
+# FFmpeg reads and writes almost every sound and video format, and reads cameras. Linux
+# usually has it; Windows and macOS do not. When it is missing, Datas fetches a ready-made
+# build once into <data>/programs/ffmpeg and uses that copy.
+#
+# The builds are the ones the open-source project static-ffmpeg uses (folder v8.0 of
+# github.com/zackees/ffmpeg_bins). Its workflow takes them from the builders that
+# ffmpeg.org links to: BtbN (Linux), gyan.dev (Windows), evermeet.cx (macOS Intel) and
+# osxexperts.net (macOS Apple Silicon). The address is pinned to one commit and each file is
+# checked against the size and SHA-256 recorded in that commit (its Git LFS pointer), so a
+# changed or damaged file is refused.
+FFMPEG_REPO = "https://github.com/zackees/ffmpeg_bins"
+FFMPEG_COMMIT = "df95abcb0ce6efff710dda5ef28a2f6f1dc21493"
+FFMPEG_BUILDS: dict[str, tuple[int, str]] = {  # key -> (bytes, sha256) of v8.0/<key>.zip
+    "win32": (72065209, "92662c2241e93fe71b3f3a01e94a0b0dc8cfad726019f96b83bc109ce44c5d0b"),
+    "darwin": (53079896, "70fd5b21cb37b6ea97c8b584cf76b3cc6a90179831c9c269811b9716c28605fb"),
+    "darwin_arm64": (
+        41925556,
+        "b2da44a8169c4d09a97db996250690c3346f72e4795521d23d3dbb1e72421207",
+    ),
+    "linux": (142008975, "ca75b05e887c7a97676632f673031875847be83daa9794298fed9cef8cac14ad"),
+    "linux_arm64": (
+        131816005,
+        "e03efe471c03b999f10988d5db62ae3bd94837463291b3c7755528b100e97d6f",
+    ),
+}
+_ffmpeg_lock = threading.Lock()
+
+
+def ffmpeg_key(system: str | None = None, machine: str | None = None) -> str | None:
+    """Which of the builds fits this computer (None: there is none for it)."""
+    system = system or SYSTEM
+    arm = (machine or platform.machine()).lower() in ("arm64", "aarch64")
+    if system == "Windows":
+        return None if arm else "win32"
+    if system == "Darwin":
+        return "darwin_arm64" if arm else "darwin"
+    if system == "Linux":
+        return "linux_arm64" if arm else "linux"
+    return None
+
+
+def ffmpeg_dir() -> Path:
+    return home() / "programs" / "ffmpeg"
+
+
+def ffmpeg_fetched() -> str | None:
+    """The copy Datas fetched earlier, if it is there."""
+    key = ffmpeg_key()
+    if not key:
+        return None
+    exe = ffmpeg_dir() / key / ("ffmpeg.exe" if SYSTEM == "Windows" else "ffmpeg")
+    return str(exe) if exe.is_file() and (ffmpeg_dir() / key / "checked").is_file() else None
+
+
+def ffmpeg_download() -> dict | None:
+    """What would be fetched for this computer: {"url", "bytes", "sha256"}."""
+    key = ffmpeg_key()
+    if not key or key not in FFMPEG_BUILDS:
+        return None
+    size, sha = FFMPEG_BUILDS[key]
+    return {
+        "url": f"{FFMPEG_REPO}/raw/{FFMPEG_COMMIT}/v8.0/{key}.zip",
+        "bytes": size,
+        "sha256": sha,
+        "key": key,
+    }
+
+
+def fetch_ffmpeg(progress=None, source: str | None = None) -> str:  # noqa: ANN001
+    """Download the build for this computer, check it and unpack it. Returns the program's
+    path. ``progress(done, total)`` is called while downloading; ``source`` replaces the
+    address in the tests. Raises a Problem (a RuntimeError) with a sentence for the person."""
+    import zipfile
+
+    import httpx
+
+    from datas.runtime.llamacpp import _download
+
+    with _ffmpeg_lock:
+        have = ffmpeg_fetched()
+        if have:
+            return have
+        dl = ffmpeg_download()
+        if not dl:
+            raise Problem(
+                "There is no ready-made FFmpeg for this kind of computer. Install it from "
+                "https://ffmpeg.org (or with your system's package manager)."
+            )
+        base = ffmpeg_dir()
+        base.mkdir(parents=True, exist_ok=True)
+        zip_path = base / (dl["key"] + ".zip")
+        try:
+            with httpx.Client(follow_redirects=True, timeout=httpx.Timeout(60, read=120)) as c:
+                _download(source or dl["url"], zip_path, c, progress, "sha256:" + dl["sha256"])
+        except ValueError as e:  # the checksum did not match: the file is already deleted
+            raise Problem(
+                "The FFmpeg file that arrived is not the one Datas expects, so it was not "
+                "used. Try again later, or install FFmpeg from https://ffmpeg.org."
+            ) from e
+        except (httpx.HTTPError, OSError) as e:
+            raise Problem(
+                "FFmpeg could not be downloaded ({why}). Check the connection and try again, "
+                "or install FFmpeg from https://ffmpeg.org.",
+                why=str(e),
+            ) from e
+        target = base / dl["key"]
+        names = {"ffmpeg", "ffprobe", "ffmpeg.exe", "ffprobe.exe"}
+        try:
+            shutil.rmtree(target, ignore_errors=True)
+            target.mkdir(parents=True)
+            with zipfile.ZipFile(zip_path) as z:
+                for info in z.infolist():
+                    # only the two programs, by their bare names: nothing in the archive can
+                    # choose where it lands
+                    name = info.filename.replace("\\", "/").rsplit("/", 1)[-1]
+                    if info.is_dir() or name not in names:
+                        continue
+                    with z.open(info) as src, (target / name).open("wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                    if SYSTEM != "Windows":
+                        os.chmod(target / name, 0o755)
+        except (OSError, zipfile.BadZipFile) as e:
+            shutil.rmtree(target, ignore_errors=True)
+            raise Problem("FFmpeg arrived but could not be unpacked: {why}", why=str(e)) from e
+        finally:
+            zip_path.unlink(missing_ok=True)
+        exe = target / ("ffmpeg.exe" if SYSTEM == "Windows" else "ffmpeg")
+        if not exe.is_file():
+            shutil.rmtree(target, ignore_errors=True)
+            raise Problem("The FFmpeg download did not contain the program.")
+        (target / "checked").write_text(f"{dl['url']}\nsha256 {dl['sha256']}\n", encoding="utf-8")
+        return str(exe)
+
+
+def ffmpeg(fetch: bool = False, progress=None) -> str | None:  # noqa: ANN001
+    """FFmpeg's path: the system's copy, else the one Datas fetched, else (with ``fetch``)
+    fetch it now. None when there is none and it could not be fetched."""
+    exe = find("ffmpeg")  # detect() already looks at the fetched copy
     if exe or not fetch:
         return exe
     try:
-        from static_ffmpeg import run
-
-        ff, _probe = run.get_or_fetch_platform_executables_else_raise()
-        return ff
-    except Exception:  # noqa: BLE001 - package missing or no connection
+        return fetch_ffmpeg(progress)
+    except RuntimeError:
         return None
 
 

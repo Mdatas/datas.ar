@@ -95,10 +95,50 @@ def test_a_phone_pairs_and_opens_the_computers_datas(computer):
         ("POST", "/api/open-url", {"url": "https://example.org"}),
         ("POST", "/api/mcp", {"name": "x", "command": "calc"}),
         ("POST", "/api/agent/run", {"task": "x", "allow_shell": True}),
+        ("POST", "/api/agent/run", {"task": "x", "devices": True}),
+        ("POST", "/api/agent/run", {"task": "x", "control": True}),
+        # the room the computer is in: its camera, its screen, what is plugged into it
+        ("GET", "/api/things", None),
+        ("POST", "/api/things/camera/photo", {}),
+        ("POST", "/api/things/screen", {}),
+        ("POST", "/api/things/print", {"markdown": "x"}),
+        ("POST", "/api/things/settings", {"mqtt": {"host": "10.0.0.1"}}),
+        # a task that runs by itself must not be a side door to the same things
+        ("POST", "/api/agent/tasks", {"title": "t", "task": "x", "allow_shell": True}),
+        ("POST", "/api/agent/tasks", {"title": "t", "task": "x", "devices": True}),
     ):
         status, out = phone.http(p, method, path, body)
         assert status == 403, (path, status, out)
     assert a.http.get("/api/privacy").status_code == 200  # …and the computer is still up
+
+    # a harmless task can be set up from the phone, but not given more power afterwards
+    status, mine = phone.http(
+        p,
+        "POST",
+        "/api/agent/tasks",
+        {"title": "notes", "task": "summarise my notes", "every": "once"},
+    )
+    assert status == 200 and not mine["allow_shell"] and not mine["devices"]
+    assert phone.http(p, "PATCH", f"/api/agent/tasks/{mine['id']}", {"allow_shell": True})[0] == 403
+    assert phone.http(p, "PATCH", f"/api/agent/tasks/{mine['id']}", {"devices": True})[0] == 403
+    assert (
+        phone.http(p, "PATCH", f"/api/agent/tasks/{mine['id']}", {"task": "tidy my notes"})[0]
+        == 200
+    )
+    # a task given commands at the computer: the phone may pause it, never rewrite it
+    strong = a.http.post(
+        "/api/agent/tasks",
+        json={"title": "backup", "task": "run the backup", "allow_shell": True, "every": "once"},
+    ).json()
+    assert (
+        phone.http(p, "PATCH", f"/api/agent/tasks/{strong['id']}", {"task": "delete everything"})[0]
+        == 403
+    )
+    assert phone.http(p, "PATCH", f"/api/agent/tasks/{strong['id']}", {"folders": ["/"]})[0] == 403
+    status, paused = phone.http(p, "PATCH", f"/api/agent/tasks/{strong['id']}", {"enabled": False})
+    assert status == 200 and paused["enabled"] is False and paused["task"] == "run the backup"
+    for t in (mine, strong):
+        a.http.delete(f"/api/agent/tasks/{t['id']}")
 
     # a phone cannot use the requests meant for computers
     for op in ("sync", "rpc", "v1"):

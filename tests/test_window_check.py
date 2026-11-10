@@ -34,6 +34,18 @@ def test_what_counts_as_a_broken_window():
     assert any(
         "script error" in p for p in desktop._judge({**GOOD, "errors": ["x is not defined"]})
     )
+    # a part of a screen that failed to load shows a red note: that counts too
+    tools = {**GOOD["screens"]["tools"], "sections": 6, "problems": ["HTTP 500"]}
+    broken = {**GOOD, "screens": {**GOOD["screens"], "tools": tools}}
+    assert any("tools screen shows a problem: HTTP 500" in p for p in desktop._judge(broken))
+    # …and so does a Tools screen that lost one of its parts (hardware, programs…)
+    fewer = {
+        **GOOD,
+        "screens": {**GOOD["screens"], "tools": {**tools, "problems": [], "sections": 5}},
+    }
+    assert any("5 of its 6 parts" in p for p in desktop._judge(fewer))
+    whole = {**GOOD, "screens": {**GOOD["screens"], "tools": {**tools, "problems": []}}}
+    assert desktop._judge(whole) == []
 
 
 def test_the_page_can_leave_its_report(tmp_path, monkeypatch):

@@ -140,10 +140,14 @@ datas/
   pool/discovery.py     nodes; workers listed by hand      pool/worker.py  ggml-rpc-server by hand
   netguard.py           which addresses the AI may open (no private networks by default)
   updates.py            updates and going back: app, engines, list of AIs
-  programs.py           programs found on the computer, conversions, ArtCraft
+  programs.py           programs found on the computer, conversions, ArtCraft; FFmpeg fetched once and checked
+  things/               hardware: local.py (camera, screen, printers, serial ports), net.py (MQTT,
+                        Home Assistant, Modbus, what is on the network), control.py (mouse and keyboard)
+  words.py              the backend's sentences in English and Spanish (Problem, Said, tr)
   mcp.py                Model Context Protocol client (connections)
   apps/                 bigger creative tools in isolated environments (uv)
   agents/tools.py       the agent's tools, each checked against the allowed folders
+  agents/things_tools.py the agent's hardware tools and the plain questions it asks before using them
   agents/runner.py      tool-calling loop      agents/schedule.py  tasks on a schedule
   agents/folders.py     well-known folders per system
   shortcuts.py          Desktop icons (Win .lnk / Linux .desktop / mac .command)
@@ -152,7 +156,8 @@ datas/
   server/app.py         FastAPI app: /api, /v1 proxy, who may talk to it
   server/ui/            the window: index.html, app.css, i18n.js, app.js, chat.js, screens.js,
                         agent.html/.css/.js, fonts — see docs/UI.md
-tests/                  unit + integration (synthetic GGUF, two linked devices, a stand-in MCP server)
+tests/                  unit + integration (synthetic GGUF, two linked devices, a phone, stand-ins for an
+                        MCP server, an MQTT broker, a Modbus device, a serial board, a file server)
 scripts/ui_shot.py      screenshots of every screen without a display
 installer/              PyInstaller spec; Windows (Inno Setup), macOS (.dmg), Linux (.deb, Arch, tarball)
 android/                the Android app

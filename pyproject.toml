@@ -45,6 +45,12 @@ dependencies = [
   "markdown-it-py>=3.0",
   # encrypted link between the user's own devices (TLS certificates)
   "cryptography>=42",
+  # cameras, the screen, printers, boards and home or industrial devices (docs/HARDWARE.md):
+  # pictures, serial ports (Arduino…), MQTT, the mouse and keyboard. All pure Python.
+  "pillow>=10.0",
+  "pyserial>=3.5",
+  "paho-mqtt>=2.0",
+  "pyautogui>=0.9.54",
 ]
 
 [project.optional-dependencies]

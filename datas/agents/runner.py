@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -20,7 +21,7 @@ SYSTEM = (
     "Documents: read_file understands PDF, Word, Excel and PowerPoint; save_document writes "
     "Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and PDF files from Markdown; convert_file "
     "changes a file's format; list_programs shows the programs installed here that you can run "
-    "or open files in{mcp}. "
+    "or open files in{mcp}.{things} "
     "Work step by step: decide, call a tool, read the result, continue. Prefer moving files into "
     "clearly named folders over deleting; never delete what you were not asked to. "
     "When the task is complete, answer with a short summary of what you did and where the results are, "
@@ -45,10 +46,14 @@ class AgentConfig:
     lang: str = "en"
     allow_local: bool = False  # web tools may open addresses inside the user's own network
     use_programs: bool = True  # connect the programs that offer their own tools (MCP)
+    allow_things: bool = False  # cameras, printers, boards, home and industrial devices
+    allow_control: bool = False  # the mouse and keyboard (experimental)
+    vision: bool = False  # the AI understands pictures: photos and screen pictures are shown to it
 
 
 def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
-    """Yield events: {'type': 'assistant'|'tool_call'|'tool_result'|'final'|'error', ...}."""
+    """Yield events: {'type': 'assistant'|'tool_call'|'tool_result'|'picture'|'final'|'error',
+    ...}. A 'picture' is a photo or a picture of the screen a tool took, as a data: address."""
     ctx = T.ToolContext(
         workspace=cfg.workspace,
         roots=[Path(r) for r in cfg.roots],
@@ -59,6 +64,9 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         confirm=cfg.confirm,
         should_stop=cfg.should_stop,
         lang=cfg.lang,
+        allow_things=cfg.allow_things,
+        allow_control=cfg.allow_things and cfg.allow_control,
+        vision=cfg.vision,
     )
     cfg.workspace.mkdir(parents=True, exist_ok=True)
     session = None
@@ -99,6 +107,16 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
             "; tools whose name starts with a program's name (for example pdfcraft__…) work "
             "inside that program"
             if ctx.mcp is not None
+            else ""
+        ),
+        things=(
+            " The user also let you use the devices around this computer: list_devices shows "
+            "cameras, screens, printers, boards on serial ports and the home or industrial "
+            "connections that are set up; network_devices shows what is on the network. "
+            "Anything that acts on the real world (printing, writing to a board, switching "
+            "something, the mouse and keyboard) cannot be undone: do exactly what was asked, "
+            "one step at a time, and say what happened."
+            if ctx.allow_things
             else ""
         ),
     )
@@ -166,12 +184,46 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
                         "content": result,
                     }
                 )
+            # pictures the tools took (camera, screen): shown to an AI that can see, after
+            # all the tool answers of this step — and to the person, in the agent's window
+            if ctx.images:
+                _forget_old_pictures(messages, keep=KEEP_PICTURES - len(ctx.images))
+            for pic in ctx.images:
+                url = "data:image/jpeg;base64," + base64.b64encode(pic["jpeg"]).decode()
+                yield {"type": "picture", "step": step, "name": pic["name"], "url": url}
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"This is the picture {pic['name']}."},
+                            {"type": "image_url", "image_url": {"url": url}},
+                        ],
+                    }
+                )
+            ctx.images.clear()
         yield {
             "type": "error",
             "step": cfg.max_steps,
             "error": f"stopped after {cfg.max_steps} steps",
             "events": ctx.events,
         }
+
+
+KEEP_PICTURES = 2  # a picture fills much of a small AI's working memory: keep the newest
+
+
+def _forget_old_pictures(messages: list[dict], keep: int) -> None:
+    """Replace all but the newest ``keep`` pictures in the conversation by a line of text."""
+    with_picture = [
+        m
+        for m in messages
+        if m.get("role") == "user"
+        and isinstance(m.get("content"), list)
+        and any(p.get("type") == "image_url" for p in m["content"])
+    ]
+    for m in with_picture[: max(0, len(with_picture) - max(0, keep))]:
+        said = " ".join(p.get("text", "") for p in m["content"] if p.get("type") == "text")
+        m["content"] = f"{said} (An earlier picture; it is no longer shown to save room.)"
 
 
 def summarize_events(events: list[dict]) -> str:

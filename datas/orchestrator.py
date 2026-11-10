@@ -37,6 +37,7 @@ from datas.recommend.engine import (
 )
 from datas.runtime import downloader, gguf_meta, llamacpp
 from datas.runtime.process import LlamaServer, bench
+from datas.words import Problem
 
 GiB = 2**30
 
@@ -118,6 +119,7 @@ class Datas:
         # connections to the local service that come from a linked phone through the encrypted
         # link: (address, port) as the service sees them -> the phone's id (datas/link)
         self.remote_clients: dict[tuple, str] = {}
+        self.window = None  # the app's own window (pywebview), when Datas opened it itself
         self._agent_windows: list[subprocess.Popen] = []
         self._lock = threading.Lock()
         # ---- sleeping when idle, waking on the next message ----
@@ -217,7 +219,10 @@ class Datas:
                 job.state = "done"
             except Exception as e:  # noqa: BLE001 — surfaced to the UI
                 job.state = "error"
-                job.error = f"{type(e).__name__}: {e}"
+                # a Problem is a sentence written for the person, in their language
+                job.error = (
+                    e.say(self.cfg.lang) if isinstance(e, Problem) else f"{type(e).__name__}: {e}"
+                )
                 job.say(job.error)
             finally:
                 job.finished = time.time()
@@ -706,6 +711,10 @@ class Datas:
             allow_network=t.internet,
             lang=self.cfg.lang,
             allow_local=self.cfg.allow_local_fetch,
+            # devices if the task was given them; the mouse and keyboard never run unattended
+            allow_things=bool(getattr(t, "devices", False)),
+            allow_control=False,
+            vision=self.ai_sees(),
         )
         lines, final, state = [], "", "done"
         self.agent_busy += 1
@@ -916,6 +925,13 @@ class Datas:
         return self._run_job(job, lambda j: self.bench())
 
     # ---- pool ---------------------------------------------------------------
+    def ai_sees(self) -> bool:
+        """Can the AI in use understand pictures? A local one says so when it starts; for an
+        online service we assume yes (most do, and the service says so itself if not)."""
+        if self.cfg.provider in ("local", "pool"):
+            return "--mmproj" in (self.server.state.args or [])
+        return True
+
     def link_manager(self):  # noqa: ANN201 - datas.link.LinkManager
         """The encrypted link to the user's other devices (created on first use)."""
         with self._lock:

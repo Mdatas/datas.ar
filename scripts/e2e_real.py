@@ -69,6 +69,9 @@ def main() -> int:
     ap.add_argument("--model", default="qwen3-0.6b")
     ap.add_argument("--quant", default="Q4_0")
     ap.add_argument("--voice", action="store_true", help="also test speaking and hearing")
+    ap.add_argument(
+        "--hardware", action="store_true", help="also test FFmpeg, the camera and the screen"
+    )
     ap.add_argument("--report", default="")
     ap.add_argument("--serve", action="store_true", help="start `datas serve` here, stop it after")
     ap.add_argument("--serve-log", default="serve.log")
@@ -239,13 +242,85 @@ def run(a: argparse.Namespace) -> int:
                 time.time() - t,
             )
 
-    # 6. stop the AI; the service stays
+    # 6. hardware: FFmpeg fetched and checked, a recording read through it, camera and screen
+    if a.hardware:
+        hardware(c, a)
+
+    # 7. stop the AI; the service stays
     t = time.time()
     c.post("/api/stop")
     time.sleep(2)
     st = c.get("/api/status").json()
     step("the AI stops when asked", not st.get("server", {}).get("running"), "", time.time() - t)
     return finish(a, 0 if all(s["ok"] for s in STEPS) else 1)
+
+
+def hardware(c: httpx.Client, a: argparse.Namespace) -> None:
+    """What can be checked about cameras, the screen and FFmpeg on a machine that has no
+    camera: the list answers, FFmpeg is fetched from its pinned address and matches its
+    checksum, it really runs (an MP3 becomes text), and asking for a photo or a picture of
+    the screen ends in a picture or in a plain sentence — never in a crash."""
+    t = time.time()
+    r = c.get("/api/things")
+    th = r.json() if r.status_code == 200 else {}
+    step(
+        "the list of hardware answers",
+        r.status_code == 200 and "cameras" in th,
+        f"{len(th.get('cameras', []))} camera(s), {len(th.get('printers', []))} printer(s), "
+        f"{len(th.get('serial', []))} board(s), screen: {bool(th.get('screens'))}, "
+        f"mouse and keyboard: {th.get('control', {}).get('ok')}, problems: {th.get('problems')}",
+        time.time() - t,
+    )
+    t = time.time()
+    j = wait_job(c, c.post("/api/things/ffmpeg").json(), 900)
+    th = c.get("/api/things").json()
+    step(
+        "FFmpeg is fetched and matches its checksum",
+        j["state"] == "done" and th.get("ffmpeg", {}).get("found") is True,
+        j.get("error") or str((j.get("result") or {}).get("path", "")),
+        time.time() - t,
+    )
+    if a.voice:  # a recording that only FFmpeg can read: text -> MP3 -> text
+        t = time.time()
+        said = "The printer is in the kitchen, next to the window."
+        sj = wait_job(c, c.post("/api/tools/speak", json={"text": said, "lang": "en"}).json(), 600)
+        mp3 = (sj.get("result") or {}).get("mp3") or ""
+        heard = ""
+        if mp3:
+            with open(mp3, "rb") as fh:
+                tj = wait_job(
+                    c,
+                    c.post(
+                        "/api/tools/transcribe",
+                        params={"name": "note.mp3", "lang": "en"},
+                        content=fh.read(),
+                        timeout=300,
+                    ).json(),
+                    900,
+                )
+            heard = (tj.get("result") or {}).get("text", "") or tj.get("error") or ""
+        words = [w for w in ("printer", "kitchen", "window") if w in heard.lower()]
+        step(
+            "an MP3 recording becomes text (FFmpeg really runs)",
+            len(words) >= 2,
+            repr(heard[:120]) if mp3 else f"no MP3 was made: {sj.get('error') or sj.get('result')}",
+            time.time() - t,
+        )
+    for name, path in (
+        ("a photo", "/api/things/camera/photo"),
+        ("the screen", "/api/things/screen"),
+    ):
+        t = time.time()
+        r = c.post(path, json={}, timeout=120)
+        body = r.json() if "json" in r.headers.get("content-type", "") else {}
+        got = str(body.get("image", "")).startswith("data:image/jpeg;base64,")
+        said = str(body.get("detail", ""))
+        step(
+            f"asking for {name} gives a picture or a plain sentence",
+            (r.status_code == 200 and got) or (r.status_code == 409 and len(said) > 20),
+            f"{body.get('width')}x{body.get('height')} picture" if got else said[:160],
+            time.time() - t,
+        )
 
 
 def finish(a: argparse.Namespace, code: int) -> int:

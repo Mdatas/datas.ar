@@ -285,7 +285,7 @@ SCREENS.tools = async view => {
     const x = await Jobs.track(await api("/api/tools/long", { body }), { title: t("tool_long") });
     if (x.state === "done" && x.result) resultDialog(f ? f.name : t("tool_long"), x.result.markdown || "");
   }) }, t("tool_long_go"));
-  const programs = h("div", {}, spinner()), conns = h("div", {}, spinner()), apps = h("div", {}, spinner());
+  const programs = h("div", {}, spinner()), conns = h("div", {}, spinner()), apps = h("div", {}, spinner()), hw = h("div", {}, spinner());
   wrap.append(
     sec(t("tools_agent"), t("tools_agent_sub"), h("button", { class: "btn primary", onclick: guard(async () => { await api("/api/window/agent", { method: "POST" }); toast(t("agent_opened")); }) }, icon("agent", 18), t("tools_agent_open"))),
     sec(t("tools_everyday"), t("tools_everyday_sub"), h("div", { class: "grid2" },
@@ -294,6 +294,7 @@ SCREENS.tools = async view => {
       h("div", { class: "sheet stack" }, h("b", { text: t("tool_long") }), h("span", { class: "muted small", text: t("tool_long_sub") }), lgFile, lgText,
         h("div", { class: "row" }, seg([["summary", t("tool_long_summary")], ["translate", t("tool_long_translate")]], lgMode, v => { lgMode = v; }),
           seg([["en", "English"], ["es", "Español"]], lgLang, v => { lgLang = v; })), lgBtn))),
+    !isRemote() && sec(t("hw_title"), t("hw_sub"), hw),
     sec(t("tools_programs"), t("tools_programs_sub"), programs),
     sec(t("tools_conns"), t("tools_conns_sub"), conns),
     sec(t("tools_apps"), t("tools_apps_sub"), apps));
@@ -356,7 +357,109 @@ SCREENS.tools = async view => {
   };
   loadPrograms().catch(e => add(clear(programs), h("p", { class: "note bad", text: e.message })));
   loadApps().catch(e => add(clear(apps), h("p", { class: "note bad", text: e.message })));
+  if (!isRemote()) hardware(hw, busy).catch(e => add(clear(hw), h("p", { class: "note bad", text: e.message })));
 };
+
+/* ---- Tools: cameras, printers, boards, home and industrial devices ---- */
+async function hardware(box, busy) {
+  const th = await api("/api/things"), set = th.settings;
+  const again = () => hardware(box, busy).catch(oops);
+  const line = (ic, name, sub, ...btns) => h("div", { class: "item" }, h("div", { class: "row" }, icon(ic), h("span", { class: "name grow", text: name }), btns), sub && h("div", { class: "muted", text: sub }));
+  const act = (label, fn) => { const b = h("button", { class: "btn small", onclick: () => busy(b, fn) }, label); return b; };
+  const rows = [];
+  // cameras
+  const tryPhoto = c => act(t("hw_try_photo"), async () => { const r = await Things.photo(c && c.id); if (r) Things.show(c ? c.name : t("hw_camera"), r); else again(); });
+  if (th.cameras.length) th.cameras.forEach(c => rows.push(line("camera", c.name, t("hw_camera"), tryPhoto(c))));
+  else if (!th.ffmpeg.found && th.ffmpeg.bytes && th.problems.cameras) {
+    rows.push(line("camera", t("hw_camera"), t("hw_ffmpeg_need", { size: Math.round(th.ffmpeg.bytes / 1e6) }),
+      act(t("hw_ffmpeg_get"), async () => { await Jobs.track(await api("/api/things/ffmpeg", { method: "POST" }), { title: "FFmpeg" }); again(); })));
+  } else rows.push(line("camera", t("hw_camera"), th.problems.cameras || t("hw_no_camera")));
+  // the screen
+  rows.push(th.screens.length
+    ? line("screen", t("hw_screen"), th.screens.map(x => x.width + " × " + x.height).join(", "), act(t("hw_try_screen"), async () => Things.show(t("hw_screen"), await Things.screen(false))))
+    : line("screen", t("hw_screen"), th.problems.screens || t("hw_no_screen")));
+  // printers
+  if (th.printers.length) th.printers.forEach(p => rows.push(line("printer", p.name, t("hw_printer") + (p.default ? ", " + t("hw_default") : ""))));
+  else rows.push(line("printer", t("hw_printer"), th.problems.printers || t("hw_no_printer")));
+  // boards and instruments on serial ports
+  if (th.serial.length) th.serial.forEach(p => {
+    const speed = h("select", { "aria-label": t("hw_speed"), title: t("hw_speed"), style: "width:auto;min-height:32px;padding:2px 8px" }, [9600, 115200, 57600, 38400, 19200, 4800].map(n => h("option", { value: String(n), text: String(n) })));
+    rows.push(line("plug", p.what, [p.port, p.maker].filter(Boolean).join(", "), speed, act(t("hw_listen"), async () => {
+      const r = await api("/api/things/serial", { body: { port: p.port, seconds: 3, baud: Number(speed.value) } });
+      openDialog({ title: t("hw_listen_title", { port: p.port }), wide: true, body: [r.text.trim() ? h("pre", { class: "serial", text: r.text }) : h("p", { class: "muted", text: t("hw_listen_none") })],
+        actions: close => [h("button", { class: "btn primary", onclick: close }, t("close"))] });
+    })));
+  });
+  else rows.push(line("plug", t("hw_board"), th.problems.serial || t("hw_no_board")));
+  // the mouse and keyboard
+  rows.push(line("sliders", t("hw_control"), th.control.ok ? t("hw_control_yes") : t("hw_control_no", { why: th.control.why })));
+
+  // connections to the person's own hubs
+  const field = (label, input, hint) => h("label", { class: "field" }, label, input, hint && h("span", { class: "hint", text: hint }));
+  const result = () => h("div", { class: "small", role: "status" });
+  const check = (note, what, name, save) => async () => {
+    note.style.color = ""; note.textContent = t("hw_checking");
+    await save();
+    const r = await api("/api/things/check", { body: { what, name } });
+    note.textContent = r.detail; note.style.color = r.ok ? "var(--ok)" : "var(--bad)";
+  };
+  const saved = note => { note.style.color = ""; note.textContent = t("saved"); };
+  // MQTT
+  const mq = set.mqtt, mqHost = h("input", { type: "text", value: mq.host, placeholder: "192.168.1.10" }), mqPort = h("input", { type: "number", value: String(mq.port), min: "1", max: "65535" }),
+    mqUser = h("input", { type: "text", value: mq.username, autocomplete: "off" }), mqPass = h("input", { type: "password", autocomplete: "new-password", placeholder: mq.password_set ? t("hw_secret_kept") : "" }),
+    mqNote = result();
+  let mqTls = !!mq.tls;
+  const saveMq = () => api("/api/things/settings", { body: { mqtt: { host: mqHost.value.trim(), port: Number(mqPort.value) || 1883, username: mqUser.value.trim(), password: mqPass.value, tls: mqTls } } });
+  // Home Assistant
+  const ha = set.home_assistant, haUrl = h("input", { type: "text", value: ha.url, placeholder: "http://homeassistant.local:8123" }),
+    haTok = h("input", { type: "password", autocomplete: "new-password", placeholder: ha.token_set ? t("hw_secret_kept") : "" }), haNote = result();
+  const saveHa = () => api("/api/things/settings", { body: { home_assistant: { url: haUrl.value.trim(), token: haTok.value.trim() } } });
+  // Modbus
+  const mbList = h("div", { class: "stack" }), mbNote = result();
+  const mbRows = () => [...mbList.children].map(r => ({ name: r.querySelector("[data-k=name]").value.trim(), host: r.querySelector("[data-k=host]").value.trim(),
+    port: Number(r.querySelector("[data-k=port]").value) || 502, unit: Number(r.querySelector("[data-k=unit]").value) || 1 })).filter(d => d.host);
+  const saveMb = () => api("/api/things/settings", { body: { modbus: mbRows() } });
+  const mbRow = d => {
+    const name = h("input", { type: "text", value: d.name || "", placeholder: "Inverter", data: { k: "name" } }),
+      host = h("input", { type: "text", value: d.host || "", placeholder: "192.168.1.50", data: { k: "host" } });
+    const row = h("div", { class: "mb-row" },
+      h("div", { class: "fields" }, field(t("hw_name"), name), field(t("hw_address"), host),
+        field(t("hw_port"), h("input", { type: "number", value: String(d.port || 502), min: "1", max: "65535", data: { k: "port" } })),
+        field(t("hw_unit"), h("input", { type: "number", value: String(d.unit || 1), min: "0", max: "255", data: { k: "unit" } }))),
+      h("div", { class: "row" },
+        h("button", { class: "btn small", onclick: guard(() => check(mbNote, "modbus", name.value.trim() || host.value.trim(), saveMb)()) }, t("hw_check")),
+        h("button", { class: "btn small danger", onclick: () => row.remove() }, t("hw_remove"))));
+    return row;
+  };
+  (set.modbus.length ? set.modbus : []).forEach(d => mbList.append(mbRow(d)));
+  const home = more(t("hw_home"), h("p", { class: "muted", text: t("hw_home_sub") }), h("div", { class: "stack" },
+    h("div", { class: "sheet stack" }, h("b", { text: t("hw_mqtt") }), h("span", { class: "muted small", text: t("hw_mqtt_hint") }),
+      h("div", { class: "fields" }, field(t("hw_address"), mqHost), field(t("hw_port"), mqPort), field(t("hw_user"), mqUser), field(t("hw_password"), mqPass)),
+      switchRow(t("hw_tls"), null, mqTls, v => { mqTls = v; }),
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => { await saveMq(); saved(mqNote); }) }, t("save")),
+        h("button", { class: "btn", onclick: guard(check(mqNote, "mqtt", null, saveMq)) }, t("hw_check")), mqNote)),
+    h("div", { class: "sheet stack" }, h("b", { text: t("hw_ha") }), h("span", { class: "muted small", text: t("hw_ha_hint") }),
+      h("div", { class: "fields wide" }, field(t("hw_address"), haUrl), field(t("hw_token"), haTok)),
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => { await saveHa(); saved(haNote); }) }, t("save")),
+        h("button", { class: "btn", onclick: guard(check(haNote, "home_assistant", null, saveHa)) }, t("hw_check")), haNote)),
+    h("div", { class: "sheet stack" }, h("b", { text: t("hw_modbus") }), h("span", { class: "muted small", text: t("hw_modbus_hint") }), mbList,
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: () => mbList.append(mbRow({})) }, icon("plus", 16), t("hw_add_device")),
+        h("button", { class: "btn", onclick: guard(async () => { await saveMb(); saved(mbNote); }) }, t("save")), mbNote))));
+  // what announces itself on the network
+  const found = h("div");
+  const look = h("button", { class: "btn", onclick: () => busy(look, async () => {
+    add(clear(found), h("p", { class: "muted", text: t("hw_around_looking") }));
+    const r = await api("/api/things/around?seconds=4");
+    add(clear(found), r.devices.length ? h("div", { class: "list" }, r.devices.map(d => h("div", { class: "item" },
+      h("div", { class: "row" }, h("span", { class: "name grow", text: d.name || d.host || d.address }), h("span", { class: "chip plain", text: d.address })),
+      h("div", { class: "muted", text: d.kind })))) : h("p", { class: "muted", text: t("hw_around_none") }));
+  }) }, icon("search", 18), t("hw_around_go"));
+  const around = more(t("hw_around"), h("p", { class: "muted", text: t("hw_around_sub") }), look, found);
+  add(clear(box), h("div", { class: "list" }, rows),
+    h("div", { class: "row", style: "margin:10px 0 4px" }, h("button", { class: "btn quiet small", onclick: again }, icon("refresh", 16), t("hw_again")),
+      extLink(t("hw_doc"), "https://github.com/Mdatas/datas.ar/blob/main/docs/HARDWARE.md")),
+    home, around);
+}
 
 /* ======================= Devices ======================= */
 SCREENS.devices = async view => {

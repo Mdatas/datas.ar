@@ -198,6 +198,7 @@ const Chat = {
           h("div", { class: "composer-bar" },
             h("button", { class: "icon-btn", "aria-label": t("attach"), title: t("attach"), onclick: () => $("#filePick").click() }, icon("clip")),
             h("input", { type: "file", id: "filePick", class: "hidden", multiple: true, onchange: e => { Chat.attach([...e.target.files]); e.target.value = ""; } }),
+            !isRemote() && h("button", { class: "icon-btn", id: "camBtn", "aria-label": t("cam_add"), title: t("cam_add"), onclick: e => Chat.cameraMenu(e.currentTarget) }, icon("camera")),
             !isRemote() && h("button", { class: "icon-btn", id: "micBtn", "aria-label": t("mic"), title: t("mic"), onclick: Chat.mic }, icon("mic")),
             h("span", { class: "grow" }),
             h("button", { class: "btn primary", id: "sendBtn", onclick: () => (Chat.sending ? Chat.stop() : Chat.send()) }))),
@@ -267,7 +268,8 @@ const Chat = {
   exportMenu(anchor, text) {
     const pref = (Chat.cur.helper && Chat.cur.helper.export) || [];
     const order = [...FORMATS].sort((a, b) => Number(pref.includes(b)) - Number(pref.includes(a)));
-    openMenu(anchor, [{ head: t("save_where") }, ...order.map(f => ({ label: t("fmt_" + f), icon: "doc", note: pref.includes(f) ? t("fmt_suggested") : "", fn: () => Chat.exportAs(text, f) }))]);
+    openMenu(anchor, [{ head: t("save_where") }, ...order.map(f => ({ label: t("fmt_" + f), icon: "doc", note: pref.includes(f) ? t("fmt_suggested") : "", fn: () => Chat.exportAs(text, f) })),
+      ...(isRemote() ? [] : ["hr", { label: t("print_paper"), icon: "printer", fn: () => Chat.print(text) }])]);
   },
   async exportAs(text, format) {
     try { savedToast(await api("/api/export", { body: { markdown: text, format, title: Chat.cur.title || Chat.firstWords(), lang: S.lang } })); }
@@ -505,6 +507,29 @@ const Chat = {
     }
     const b = $("#box");
     if (b) b.focus();
+  },
+  /* a photo from the camera or a picture of the screen, added like any other picture */
+  cameraMenu(anchor) {
+    openMenu(anchor, [
+      { label: t("cam_photo"), icon: "camera", fn: () => Chat.snap("camera") },
+      { label: t("cam_screen"), icon: "screen", fn: () => Chat.snap("screen") },
+    ]);
+  },
+  async snap(kind) {
+    const st = aiState(), btn = $("#camBtn");
+    if (!st.vision && !st.remote) { toast(t("no_vision")); return; }
+    if (btn) btn.disabled = true;
+    try {
+      const r = kind === "camera" ? await Things.photo() : await Things.screen(true);
+      if (r) { Chat.pendingImages.push(r.image); Chat.drawChips(); }
+    } catch (e) { oops(e); }
+    if (btn) btn.disabled = false;
+    const b = $("#box");
+    if (b) b.focus();
+  },
+  async print(text) {
+    try { toast((await api("/api/things/print", { body: { markdown: text, title: Chat.cur.title || Chat.firstWords(), lang: S.lang } })).said); }
+    catch (e) { oops(e); }
   },
   async mic() {
     const v = S.status.voice, btn = $("#micBtn");

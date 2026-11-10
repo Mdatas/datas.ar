@@ -411,12 +411,24 @@ def agent(
     ),
     ask: str = typer.Option("risky", help="approve actions: all | risky | none"),
     yes: bool = typer.Option(False, "--yes", "-y", help="same as --ask none"),
+    devices: bool = typer.Option(
+        False, help="may use cameras, printers, boards, home and industrial devices"
+    ),
+    control: bool = typer.Option(
+        False, help="may use the mouse and keyboard (experimental; needs --devices)"
+    ),
 ):
     """Run the built-in agent on a task. Files go to the agent workspace (~/.local/share/datas/agent-workspace)."""
     from datas.agents import AgentConfig, run_agent
 
     cfg = Config.load()
     url = (base_url or f"http://127.0.0.1:{cfg.ui_port}/v1").rstrip("/")
+    sees = False
+    if devices and not base_url:  # can the AI that is running look at pictures?
+        try:
+            sees = bool(_app_api("GET", "/api/things").get("vision"))
+        except Exception:  # noqa: BLE001 - the app is not open: the next lines say so
+            sees = False
     acfg = AgentConfig(
         base_url=url,
         model=model,
@@ -426,6 +438,9 @@ def agent(
         max_steps=max_steps,
         ask="none" if yes else ask,
         confirm=(None if yes or ask == "none" else (lambda q: typer.confirm(q, default=False))),
+        allow_things=devices,
+        allow_control=devices and control,
+        vision=sees,
     )
     if workspace:
         acfg.workspace = workspace
@@ -440,6 +455,8 @@ def agent(
             con.print(f"[cyan]→ {ev['name']}[/] {ev['arguments'][:200]}")
         elif kind == "tool_result":
             con.print(f"[dim]{ev['result'][:600]}[/]")
+        elif kind == "picture":
+            con.print(f"[dim](the AI was shown the picture {ev['name']})[/]")
         elif kind == "final":
             con.print(f"\n[green]done[/] in {ev['step'] + 1} step(s)")
         elif kind == "error":
@@ -1014,6 +1031,122 @@ def apps_open(app_id: str):
 @tools_app.command("remove")
 def apps_remove(app_id: str, keep_models: bool = False):
     con.print("removed" if _core().apps.remove(app_id, keep_models) else "not installed")
+
+
+# ---------------------------------------------------------------------------
+# hardware: cameras, the screen, printers, boards, home and industrial devices
+# (docs/HARDWARE.md). These work on their own; the app does not have to be open.
+
+things_app = typer.Typer(
+    help="Cameras, the screen, printers, boards (Arduino…), home and industrial devices."
+)
+app.add_typer(things_app, name="things")
+
+
+def _thing(fn, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+    from datas.things import ThingError
+
+    try:
+        return fn(*args, **kwargs)
+    except ThingError as e:
+        con.print(f"[red]{e}[/]")
+        raise typer.Exit(1) from None
+
+
+@things_app.command("list")
+def things_list(as_json: bool = typer.Option(False, "--json")):
+    """What is plugged into this computer and which connections are set up."""
+    from datas import things
+
+    inv = things.inventory()
+    if as_json:
+        print(json.dumps(inv, indent=1, ensure_ascii=False))
+    else:
+        con.print(things.describe(inv))
+        if not inv["ffmpeg"]["found"]:
+            con.print("FFmpeg (needed for the camera) is not here: `datas things ffmpeg` gets it.")
+
+
+@things_app.command("around")
+def things_around(seconds: float = 3.0, as_json: bool = typer.Option(False, "--json")):
+    """Devices on this network that announce themselves (nothing is probed)."""
+    from datas.things import net
+
+    found = net.around(seconds)
+    if as_json:
+        print(json.dumps(found, indent=1, ensure_ascii=False))
+        return
+    for d in found:
+        con.print(f"{d['address']:<16} {d['name'] or d.get('host') or '?'} — {d['kind']}")
+    if not found:
+        con.print("No device announced itself.")
+
+
+@things_app.command("ffmpeg")
+def things_ffmpeg():
+    """Fetch FFmpeg once (reads cameras and recordings); checked against its checksum."""
+    from datas import programs
+
+    have = programs.ffmpeg()
+    if have:
+        con.print(f"FFmpeg is here: {have}")
+        return
+    try:
+        con.print(programs.fetch_ffmpeg(_progress_printer("FFmpeg")))
+    except RuntimeError as e:
+        con.print(f"[red]{e}[/]")
+        raise typer.Exit(1) from None
+
+
+@things_app.command("photo")
+def things_photo(
+    out: Path = typer.Argument(Path("photo.jpg")),
+    camera: str | None = None,
+    fetch: bool = typer.Option(False, help="get FFmpeg first if it is missing"),
+):
+    """Take one picture with a camera of this computer."""
+    from datas.things import local
+
+    out.write_bytes(_thing(local.photo, camera, fetch=fetch))
+    con.print(f"saved {out}")
+
+
+@things_app.command("screen")
+def things_screen(out: Path = typer.Argument(Path("screen.jpg"))):
+    """Save a picture of what is on the screen."""
+    from datas.things import local
+
+    out.write_bytes(_thing(local.screenshot))
+    con.print(f"saved {out}")
+
+
+@things_app.command("print")
+def things_print(file: Path, printer: str | None = None, copies: int = 1):
+    """Print a file on paper."""
+    from datas.things import local
+
+    con.print(_thing(local.print_file, file, printer, copies))
+
+
+@things_app.command("serial")
+def things_serial(
+    port: str,
+    send: str | None = typer.Option(None, help="a line of text to write first"),
+    seconds: float = 3.0,
+    baud: int = 9600,
+):
+    """Listen to a board or instrument on a serial port (and optionally write one line)."""
+    from datas.things import local
+
+    print(_thing(local.serial_talk, port, send, seconds, baud))
+
+
+@things_app.command("check")
+def things_check(what: str, name: str | None = None):
+    """Try a connection that is set up: mqtt | home_assistant | modbus (with --name)."""
+    from datas.things import net
+
+    con.print(_thing(net.check, what, name))
 
 
 if __name__ == "__main__":

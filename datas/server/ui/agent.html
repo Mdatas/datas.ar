@@ -13,14 +13,16 @@
 <header><span class="wordmark">Datas</span><span id="t_agent" class="where">Agent</span><div class="spacer"></div><button id="langBtn" class="small">ES</button></header>
 <main>
   <div class="card">
-    <p id="t_lead" style="margin:0 0 8px">An agent is an AI that works step by step on a task using tools: it can find, read, write, sort and move files, open things for you, and — if you allow it — search the internet or run commands. It only touches the folders you tick here; anything it "deletes" goes to a trash folder you can restore from. Everything it does is shown below.</p>
+    <p id="t_lead" style="margin:0 0 8px">An agent is an AI that works step by step on a task using tools: it can find, read, write, sort and move files, open things for you, and — if you allow it — search the internet, use your camera, printer and other hardware, or run commands. It only touches the folders you tick here; anything it "deletes" goes to a trash folder you can restore from. Everything it does is shown below.</p>
     <p class="fine" id="t_folder"></p>
     <div class="row" style="margin:6px 0"><b id="t_grant">It may work in:</b><div class="chips" id="folderChips"></div><input type="text" id="customFolder" placeholder="C:\Users\me\Projects …" style="min-width:220px"><button class="small" id="addFolder">+</button></div>
     <textarea id="task" placeholder="Example: read all the text files in my folder and write a one-page summary called SUMMARY.md"></textarea>
     <div class="row" style="margin-top:10px">
       <label class="switch on" id="netSw"><i></i><span id="t_net">May search and read the internet</span></label>
+      <label class="switch" id="devSw"><i></i><span id="t_dev">May use my camera, screen, printer and other hardware</span></label>
+      <label class="switch danger" id="ctlSw"><i></i><span id="t_ctl">May use the mouse and keyboard (experimental — risky)</span></label>
       <label class="switch danger" id="shellSw"><i></i><span id="t_shell">May run commands on this computer (advanced — risky)</span></label>
-      <label><span id="t_ask">Ask me</span> <select id="askSel"><option value="risky">before anything that touches my folders, runs commands or opens things</option><option value="all">before every single action</option><option value="none">never — just do it, I'm watching</option></select></label>
+      <label><span id="t_ask">Ask me</span> <select id="askSel"><option value="risky">before anything that touches my folders, runs commands, opens things or uses my hardware</option><option value="all">before every single action</option><option value="none">never — just do it, I'm watching</option></select></label>
       <span class="spacer"></span>
       <button class="danger hidden" id="stop"><span id="t_stop">Stop</span></button>
       <button class="primary" id="run" ><span id="t_run">Start</span></button>
@@ -41,7 +43,7 @@
       <input type="time" id="tAt" value="09:00">
       <button class="primary small" id="tAdd"><span id="t_add">Add</span></button>
     </div>
-    <p class="fine" id="t_sched_f">The new task uses the folders and switches ticked above. It runs by itself, so it does not stop to ask before each step: those folders and switches are its limits.</p>
+    <p class="fine" id="t_sched_f">The new task uses the folders and switches ticked above. It runs by itself, so it does not stop to ask before each step: those folders and switches are its limits. A task that runs by itself never uses the mouse or keyboard.</p>
   </div>
   <div class="card"><b id="t_inbox">Inbox — what it did</b><div id="inbox"></div></div>
 </main>
