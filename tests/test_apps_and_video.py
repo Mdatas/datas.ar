@@ -57,6 +57,18 @@ def test_uv_asset_and_accel_keys():
 def test_runner_starts_and_stops_a_user_recipe(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATAS_HOME", str(tmp_path))
     (tmp_path / "apps.d").mkdir()
+    # a tiny web server that does not do reverse-DNS on start (python -m http.server does,
+    # which takes 30 s+ on macOS CI runners)
+    server_py = (
+        "import sys, socketserver\n"
+        "from http.server import BaseHTTPRequestHandler\n"
+        "class H(BaseHTTPRequestHandler):\n"
+        "    def do_GET(self):\n"
+        "        self.send_response(200); self.end_headers(); self.wfile.write(b'ok')\n"
+        "    def log_message(self, *a): pass\n"
+        "socketserver.TCPServer.allow_reuse_address = True\n"
+        "socketserver.TCPServer(('127.0.0.1', int(sys.argv[1])), H).serve_forever()\n"
+    )
     recipe = {
         "id": "hello",
         "name": "Hello",
@@ -68,7 +80,7 @@ def test_runner_starts_and_stops_a_user_recipe(tmp_path: Path, monkeypatch):
         "plain_es": "x",
         "source": {"repo": "a/b", "tag": "1"},
         "install": [],
-        "launch": {"args": ["-m", "http.server", "{port}", "--bind", "127.0.0.1"]},
+        "launch": {"args": ["server.py", "{port}"]},
         "port": 8765,
     }
     (tmp_path / "apps.d" / "hello.json").write_text(json.dumps(recipe))
@@ -78,9 +90,10 @@ def test_runner_starts_and_stops_a_user_recipe(tmp_path: Path, monkeypatch):
     # pretend it is installed: the "venv python" is this interpreter
     d = m.dir("hello")
     (d / "src").mkdir(parents=True)
+    (d / "src" / "server.py").write_text(server_py)
     (d / ".datas-installed").write_text("1")
     monkeypatch.setattr(AppManager, "py", lambda self, app_id: Path(sys.executable))
-    r = m.start("hello", timeout=30)
+    r = m.start("hello", timeout=60)
     assert r["url"] == "http://127.0.0.1:8765/" and m.running("hello")
     assert any(a["id"] == "hello" and a["running"] for a in m.list())
     m.stop("hello")
