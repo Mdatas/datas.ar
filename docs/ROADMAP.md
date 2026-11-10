@@ -63,18 +63,23 @@ Status:
 - [x] **Updates with a way back** for the app, the AI engine, the picture engine and the list of AIs; automatic return when a new engine fails; settings saved once per version; a damaged settings file cannot stop the app — docs/UPDATES.md
 - [x] **Protection**: the local service answers only local names and refuses other web pages; no script can be written into the window; the AI cannot open addresses inside your network; downloads are checked; found programs cannot be used to run scripts while commands are off — docs/SECURITY.md
 - [x] **`datas selftest`**: a copy checks itself; every installer build runs it on the finished app
+- [x] **The real window is tested on every system**: each installer build opens the native window (WebView2, WKWebView, Qt WebEngine) and the page reports what it shows; a weekly and per-release run downloads a real small AI and checks a streamed answer, a document and voice (text → speech → text) on Windows, macOS and Linux
+- [x] **Phones link**: a phone pairs with the one-time code and shows a computer's Datas through the encrypted link; Android app with *My computers* — docs/DEVICES.md
+- [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
 ## Next
 
 **Installing and trusting**
-- [ ] Code signing: Windows (SmartScreen) and macOS (Developer ID + notarization) — needs paid certificates
+- [ ] Certificates: Windows (SignPath Foundation, Azure Trusted Signing or a certificate authority) and macOS (Apple Developer ID + notarization) — the build steps are written; the owner has to obtain them (docs/SIGNING.md)
 - [ ] A first published release, so *Check for updates* has something to find
 - [ ] Community catalog signing (sigstore) and a "tested on" list per kind of device
 
 **Devices**
 - [~] Android app (WebView + foreground service + bundled engine) — code in `android/`, APK built by CI
-- [ ] Android: linking with computers, file picker for model files, pictures, Snapdragon flavour, voice (whisper.cpp and Kokoro Android builds)
+- [x] Android: linking with computers (*My computers*)
+- [ ] Android: the Datas window for the phone's own AI too; voice from the phone in a linked computer's Datas; saving files to the phone; file picker for model files, pictures, Snapdragon flavour
+- [ ] iPhone companion app (link to your computers) — source in `ios/`, needs an Apple Developer account to reach a phone
 - [ ] Linking devices in different places: a setup helper for WireGuard / Tailscale
 - [ ] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split)
 - [ ] exo backend for all-Apple-Silicon pools

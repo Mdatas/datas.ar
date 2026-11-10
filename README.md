@@ -54,7 +54,8 @@ device can and cannot do, and the choices are yours.
 
 Link the computers you own with a one-time code. They can then keep the same chats, lend
 each other memory so a bigger AI fits, and use each other's AI; if one drops out, the one
-you are on carries on alone. The link is encrypted with the web's standard (TLS 1.3) and
+you are on carries on alone. An Android phone links the same way and shows the computer's
+Datas, so a small phone uses the big AI at home. The link is encrypted with the web's standard (TLS 1.3) and
 only devices you paired can connect — no account, no server in the middle. Strangers'
 devices are not supported, because that cannot be made private today.
 → [docs/DEVICES.md](docs/DEVICES.md) · [docs/P2P.md](docs/P2P.md)
@@ -89,7 +90,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 | **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit**. Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No administrator password. |
 | **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in [`installer/linux/README.md`](installer/linux/README.md). |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
-| **Android** | Its own app in [`android/`](android/README.md), built by the `android-apk` workflow. It chats on the phone; it cannot link with computers yet. |
+| **Android** | `Datas-release.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
 | **Anything with Python 3.10+** | `pip install datas-ar && datas` |
 
 Needs a 64-bit computer (or an arm64 phone). No account. The first start downloads the AI
@@ -101,9 +102,12 @@ Until a release is published, the installers are produced by the project's GitHu
 
 ## What is not there yet
 
-- **The installers are not code-signed.** Windows and macOS show a warning on first start.
-  Signing needs paid certificates.
-- **Phones do not link yet**, and there is no iPhone app.
+- **The installers carry no paid certificate.** Windows and macOS show a warning on first
+  start. Every release file does have a checksum and a signed record of where it was built;
+  what the paid certificates need is in [docs/SIGNING.md](docs/SIGNING.md).
+- **Phones**: Android links to your computers but has not been tried on a physical phone by
+  the project yet; the iPhone app is being written and needs an Apple Developer account to
+  reach a phone.
 - **Linked devices make a bigger AI fit, not a faster one.** Splitting many tasks across
   devices is planned.
 - **Some texts are English only**: the limits and comparisons written for each AI, and
@@ -124,7 +128,7 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | [RECOMMENDER.md](docs/RECOMMENDER.md) · [HARDWARE_DETECTION.md](docs/HARDWARE_DETECTION.md) | the memory arithmetic; what is read from the device, per system |
 | [CATALOG.md](docs/CATALOG.md) | the 27 verified AIs, the format, how to add one |
 | [RUNTIME.md](docs/RUNTIME.md) · [UPDATES.md](docs/UPDATES.md) | llama.cpp builds, pinning, updates and going back |
-| [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) | what is stored where; how the app is protected and what it does not protect against |
+| [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) · [SIGNING.md](docs/SIGNING.md) | what is stored where; how the app is protected and what it does not protect against; what is signed |
 | [DEVICES.md](docs/DEVICES.md) · [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | linked devices; the older manual pooling; why strangers' devices are ruled out |
 | [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
 | [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
@@ -135,7 +139,8 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 ```bash
 git clone https://github.com/Mdatas/datas.ar && cd datas.ar
 pip install -e ".[dev]" && pytest   # about 120 tests, under a minute; one runs a real llama-server on a tiny model
-datas selftest                      # checks this copy: window, lessons, documents, device link, local service
+datas selftest                      # checks this copy: window files, lessons, documents, device link, local service
+datas open --selfcheck out.json     # opens the real window, checks every screen shows, writes a report
 datas-cli --help                    # scan | recommend | run | chat | agent | link | provider | runtime | catalog | doctor …
 ```
 

@@ -66,6 +66,12 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# macOS signing: set DATAS_MACOS_IDENTITY to a "Developer ID Application: …" identity that is
+# in the keychain and every binary is signed with it for notarization (docs/SIGNING.md).
+# Without it PyInstaller signs "ad hoc", which is what an unsigned download is.
+MAC_ID = (os.environ.get("DATAS_MACOS_IDENTITY") or None) if MAC else None
+ENTITLEMENTS = os.path.join(ROOT, "installer", "macos", "entitlements.plist") if MAC_ID else None
+
 exe_gui = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
@@ -74,6 +80,8 @@ exe_gui = EXE(
     console=False,          # no terminal window — the app opens its own window
     disable_windowed_traceback=False,
     upx=False,
+    codesign_identity=MAC_ID,
+    entitlements_file=ENTITLEMENTS,
 )
 exe_cli = EXE(
     pyz, a.scripts, [],
@@ -82,6 +90,8 @@ exe_cli = EXE(
     icon=ICON,
     console=True,
     upx=False,
+    codesign_identity=MAC_ID,
+    entitlements_file=ENTITLEMENTS,
 )
 coll = COLLECT(exe_gui, exe_cli, a.binaries, a.datas, strip=False, upx=False, name="Datas")
 
@@ -98,5 +108,13 @@ if MAC:
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "12.0",
             "NSHumanReadableCopyright": "GPL-3.0-or-later — https://github.com/Mdatas/datas.ar",
+            # macOS closes an app that uses these without saying why
+            "NSMicrophoneUsageDescription": "Datas listens only while you use the microphone button, to turn your voice into text on this Mac. Nothing is sent anywhere.",
+            "NSCameraUsageDescription": "Datas takes a picture only when you ask for one, to show it to the AI on this Mac. Nothing is sent anywhere.",
+            "NSLocalNetworkUsageDescription": "Datas finds and talks to the devices you linked yourself on this network.",
+            "NSBonjourServices": ["_datas-link._tcp"],
+            "NSAppleEventsUsageDescription": "Datas controls other programs only when you allow the agent to.",
         },
+        codesign_identity=MAC_ID,
+        entitlements_file=ENTITLEMENTS,
     )

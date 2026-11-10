@@ -99,6 +99,24 @@ code. Full description and limits: [DEVICES.md](DEVICES.md).
 
 Details: [PRIVACY.md](PRIVACY.md).
 
+## A linked phone
+
+A phone linked to this computer (see [DEVICES.md](DEVICES.md#phones-and-tablets)) can open
+this computer's Datas through the encrypted link if you left that switch on. It is treated
+as you, with limits: requests that come from a phone are refused when they would reach the
+room (microphone, camera, screen), the computer beyond Datas (opening files and programs,
+commands for the agent, connections), other devices (linking, unlinking), or cannot be
+undone (erasing everything). The phone proves who it is with a secret that never leaves the
+encrypted connection; the computer keeps only its fingerprint.
+
+If a phone is lost or sold: *Devices → Unlink* on the computer. A phone that is unlocked in
+someone else's hands can read your chats there until you do.
+
+## Signatures
+
+What is signed and what is not — release files, Windows, macOS, Android — is in
+[SIGNING.md](SIGNING.md).
+
 ## Checking a copy
 
 `datas-cli selftest` checks that a copy of Datas is whole and behaves: the window files, the

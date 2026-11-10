@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # attach the installers to a release when run on a v* tag
+  contents: write       # attach the installers to a release when run on a v* tag
+  id-token: write       # sign a statement of where the files were built (provenance)
+  attestations: write
 
 jobs:
   linux:
@@ -90,6 +92,8 @@ jobs:
             dist/linux/*.deb
             dist/linux/*.pkg.tar.zst
             dist/linux/*.tar.gz
+      - name: checksum files (SHA-256) next to the packages
+        run: cd dist/linux && for f in *.deb *.pkg.tar.zst *.tar.gz; do sha256sum "$f" > "$f.sha256"; cat "$f.sha256"; done
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -97,9 +101,21 @@ jobs:
             dist/linux/*.deb
             dist/linux/*.pkg.tar.zst
             dist/linux/*.tar.gz
+            dist/linux/*.sha256
+      - name: signed provenance — a public, verifiable record that these files were built here from this commit
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/linux/*.deb
+            dist/linux/*.pkg.tar.zst
+            dist/linux/*.tar.gz
 
   macos:
     runs-on: macos-latest   # Apple Silicon runner → arm64 build (Metal)
+    env:
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERT_P12_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -114,9 +130,26 @@ jobs:
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
       - name: icon
         run: installer/macos/make-icns.sh
+      # --- Apple signing: only when the owner added the certificate (docs/SIGNING.md) ---
+      - name: put the Developer ID certificate in a keychain (only if it was provided)
+        if: env.HAS_APPLE_CERT == 'true'
+        env:
+          P12: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/sign.keychain-db"; KP="$(uuidgen)"
+          security create-keychain -p "$KP" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KP" "$KC"
+          echo "$P12" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
       - name: pyinstaller
         env:
           DATAS_VERSION: ${{ steps.v.outputs.version }}
+          DATAS_MACOS_IDENTITY: ${{ env.HAS_APPLE_CERT == 'true' && secrets.APPLE_SIGN_IDENTITY || '' }}
         run: pyinstaller --noconfirm installer/datas.spec
       - name: smoke test the frozen app
         run: |
@@ -149,7 +182,29 @@ jobs:
         with:
           name: Datas-macos
           path: dist/macos/*.dmg
+      - name: sign and notarize the disk image (only if the certificate was provided)
+        if: env.HAS_APPLE_CERT == 'true'
+        env:
+          IDENTITY: ${{ secrets.APPLE_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          DMG="$(ls dist/macos/*.dmg)"
+          codesign --force --timestamp --sign "$IDENTITY" "$DMG"
+          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$DMG"
+      - name: checksum file (SHA-256) next to the disk image
+        run: cd dist/macos && for f in *.dmg; do shasum -a 256 "$f" > "$f.sha256"; cat "$f.sha256"; done
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/macos/*.dmg
+          files: |
+            dist/macos/*.dmg
+            dist/macos/*.sha256
+      - name: signed provenance — a public, verifiable record that this file was built here from this commit
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/macos/*.dmg

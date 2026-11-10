@@ -131,7 +131,7 @@ d.stop()
 | POST | `/api/link/pair` | `{address, code}` — link with the device that shows the code |
 | GET | `/api/link/nearby` | devices on this network with linking on (names only) |
 | POST | `/api/link/options` | `{share_memory?, sync_chats?, device_name?}` |
-| DELETE | `/api/link/peers/{id}` | unlink |
+| DELETE · POST | `/api/link/peers/{id}` | unlink · for a phone `{window}`: may it open this device's Datas |
 | POST | `/api/link/sync` · `/api/link/use/{id}` | sync chats now · chat with the AI running on that device |
 | ANY | `/link/{id}/v1/{path}` | local door to the AI on a linked device; the request travels over the encrypted link |
 
@@ -178,6 +178,16 @@ d.stop()
 | POST | `/api/updates/engine` `{tag?}` · `/api/updates/engine/rollback` · `/api/updates/engine/cleanup` | new AI engine beside the old one, tried, with automatic return; go back; delete old copies |
 | POST | `/api/updates/images` `{tag?}` · `/api/updates/images/rollback` | the same for the picture engine |
 | POST · DELETE | `/api/updates/catalog` | fetch the newest list of AIs · go back to the built-in list |
+
+### Checking the window
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST · GET | `/api/selfcheck` | the window, opened with `?selfcheck`, reports what it showed; `Datas open --selfcheck out.json` reads it (used by the installer builds) |
+
+Requests that arrive from a linked phone through the link are answered like any other, except
+the ones listed in `REMOTE_REFUSED` (`datas/server/app.py`), which get `403`; `/api/status`
+then carries `remote: {device, phone}`.
 
 ## Command line
 

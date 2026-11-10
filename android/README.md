@@ -1,8 +1,13 @@
 # Datas for Android
 
-Native Android app (Kotlin) with the same flow as the desktop version: scan the phone →
-recommend a model → download → run → chat. The engine is the official llama.cpp Android
-build, bundled inside the APK; chat is llama-server's own web UI in a WebView.
+Native Android app with two parts:
+
+- **My computers**: link the phone to your computers that run Datas (one-time code, TLS 1.3,
+  nothing in the middle) and use their Datas from the phone. Needs Android 10+.
+  → [docs/DEVICES.md](../docs/DEVICES.md#phones-and-tablets)
+- **On this phone**: scan the phone → recommend a model → download → run → chat. The engine
+  is the official llama.cpp Android build, bundled inside the APK; chat is llama-server's own
+  web UI in a WebView.
 
 ```
 app/src/main/java/ar/datas/app/
@@ -12,7 +17,13 @@ app/src/main/java/ar/datas/app/
   Downloader.kt      Android DownloadManager (resumable, notification, app-specific storage)
   Engine.kt          llama-server command line + health check
   EngineService.kt   foreground service that owns the llama-server process (+ wake lock)
-  MainActivity.kt    the three-step screen; WebView → http://127.0.0.1:8421/
+  MainActivity.kt    the main screen: My computers, and the three steps for an AI on the phone
+  Computers.kt       the linked computers, in the app's private storage
+  WindowActivity.kt  a linked computer's Datas, full screen (WebView → a local door → the link)
+app/src/main/java/ar/datas/link/
+  LinkClient.java    pairing, pinned TLS 1.3, the door — plain Java, standard library only
+  Json.java          just enough JSON for the link's messages
+link-cli/LinkCli.java  a command line around LinkClient, used by tests/test_phone_link.py
 app/src/main/jniLibs/arm64-v8a/   llama.cpp binaries (fetched by scripts/android-fetch-llamacpp.sh)
 ```
 
@@ -53,7 +64,12 @@ Flags mirror the desktop recommender: `-c <ctx> -t <cores-1> --jinja -fa auto --
 build (Adreno OpenCL / Hexagon). It only runs on Snapdragon SoCs — ship it as a separate
 flavour, not as the default. The generic `android-arm64` build runs on every arm64 phone.
 
-## Known limits (v0.1)
+## Known limits
+
+- Not yet tried on a physical phone by the project (compiled by CI; the link code is tested
+  against a real Datas on every change).
+- From a linked computer's Datas: no voice from the phone yet; files saved from answers stay
+  on the computer.
 
 - Models download into the app's external files dir (`Android/data/ar.datas.app/files/models`);
   uninstalling the app deletes them.

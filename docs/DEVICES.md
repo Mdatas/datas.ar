@@ -26,6 +26,39 @@ with one click.
 
 From the command line: `datas-cli link status | code | pair <address> <code> | unlink <id> | sync`.
 
+## Phones and tablets
+
+The Datas app for Android has a card called **My computers**.
+
+1. On the computer: *Devices → Show a code*.
+2. On the phone: *My computers → Link a computer*. Computers on the same Wi-Fi are listed;
+   tap yours (or type the address the computer shows) and type the code.
+3. Tap **Open** next to the computer. The phone now shows that computer's Datas — its chats,
+   its AIs, helpers, documents, Learn — and the answers are written by the computer's AI.
+
+So a phone with little memory uses the big AI at home. The phone app also still runs a small
+AI of its own, without any connection.
+
+**What a linked phone may do** is decided at the computer, per phone, with one switch on the
+Devices screen: *May open Datas on this computer*. With it on, the phone can use Datas there
+as if you sat in front of it — with these exceptions, which are refused because a phone can
+be lost or borrowed:
+
+- the computer's microphone, camera, screen and other hardware;
+- opening files, folders or programs on the computer;
+- linking or unlinking devices, adding connections (MCP), erasing everything Datas remembers,
+  installing an update;
+- letting the agent run commands.
+
+**If a phone is lost:** press *Unlink* next to it on the computer's Devices screen. From that
+moment the phone is refused.
+
+Limits today: the phone has to reach the computer — the same Wi-Fi, or a private network
+between your devices (WireGuard, Tailscale); files saved from an answer stay on the computer;
+talking to the AI by voice is not available from the phone yet; chats made with the phone's
+own small AI are not shared with the computer. An iPhone app is being written
+(see [MOBILE.md](MOBILE.md)).
+
 ## How it is protected
 
 Words used below: **TLS** (Transport Layer Security) is the web standard that encrypts
@@ -44,6 +77,21 @@ What an outsider sees — your Wi-Fi router, your internet provider, someone on 
 network: that two of your devices exchange encrypted data, how much, and when. Not the
 content.
 
+### Phones: a secret instead of a certificate
+
+A phone app does not make a certificate. When linking, it invents a long random secret
+(256 bits) and uses the one-time code to prove that the secret is its own, while the computer
+proves it knows the code too — the same exchange as between computers, with the fingerprint
+of the phone's secret in the place of a certificate. Afterwards the phone:
+
+- connects with TLS 1.3 and accepts **only** the exact certificate the computer had when they
+  were linked (so another device at that address is refused);
+- shows its secret inside that encrypted connection.
+
+The computer stores only a fingerprint (SHA-256) of the secret, so its list of linked devices
+does not contain anything that could be used to pretend to be the phone. The phone keeps the
+secret in the app's private storage.
+
 ### What travels on the link
 
 | Purpose | What is sent |
@@ -55,7 +103,9 @@ content.
 
 ## Limits, stated plainly
 
-- **Computers only, for now.** The Android app cannot link yet.
+- **Phones are a window, not a full member yet.** A linked phone shows and uses a computer's
+  Datas; it does not lend memory or share the chats of its own small AI. Android only for
+  now; linking needs Android 10 or newer.
 - **Bigger, not faster.** Shared memory lets a larger AI fit. Every word still passes
   through all the devices, so the speed is set by the slowest one and by the network. A cable
   or good Wi-Fi matters.
@@ -89,9 +139,19 @@ Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_
 - Messages: a 4-byte length followed by JSON; after an `rpc` or `v1` request the same
   connection carries raw bytes.
 - Operations: `pair`, `info`, `sync`, `rpc` (tunnel to the local `ggml-rpc-server` on
-  `127.0.0.1`), `v1` (OpenAI-compatible request to the local AI).
+  `127.0.0.1`), `v1` (OpenAI-compatible request to the local AI), and for phones `window`
+  (the connection is joined to the local service on `127.0.0.1`).
+- A phone pairs with `{"op":"pair","app":true,"id":<SHA-256 of its secret>,…}` and later
+  sends `"auth": <secret>` in its first message instead of presenting a certificate; it may
+  only ask for `info` and `window`. The service learns which of its connections come from a
+  phone (`core.remote_clients`) and applies `remote_refusal()` in `datas/server/app.py`.
+- The phone's side: [`android/…/ar/datas/link/LinkClient.java`](../android/app/src/main/java/ar/datas/link/LinkClient.java)
+  (plain Java, standard library only) and the same in Python,
+  [`tests/phone.py`](../tests/phone.py). `tests/test_phone_link.py` compiles the Java and runs
+  it against a real Datas.
 - Rediscovery after an address change: mDNS service `_datas-link._tcp` carrying the device id.
 - Files in `<data folder>/link/`: `device.key` (private, mode 600), `device.crt`,
-  `peers.json` (name, address and certificate of each paired device).
+  `peers.json` (name, address and certificate of each paired computer; name and secret
+  fingerprint of each paired phone).
 - The older, manual way of pooling memory without pairing is described in
   [POOLING.md](POOLING.md); it is unencrypted and meant only for a network you fully control.

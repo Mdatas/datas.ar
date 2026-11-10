@@ -1,15 +1,25 @@
 # Phones and tablets
 
-## Android — native app (`android/`)
+## Android — the app (`android/`)
 
-A Kotlin app with the same three steps (scan → recommend → install & run → chat), the
-same catalog file, a port of the recommender, Android's DownloadManager for the weights,
-and the official llama.cpp Android build bundled in the APK (~27 MB stripped). Chat is
-llama-server's own web UI in a WebView. Build it with Android Studio or let the
-`android-apk` GitHub Actions workflow produce the APK — see [android/README.md](../android/README.md).
+Two things in one app:
 
-Status: written and reviewed, **not yet compiled on a phone** — the first APK built by CI
-or Android Studio is the real test. Report what your device picks.
+- **My computers** — link the phone to a computer of yours that has Datas (one-time code,
+  encrypted, no account) and use that computer's Datas from the phone: its AIs, chats,
+  helpers, documents and Learn. Described in [DEVICES.md](DEVICES.md#phones-and-tablets).
+  Needs Android 10 or newer.
+- **On this phone** — scan the phone → recommend a small AI → download → chat, with nothing
+  leaving the phone. Same catalog file as the desktop, a port of the recommender, Android's
+  DownloadManager for the files, and the official llama.cpp Android build inside the APK
+  (about 27 MB). The chat here is still llama.cpp's own page, not the Datas window.
+
+Get it: the `android-apk` workflow builds the APK on every change and attaches it to each
+release — see [android/README.md](../android/README.md).
+
+Status, honestly: the link code is tested on every change against a real Datas (the tests
+compile it and pair, open the window, get refused where a phone should be). The app is
+compiled by the build. **It has not been tried on a physical phone by the project yet** —
+tell us what happens on yours.
 
 ## Android — alternative path via Termux
 
@@ -49,19 +59,17 @@ the engine's web UI in a WebView. Open-source references for the next steps (fil
 picker, vision, Play Store packaging): PocketPal AI (MIT) and Google AI Edge Gallery
 (Apache-2.0).
 
-## iOS — planned
+## iPhone and iPad
 
-There is no way to install Python-based tooling on iOS. The path is a native Swift shell
-around the `llama-<tag>-xcframework.zip` that llama.cpp ships on every release, reusing
-Datas' catalog JSON and recommender logic (ported to Swift; it is ~300 lines of
-arithmetic). Constraints to design around:
+There is no way to run Python on iOS, and Apple only lets apps be installed through its
+store or with a paid developer account. Two steps are planned:
 
-- No background execution: inference stops when the app is backgrounded.
-- App Store rules: the engine ships in the binary; models are downloaded as data (fine).
-- Memory: iOS has a hard per-app limit (~ 60 % of RAM on recent iPhones); the headroom
-  model maps onto it directly.
-- Tiers: iPhone 15 Pro / 16 / 17 class (8 GB) → 3–4B models; older → ≤2B.
+1. **A companion app** (being written, `ios/`): link to your computers with the one-time
+   code and use their Datas from the phone, exactly like the Android "My computers". It runs
+   no AI on the phone, so it is small.
+2. **An AI on the iPhone itself**, on the `llama-<tag>-xcframework.zip` that llama.cpp ships
+   with every release, reusing Datas' catalog and recommender. Constraints: no work in the
+   background, a hard memory limit per app (about 60 % of RAM), 8 GB iPhones → 3–4B models.
 
-Until then, a phone is the best **client** of a pool or a desktop: in Datas on the
-desktop run `datas serve --host 0.0.0.0` (behind a VPN), and point any OpenAI-compatible
-iOS chat app at `http://<desktop>:8420/v1`.
+Putting either on a real iPhone needs an Apple Developer account (US$99 a year) owned by
+whoever publishes the app — the project cannot do that for you.

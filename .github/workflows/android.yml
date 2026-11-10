@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # attach the installer to a release when run on a v* tag
+  contents: write       # attach the installer to a release when run on a v* tag
+  id-token: write       # sign a statement of where the file was built (provenance)
+  attestations: write
 
 jobs:
   apk:
@@ -57,10 +59,18 @@ jobs:
           path: |
             Datas-debug.apk
             Datas-release.apk
+      - name: checksum files (SHA-256)
+        run: for f in Datas-debug.apk Datas-release.apk; do sha256sum "$f" > "$f.sha256"; cat "$f.sha256"; done
       - name: attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Datas-debug.apk
             Datas-release.apk
+            Datas-release.apk.sha256
+      - name: signed provenance — a public, verifiable record that this file was built here from this commit
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: Datas-release.apk

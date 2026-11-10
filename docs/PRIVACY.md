@@ -63,6 +63,10 @@ AI's internal numbers when memory is shared, and your messages when you use anot
 AI. Someone watching the network sees that your devices talk, how much and when — not what.
 Details and limits: [DEVICES.md](DEVICES.md).
 
+A linked **phone** shows this computer's Datas: what you type on the phone travels over the
+same encrypted link and is handled, and kept, by the computer — nothing is stored on the
+phone except the link itself (the computer's fingerprint and the phone's secret).
+
 The older, hand-made way of pooling (`datas pool worker --host …`, [POOLING.md](POOLING.md))
 is llama.cpp's own protocol with no password and no encryption: only for a network you fully
 control.

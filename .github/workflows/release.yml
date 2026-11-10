@@ -38,3 +38,4 @@ jobs:
           gh workflow run windows-installer.yml --ref "v$VERSION"
           gh workflow run desktop-installers.yml --ref "v$VERSION"
           gh workflow run android.yml --ref "v$VERSION"
+          gh workflow run e2e.yml --ref "v$VERSION"   # a real AI, a real answer, voice — on that exact version
