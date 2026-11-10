@@ -703,6 +703,20 @@ def run(body: RunBody) -> dict:
     ).to_dict()
 
 
+@app.post("/api/starter")
+def starter() -> dict:
+    """The small starter AI (about 0.4 GB): fetched and started at the device test, so the
+    guide can answer questions — about AI, about Datas, from every document Datas ships —
+    before the person chooses and downloads a bigger AI. Nothing happens if an AI is running."""
+    from datas.orchestrator import STARTER_ID, STARTER_QUANT
+
+    if core.server.running():
+        return {"skipped": "an AI is already running"}
+    return core.start_run_job(
+        STARTER_ID, STARTER_QUANT, 4096, 16, False, False, False, False
+    ).to_dict()
+
+
 @app.post("/api/run-custom")
 def run_custom(body: RunCustomBody) -> dict:
     job = core._job("run", f"Run {Path(body.path).name}")

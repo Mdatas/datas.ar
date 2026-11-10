@@ -7,3 +7,7 @@ Later: switch models, plug in an API key, pool several devices, run agents.
 
 __version__ = "0.5.0"
 __app_name__ = "Datas.ar"
+
+from datas import nowindow as _nowindow  # noqa: E402
+
+_nowindow.install()  # Windows: programs started by Datas never flash a console window

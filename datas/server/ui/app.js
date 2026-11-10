@@ -554,7 +554,7 @@ function welcome() {
       h("p", { class: "small muted", text: t("welcome_change_later") })],
     actions: close => h("button", { class: "btn primary", onclick: async () => {
       try { S.priv = await api("/api/privacy", { body: { memory_mode: mode, onboarded: true, lang: S.lang } }); } catch (e) { oops(e); }
-      close(); await refreshStatus(); renderShell(); go("chat");
+      close(); await refreshStatus(); renderShell(); go("setup");
     } }, t("welcome_start")),
   });
 }
@@ -579,6 +579,8 @@ async function boot() {
   Chat.fresh();
   go("chat");
   if (!S.priv.onboarded) welcome(); else hello();
+  // nothing to chat with yet: the first thing to see is the device test
+  Chat.library(true).then(lib => { if (S.priv.onboarded && !(lib.installed || []).length && !S.status.server.running && S.screen === "chat") go("setup"); }).catch(() => {});
   setInterval(tick, 6000);
   const asked = new URLSearchParams(location.search);
   if (asked.get("autorun")) autorun(asked.get("autorun"));

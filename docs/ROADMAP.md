@@ -72,6 +72,9 @@ Status:
 
 - [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 27 checked documents from FEMA, CDC, CPSC, WHO, Hesperian and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
 - [x] A weekly check that every library document still downloads and matches its checksum
+- [x] **The first screen is the device test**: Datas shows what the device has (processor, memory, graphics card, free disk), then asks what work you want and how much of the device the AI may use (light, balanced or heavy), then gets and runs the recommended AI
+- [x] **A starter AI from the first minute**: a small AI (Qwen3 0.6B, about 0.4 GB) can be fetched at the device test; the guide answers from every document Datas ships — the AI lessons, the survival guides, and how Datas is built — before a bigger AI is downloaded
+- [x] **No more flashing black windows on Windows**: every helper program Datas starts runs with no console window
 - [x] *About*: how Datas works in seven steps, and every part it is built on grouped, with official links and licence links; a test keeps every dependency credited
 - [ ] More Spanish documents in the library; Portuguese
 

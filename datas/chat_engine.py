@@ -233,6 +233,10 @@ def system_prompt(
     ]
     if skill != "guide":
         all_docs += assistants.docs_text(skill)
+    else:  # the guide answers from everything Datas ships: lessons, survival, how it is built
+        from datas import manual
+
+        all_docs += manual.docs_text(lang)
     try:
         all_docs += context_docs()
     except Exception:  # noqa: BLE001 - an unreadable file must not break the chat

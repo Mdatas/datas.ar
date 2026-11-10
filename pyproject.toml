@@ -85,6 +85,9 @@ packages = ["datas"]
 "datas/survival/catalog.json" = "datas/survival/catalog.json"
 "datas/survival/guides.en.md" = "datas/survival/guides.en.md"
 "datas/survival/guides.es.md" = "datas/survival/guides.es.md"
+# the documentation, so the guide can answer from it in an installed copy (datas/manual.py)
+"docs" = "datas/manual"
+"README.md" = "datas/manual/README.md"
 
 [tool.ruff]
 line-length = 100

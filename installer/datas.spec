@@ -25,6 +25,9 @@ datas = [
     (os.path.join(ROOT, "datas", "survival", "catalog.json"), os.path.join("datas", "survival")),
     (os.path.join(ROOT, "datas", "survival", "guides.en.md"), os.path.join("datas", "survival")),
     (os.path.join(ROOT, "datas", "survival", "guides.es.md"), os.path.join("datas", "survival")),
+    # the documentation, so the guide answers from it (datas/manual.py)
+    (os.path.join(ROOT, "docs", "*.md"), os.path.join("datas", "manual")),
+    (os.path.join(ROOT, "README.md"), os.path.join("datas", "manual")),
     # whole folders: the window (pages, style, scripts, fonts, icons) and the fonts used in PDFs
     (os.path.join(ROOT, "datas", "server", "ui"), os.path.join("datas", "server", "ui")),
     (os.path.join(ROOT, "datas", "fonts"), os.path.join("datas", "fonts")),

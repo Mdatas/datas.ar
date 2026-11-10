@@ -36,8 +36,39 @@ function modelFacts(c) {
     [t("f_page"), p.model_page && extLink(t("open_page"), p.model_page)],
   ]);
 }
+/* The device test: what this computer has, in plain words. Run first, before choosing. */
+async function deviceTest(box, onDone) {
+  add(clear(box), spinner());
+  const s = await api("/api/spec?refresh=1");
+  const gpus = (s.gpus || []).map(g => g.name + (g.vram_total ? " (" + gb(g.vram_total / 1073741824) + ")" : g.unified ? " (" + t("dt_shared") + ")" : ""));
+  add(clear(box), h("div", { class: "list" },
+    [["chip", t("dt_cpu"), s.cpu_name + " — " + t("dt_cores", { n: s.cpu_cores_logical })],
+     ["sliders", t("dt_ram"), gb(s.ram_gib)],
+     ["image", t("dt_gpu"), gpus.length ? gpus.join(", ") : t("dt_no_gpu")],
+     ["save", t("dt_disk"), gb(s.disk_free_models / 1073741824)]].map(([ic, k, v]) =>
+      h("div", { class: "item" }, h("div", { class: "row" }, icon(ic, 18), h("span", { class: "name grow", text: k }), h("span", { text: v }))))));
+  S.devtested = true;
+  if (onDone) onDone(s);
+}
+
 SCREENS.setup = async view => {
   const wrap = page(view, t("setup_title"), t("setup_lead"));
+  // 1. the device test, then what to do with it
+  const testBox = h("div"), steps = h("div", { class: S.devtested ? "" : "hidden" });
+  let starter = true;
+  const startTest = guard(async () => {
+    await deviceTest(testBox, () => steps.classList.remove("hidden"));
+    load();
+    if (starter && !S.status.server.running) {
+      try { const r = await api("/api/starter", { method: "POST" }); if (r.id) { toast(t("dt_starter_getting"), { ms: 9000 }); Jobs.track(r, { title: t("dt_starter") }).then(refreshStatus); } } catch (e) { /* the starter is a convenience */ }
+    }
+  });
+  wrap.append(sec(t("dt_title"), t("dt_sub"), testBox));
+  if (S.devtested) deviceTest(testBox).catch(() => {});
+  else add(testBox, h("div", { class: "hero" },
+    h("p", { text: t("dt_lead") }),
+    h("label", { class: "row small", style: "gap:8px;align-items:flex-start" }, h("input", { type: "checkbox", checked: true, onchange: e => { starter = e.target.checked; } }), h("span", { text: t("dt_starter_hint") })),
+    h("div", { class: "row" }, h("button", { class: "btn primary", onclick: startTest }, icon("chip", 18), t("dt_run")))));
   const uses = new Set(String(S.status.use_cases || "text").split(",").filter(Boolean));
   uses.add("text");
   let mode = S.status.resource_mode || "balanced", ctx = S.status.context || 8192, lib = { installed: [] };
@@ -97,10 +128,11 @@ SCREENS.setup = async view => {
   const drawUses = () => add(clear(useRow), ["images", "coding", "agents", "sound", "video"].map(u =>
     h("button", { class: "toggle-chip", "aria-pressed": String(uses.has(u)), onclick: () => { if (uses.has(u)) uses.delete(u); else uses.add(u); drawUses(); load(); } }, t("use_" + u))));
   drawUses();
-  wrap.append(sec(t("setup_what"), t("setup_what_sub"), useRow),
+  add(steps, sec(t("setup_what"), t("setup_what_sub"), useRow),
     sec(t("setup_mode"), t("setup_mode_sub"), seg([["light", t("mode_light")], ["balanced", t("mode_balanced")], ["heavy", t("mode_heavy")]], mode, v => { mode = v; load(); })),
     result);
-  await load();
+  wrap.append(steps);
+  if (S.devtested) await load();
 };
 
 /* ======================= My AIs ======================= */
