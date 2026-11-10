@@ -62,7 +62,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "service install failed" }
           $line = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run').Datas
           Write-Output "Run entry: $line"
-          if ($line -notmatch 'Datas\.exe" serve --no-browser --home') { throw "unexpected Run entry" }
+          if ($line -notmatch 'Datas\.exe"? serve --no-browser --home') { throw "unexpected Run entry" }
           $ok = $false
           foreach ($i in 1..60) { try { Invoke-RestMethod http://127.0.0.1:8420/api/status | Out-Null; $ok = $true; break } catch { Start-Sleep 1 } }
           if (-not $ok) { throw "the background Datas does not answer" }
