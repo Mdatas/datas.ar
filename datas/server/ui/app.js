@@ -68,6 +68,7 @@ const ICONS = {
   doc: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
   chain: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
   shield: "M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z",
+  compass: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15.5 8.5l-2 5-5 2 2-5z",
   up: "M12 20V8M7 12l5-5 5 5M5 4h14", undo: "M8 8L4 12l4 4M4 12h10a5 5 0 0 1 0 10h-3",
   agent: "M7 9h10v9H7zM12 9V5M10 13h.01M14 13h.01M4 13v3M20 13v3",
 };
@@ -401,7 +402,7 @@ function md(src) {
 }
 
 /* ---------- frame: sidebar, top bar, moving between screens ---------- */
-const NAV = [["library", "chip"], ["create", "image"], ["tools", "toolbox"], ["devices", "devices"], ["learn", "book"], ["settings", "sliders"]];
+const NAV = [["library", "chip"], ["create", "image"], ["tools", "toolbox"], ["devices", "devices"], ["learn", "book"], ["survival", "compass"], ["settings", "sliders"]];
 function renderShell() {
   add(clear($("#side")),
     h("div", { class: "brand" }, sunMark("awake", 32), h("span", { class: "wordmark", text: "Datas" }),

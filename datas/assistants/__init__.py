@@ -220,9 +220,15 @@ def delete_doc(aid: str, name: str) -> bool:
 
 
 def docs_text(aid: str | None) -> list[dict]:
-    """[{name, text}] for a custom helper's reference documents (empty for built-in ones)."""
+    """[{name, text}] for a custom helper's reference documents (empty for built-in ones,
+    except the survival helper, which reads the offline survival library)."""
     if not aid:
         return []
+    if aid == "survival":
+        from datas import survival
+        from datas.config import Config
+
+        return survival.docs_text(Config.load().lang)
     d = user_dir() / Path(aid).name
     if not d.is_dir():
         return []

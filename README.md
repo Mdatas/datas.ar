@@ -34,8 +34,9 @@ device can and cannot do, and the choices are yours.
 | **Tools** | Recording → text with subtitles, text → audio, summarise or translate long documents; the agent; cameras, printers and other hardware; the open programs found on this computer; connections; bigger creative tools. |
 | **Devices** | Link your own computers with a one-time code. |
 | **Learn** | AI from zero to expert, in English and Spanish. |
+| **Offline survival** | Guides and a library kept on the device for when the power, the water or the internet fail — water, food, electricity, staying connected, travel, long self-sufficiency and, above all, organising with neighbours. The smallest AI answers from it with no internet. |
 | **Settings** | Privacy, language and look (day or night), the AI, voice, paid online services, updates. |
-| **About Datas** | Version, everything Datas is built on, technical logs. |
+| **About Datas** | Version, how Datas works in seven steps, everything it is built on (grouped, each with its official link and licence), technical logs. |
 
 ### In a chat
 
@@ -63,6 +64,16 @@ another one of yours too — handy for one without a screen. The link is encrypt
 web's standard (TLS 1.3) and only devices you paired can connect — no account, no server in
 the middle. Strangers' devices are not supported, because that cannot be made private today.
 → [docs/DEVICES.md](docs/DEVICES.md) · [docs/P2P.md](docs/P2P.md)
+
+### Offline survival
+
+Datas' own guides (English and Spanish, every figure tied to its public source) and a library
+of about 78 MB to keep: FEMA's *Are You Ready?* / *¿Está listo?* and CERT manual, CDC water and
+generator sheets, WHO water and sanitation notes, Hesperian's *Where There Is No Doctor*
+chapters, the US Army survival manual, and public-domain books such as Kropotkin's *Mutual Aid*,
+*Don Quijote* and *Martín Fierro*. Each document is downloaded from its publisher and checked
+against a pinned checksum; a built-in helper answers from all of it with no internet.
+→ [docs/SURVIVAL.md](docs/SURVIVAL.md)
 
 ### Learn
 

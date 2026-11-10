@@ -33,7 +33,7 @@ copies of documents, some cash, warm clothes.
 alone. Agree on one meeting point for your building or block, and one place where messages are
 left on paper.
 
-Sources: FEMA, *Are You Ready?* (the library below; ready.gov/prepare-for-emergencies).
+Sources: FEMA, *Are You Ready?* (the library below; ready.gov/collection/are-you-ready).
 
 ## Water
 <!-- id: water -->
@@ -65,9 +65,10 @@ own. Agree who tests and treats it, who carries water for those who cannot, and 
 The WHO technical notes in the library explain cleaning wells and tanks for a whole community.
 
 Sources: CDC, *Make Water Safe During an Emergency*
-(cdc.gov/water-emergency/communication-resources/); CDC, *Personal Preparation and Storage of
-Safe Water* (archived copy, webarchive.library.unt.edu); WHO/WEDC *Technical Note 5*
-(repository.lboro.ac.uk).
+(cdc.gov/water-emergency/communication-resources/);
+CDC, *Personal Preparation and Storage of Safe Water*
+(archived copy, webarchive.library.unt.edu);
+WHO/WEDC, *Technical Note 5* (repository.lboro.ac.uk).
 
 ## Food
 <!-- id: food -->
@@ -124,8 +125,9 @@ and never in a closed garage (carbon monoxide). Do not run the starter battery f
 medicine fridge going if people share it on a schedule. Put the charging point in a common
 place and write the turns on paper. Check on neighbours who run generators.
 
-Sources: CDC, *When the power goes out, keep your generator outside*; US CPSC, *What to Know
-About Generators and Carbon Monoxide*; FEMA generator safety guidance (in the library).
+Sources: CDC, *When the power goes out, keep your generator outside*;
+US CPSC, *What to Know About Generators and Carbon Monoxide*;
+FEMA generator safety guidance (in the library).
 
 ## Staying connected
 <!-- id: connect -->
@@ -163,8 +165,8 @@ Sources: Meshtastic documentation (meshtastic.org/docs); Kiwix (kiwix.org).
 ## Health and first aid
 <!-- id: health -->
 
-- Learn **first aid** before you need it; the library has the first-aid chapter of *Where There
-  Is No Doctor* (English and Spanish).
+- Learn **first aid** before you need it; the library has the first-aid chapter of
+  *Where There Is No Doctor* (English and Spanish).
 - Keep a **list of each person's conditions, allergies and medicines** on paper, and a supply of
   the medicines you take every day. Medicines that need cold (like insulin) are a priority for
   any fridge or generator.
@@ -228,8 +230,8 @@ When normal supplies stop for weeks or months, everything becomes a cycle:
 the weakest. Kropotkin's *Mutual Aid* (library) is the classic case that cooperation — not only
 competition — keeps groups alive.
 
-Sources: Hesperian, *A Community Guide to Environmental Health* (library); WHO/WEDC technical
-notes (library).
+Sources: Hesperian, *A Community Guide to Environmental Health* (library);
+WHO/WEDC technical notes (library).
 
 ## Doing it together
 <!-- id: community -->
@@ -255,8 +257,9 @@ help the injured until professionals arrive.
 a power bank, can serve a whole building over a local Wi-Fi network: everyone's phone can link
 to it and ask.
 
-Sources: FEMA, *CERT Basic Training Participant Manual*; FEMA, *Are You Ready?*; FEMA /
-Ready.gov, *Disaster Preparedness Guide for Older Adults* (all in the library).
+Sources: FEMA, *CERT Basic Training Participant Manual*;
+FEMA, *Are You Ready?*;
+FEMA / Ready.gov, *Disaster Preparedness Guide for Older Adults* (all in the library).
 
 ## Using Datas when the internet is gone
 <!-- id: datas -->

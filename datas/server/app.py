@@ -2087,6 +2087,66 @@ def open_exported(body: OpenBody) -> dict:
 # ---------------------------------------------------------------------------
 # Learn: lessons, a glossary and a hand-checked list of outside material
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Offline survival: Datas' own guides and a library kept on this device (datas/survival)
+# ---------------------------------------------------------------------------
+@app.get("/api/survival")
+def survival_index(lang: str | None = None) -> dict:
+    from datas import survival
+
+    return survival.state(lang or core.cfg.lang)
+
+
+def _survival_call(fn, *args):  # noqa: ANN001, ANN202
+    from datas.words import Problem
+
+    try:
+        return fn(*args)
+    except Problem as e:
+        raise HTTPException(400, e.say(core.cfg.lang)) from e
+
+
+@app.post("/api/survival/keep/{item_id}")
+def survival_keep(item_id: str) -> dict:
+    """Download one document from its publisher (a job: it can be large)."""
+    from datas import survival
+
+    _survival_call(survival._item, item_id)  # noqa: SLF001 - unknown ids are said at once
+    return _update_job("Survival library", lambda j: survival.fetch(item_id, j.progress))
+
+
+@app.post("/api/survival/keep-all")
+def survival_keep_all() -> dict:
+    from datas import survival
+
+    lang = core.cfg.lang
+    return _update_job("Survival library", lambda j: survival.fetch_all(lang, j.progress))
+
+
+@app.delete("/api/survival/keep/{item_id}")
+def survival_forget(item_id: str) -> dict:
+    from datas import survival
+
+    return {"removed": _survival_call(survival.remove, item_id)}
+
+
+@app.get("/api/survival/file/{item_id}")
+def survival_file(item_id: str) -> FileResponse:
+    """A kept document, to read in the window (PDF or plain text)."""
+    from datas import survival
+
+    f = _survival_call(survival.file_of, item_id)
+    kind = "application/pdf" if f.suffix == ".pdf" else "text/plain; charset=utf-8"
+    return FileResponse(str(f), media_type=kind, headers={"Content-Disposition": "inline"})
+
+
+@app.get("/api/survival/text/{item_id}")
+def survival_text(item_id: str) -> dict:
+    from datas import survival
+
+    return {"text": _survival_call(survival.text_of, item_id)}
+
+
 @app.get("/api/learn")
 def learn_index(lang: str | None = None) -> dict:
     return learn.listing(lang or core.cfg.lang, core.cfg)

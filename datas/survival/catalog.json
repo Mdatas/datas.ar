@@ -68,7 +68,7 @@
    "lang": "en",
    "kind": "guide",
    "page": "https://www.ready.gov/collection/are-you-ready",
-   "url": "https://www.ready.gov/sites/default/files/2021-03/are-you-ready-guide.pdf",
+   "url": "https://www.ready.gov/sites/default/files/2021-11/are-you-ready-guide.pdf",
    "format": "pdf",
    "license": "US Government work: public domain in the USA",
    "license_url": "https://www.usa.gov/government-copyright",
@@ -76,8 +76,8 @@
     "en": "The classic family and neighbourhood preparedness book: plans, supplies, every kind of disaster, what to do before, during and after.",
     "es": "El libro clásico de preparación para familias y barrios: planes, provisiones, cada tipo de desastre, qué hacer antes, durante y después."
    },
-   "size": null,
-   "sha256": null
+   "size": 4233522,
+   "sha256": "3873f8ae7528389adacab72259c37b9ae3c507bd3ae23783122e06586560040c"
   },
   {
    "id": "fema-esta-listo",
@@ -171,12 +171,12 @@
     "en": "One page: boiling, bleach, filters.",
     "es": "Una página: hervir, lavandina, filtros (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 730926,
+   "sha256": "c39b55b4d8f3dd40ecd2b13175f7661b52dfc6e73e4a24ef189de64fb9d513b1"
   },
   {
    "id": "cdc-water-safe-es",
-   "title": "Cómo hacer que el agua sea segura en una emergencia",
+   "title": "Haga que el agua sea segura durante una emergencia",
    "by": "CDC (Estados Unidos)",
    "topic": "water",
    "lang": "es",
@@ -190,8 +190,8 @@
     "en": "The same page in Spanish.",
     "es": "Una página: hervir, lavandina, filtros."
    },
-   "size": null,
-   "sha256": null
+   "size": 518009,
+   "sha256": "66c2a94557afcc2458ea8e13a17f96bf697ca01c98413515a42c210786432938"
   },
   {
    "id": "cdc-use-safe-water",
@@ -209,8 +209,8 @@
     "en": "What safe water is needed for: drinking, cooking, brushing teeth, washing hands, baby formula.",
     "es": "Para qué hace falta agua segura: beber, cocinar, lavarse los dientes y las manos, preparar la leche del bebé (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 141092,
+   "sha256": "f7bda1f9e7827ee74278d408001e9cdf4529924fa70144e0696ee0fd4ee39bad"
   },
   {
    "id": "who-wash-emergencies",

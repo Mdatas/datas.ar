@@ -11,434 +11,777 @@
       "role": "The engine that runs the AI models (llama-server, pooling over RPC, benchmarks).",
       "by": "ggml-org / Georgi Gerganov and contributors",
       "license": "MIT",
-      "url": "https://github.com/ggml-org/llama.cpp"
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "group": "engine",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "Hugging Face Hub",
       "role": "Where the open models are downloaded from, with verified file sizes and checksums.",
       "by": "Hugging Face",
       "license": "Apache-2.0 (library)",
-      "url": "https://huggingface.co"
+      "url": "https://huggingface.co",
+      "group": "engine",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Qwen (Qwen3, 3.5, 3.6, 3.8, Qwen3-Coder-Next)",
       "role": "Open-weight models in the catalog.",
       "by": "Alibaba Cloud Qwen team",
       "license": "Apache-2.0 (verify per model)",
-      "url": "https://qwen.ai"
+      "url": "https://qwen.ai",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Gemma 4",
       "role": "Open-weight models in the catalog (E2B, E4B, 12B, 26B-A4B, 31B).",
       "by": "Google DeepMind",
       "license": "Gemma Terms of Use",
-      "url": "https://ai.google.dev/gemma"
+      "url": "https://ai.google.dev/gemma",
+      "group": "models",
+      "license_url": "https://ai.google.dev/gemma/terms"
     },
     {
       "name": "gpt-oss 20B / 120B",
       "role": "Open-weight models in the catalog.",
       "by": "OpenAI",
       "license": "Apache-2.0",
-      "url": "https://openai.com/open-models"
+      "url": "https://openai.com/open-models",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Phi-4 mini",
       "role": "Open-weight model in the catalog.",
       "by": "Microsoft",
       "license": "MIT",
-      "url": "https://azure.microsoft.com/en-us/products/phi"
+      "url": "https://azure.microsoft.com/en-us/products/phi",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "SmolLM3",
       "role": "Open-weight model in the catalog.",
       "by": "Hugging Face",
       "license": "Apache-2.0",
-      "url": "https://huggingface.co/HuggingFaceTB"
+      "url": "https://huggingface.co/HuggingFaceTB",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Nemotron 3.5 Lightning",
       "role": "Open-weight model in the catalog.",
       "by": "NVIDIA",
       "license": "NVIDIA Open Model License (verify)",
-      "url": "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/"
+      "url": "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/",
+      "group": "models"
     },
     {
       "name": "MiMo V2.6 Distill",
       "role": "Open-weight model in the catalog.",
       "by": "Xiaomi",
       "license": "MIT (verify)",
-      "url": "https://github.com/XiaomiMiMo"
+      "url": "https://github.com/XiaomiMiMo",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "Unsloth GGUF conversions",
       "role": "Ready-to-run model files where no official conversion exists.",
       "by": "Unsloth",
       "license": "per model",
-      "url": "https://huggingface.co/unsloth"
+      "url": "https://huggingface.co/unsloth",
+      "group": "models"
     },
     {
       "name": "psutil",
       "role": "Reads memory, CPU, disk and battery.",
       "by": "Giampaolo Rodola",
       "license": "BSD-3",
-      "url": "https://github.com/giampaolo/psutil"
+      "url": "https://github.com/giampaolo/psutil",
+      "group": "device",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "py-cpuinfo",
       "role": "Reads the processor name and features.",
       "by": "Matthew Brennan Jones",
       "license": "MIT",
-      "url": "https://github.com/workhorsy/py-cpuinfo"
+      "url": "https://github.com/workhorsy/py-cpuinfo",
+      "group": "device",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "nvidia-ml-py",
       "role": "Reads NVIDIA graphics memory.",
       "by": "NVIDIA",
       "license": "BSD-3",
-      "url": "https://pypi.org/project/nvidia-ml-py/"
+      "url": "https://pypi.org/project/nvidia-ml-py/",
+      "group": "device",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "FastAPI + Starlette + uvicorn",
       "role": "The local server behind the window.",
       "by": "Sebastián Ramírez, Encode",
       "license": "MIT / BSD",
-      "url": "https://fastapi.tiangolo.com"
+      "url": "https://fastapi.tiangolo.com",
+      "group": "window"
     },
     {
       "name": "pywebview",
       "role": "Shows the app in its own window instead of a browser.",
       "by": "Roman Sirokov",
       "license": "BSD-3",
-      "url": "https://pywebview.flowrl.com"
+      "url": "https://pywebview.flowrl.com",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "pydantic",
       "role": "Checks the catalog file is well-formed.",
       "by": "Samuel Colvin",
       "license": "MIT",
-      "url": "https://docs.pydantic.dev"
+      "url": "https://docs.pydantic.dev",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "httpx",
       "role": "Downloads and talks to AI services.",
       "by": "Encode",
       "license": "BSD-3",
-      "url": "https://www.python-httpx.org"
+      "url": "https://www.python-httpx.org",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "python-zeroconf",
       "role": "Finds your other devices on the home network.",
       "by": "Jakub Stasiak and contributors",
       "license": "LGPL-2.1-or-later",
-      "url": "https://github.com/python-zeroconf/python-zeroconf"
+      "url": "https://github.com/python-zeroconf/python-zeroconf",
+      "group": "devices",
+      "license_url": "https://spdx.org/licenses/LGPL-2.1-or-later.html"
     },
     {
       "name": "Pillow",
       "role": "Pictures: the picture of the screen, sizes and formats of photos.",
       "by": "Jeffrey A. Clark and contributors",
       "license": "MIT-CMU",
-      "url": "https://python-pillow.org"
+      "url": "https://python-pillow.org",
+      "group": "hardware",
+      "license_url": "https://spdx.org/licenses/MIT-CMU.html"
     },
     {
       "name": "pySerial",
       "role": "Talks to boards and instruments on a serial cable (Arduino, ESP32, 3D printers).",
       "by": "Chris Liechti and contributors",
       "license": "BSD",
-      "url": "https://github.com/pyserial/pyserial"
+      "url": "https://github.com/pyserial/pyserial",
+      "group": "hardware",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "Eclipse Paho MQTT",
       "role": "Sends and reads the short messages of smart-home devices through your own broker (MQTT).",
       "by": "Eclipse Foundation, Roger Light and contributors",
       "license": "EPL-2.0 OR BSD-3-Clause",
-      "url": "https://github.com/eclipse-paho/paho.mqtt.python"
+      "url": "https://github.com/eclipse-paho/paho.mqtt.python",
+      "group": "hardware",
+      "license_url": "https://spdx.org/licenses/EPL-2.0.html"
     },
     {
       "name": "PyAutoGUI",
       "role": "Moves the mouse and types when you let the agent do so (experimental). Comes with PyScreeze, PyTweening, PyGetWindow, PyMsgBox, MouseInfo and, on Linux, python-xlib.",
       "by": "Al Sweigart; python-xlib by Peter Liljenberg and contributors",
       "license": "BSD (PyAutoGUI, PyGetWindow); MIT (PyScreeze, PyTweening); GPL-3.0-or-later (MouseInfo, PyMsgBox); GPL-2.0-or-later (python-xlib)",
-      "url": "https://github.com/asweigart/pyautogui"
+      "url": "https://github.com/asweigart/pyautogui",
+      "group": "hardware"
     },
     {
       "name": "Home Assistant, MQTT and Modbus",
       "role": "Open ways of talking to home and industrial devices. Datas speaks them to your own hub and devices; nothing of theirs is included.",
       "by": "Home Assistant project; OASIS (MQTT); Modbus Organization",
       "license": "open specifications and interfaces",
-      "url": "https://www.home-assistant.io"
+      "url": "https://www.home-assistant.io",
+      "group": "hardware"
     },
     {
       "name": "typer + rich",
       "role": "The command-line version for advanced users.",
       "by": "Sebastián Ramírez, Will McGugan",
       "license": "MIT",
-      "url": "https://typer.tiangolo.com"
+      "url": "https://typer.tiangolo.com",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "platformdirs",
       "role": "Finds the right folders on each operating system.",
       "by": "platformdirs contributors",
       "license": "MIT",
-      "url": "https://github.com/platformdirs/platformdirs"
+      "url": "https://github.com/platformdirs/platformdirs",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "PyInstaller + Inno Setup",
       "role": "Package the Windows installer.",
       "by": "PyInstaller team, Jordan Russell",
       "license": "GPL (with exception) / Inno Setup License",
-      "url": "https://jrsoftware.org/isinfo.php"
+      "url": "https://jrsoftware.org/isinfo.php",
+      "group": "build"
     },
     {
       "name": "llmfit, canirunllm, llm-checker",
       "role": "Earlier tools whose idea — match models to hardware with plain arithmetic — Datas follows.",
       "by": "their authors",
       "license": "various",
-      "url": "https://github.com/alexsjones/llmfit"
+      "url": "https://github.com/alexsjones/llmfit",
+      "group": "ideas"
     },
     {
       "name": "exo",
       "role": "Showed home devices can share one big model; inspiration for pooling.",
       "by": "exo labs",
       "license": "Apache-2.0",
-      "url": "https://github.com/exo-explore/exo"
+      "url": "https://github.com/exo-explore/exo",
+      "group": "ideas",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "PocketPal AI, Google AI Edge Gallery",
       "role": "References for the Android app.",
       "by": "their authors",
       "license": "MIT / Apache-2.0",
-      "url": "https://github.com/a-ghorbani/pocketpal-ai"
+      "url": "https://github.com/a-ghorbani/pocketpal-ai",
+      "group": "ideas"
     },
     {
       "name": "whisper.cpp",
       "role": "Hearing: turns your voice into text, on the processor (speech-to-text).",
       "by": "ggml-org / Georgi Gerganov and contributors; Whisper weights by OpenAI",
       "license": "MIT (engine and weights)",
-      "url": "https://github.com/ggml-org/whisper.cpp"
+      "url": "https://github.com/ggml-org/whisper.cpp",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "pywhispercpp",
       "role": "Python bindings that let Datas run whisper.cpp inside the app (prebuilt for Windows, macOS, Linux).",
       "by": "absadiki",
       "license": "MIT",
-      "url": "https://github.com/absadiki/pywhispercpp"
+      "url": "https://github.com/absadiki/pywhispercpp",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "Kokoro-82M",
       "role": "Speaking: the voice that reads answers aloud in English and Spanish (text-to-speech).",
       "by": "hexgrad",
       "license": "Apache-2.0",
-      "url": "https://huggingface.co/hexgrad/Kokoro-82M"
+      "url": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "kokoro-onnx",
       "role": "ONNX export of Kokoro, its voice pack and the small library that runs it.",
       "by": "thewh1teagle",
       "license": "MIT",
-      "url": "https://github.com/thewh1teagle/kokoro-onnx"
+      "url": "https://github.com/thewh1teagle/kokoro-onnx",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "ONNX Runtime",
       "role": "Runs the Kokoro voice model on the processor.",
       "by": "Microsoft",
       "license": "MIT",
-      "url": "https://onnxruntime.ai"
+      "url": "https://onnxruntime.ai",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "espeak-ng",
       "role": "Turns written words into phonemes (sounds) for the voice; shipped via espeakng-loader.",
       "by": "espeak-ng contributors",
       "license": "GPL-3.0-or-later",
-      "url": "https://github.com/espeak-ng/espeak-ng"
+      "url": "https://github.com/espeak-ng/espeak-ng",
+      "group": "voice",
+      "license_url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
     },
     {
       "name": "python-sounddevice / PortAudio",
       "role": "Microphone capture for the Talk button.",
       "by": "Matthias Geier / PortAudio community",
       "license": "MIT / PortAudio (MIT-style)",
-      "url": "https://python-sounddevice.readthedocs.io"
+      "url": "https://python-sounddevice.readthedocs.io",
+      "group": "voice"
     },
     {
       "name": "stable-diffusion.cpp",
       "role": "Making images (and, later, video): the engine behind the Images screen (sd-server).",
       "by": "leejet and contributors",
       "license": "MIT",
-      "url": "https://github.com/leejet/stable-diffusion.cpp"
+      "url": "https://github.com/leejet/stable-diffusion.cpp",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "Z-Image-Turbo",
       "role": "The picture model Datas downloads for making images (6 B parameters, 8 steps).",
       "by": "Tongyi-MAI (Alibaba); GGUF conversions by leejet",
       "license": "Apache-2.0 (as stated on the model card)",
-      "url": "https://huggingface.co/Tongyi-MAI/Z-Image-Turbo"
+      "url": "https://huggingface.co/Tongyi-MAI/Z-Image-Turbo",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Qwen3-4B-Instruct-2507 (text encoder)",
       "role": "Reads your description for the picture model.",
       "by": "Qwen (Alibaba); GGUF by Unsloth",
       "license": "Apache-2.0",
-      "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF"
+      "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "FLUX.1 autoencoder (ae.safetensors)",
       "role": "Turns the picture model's output into pixels (VAE).",
       "by": "Black Forest Labs",
       "license": "Apache-2.0",
-      "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "uv",
       "role": "Sets up Python and isolated environments for the third-party tools under \"More tools\".",
       "by": "Astral",
       "license": "Apache-2.0 / MIT",
-      "url": "https://github.com/astral-sh/uv"
+      "url": "https://github.com/astral-sh/uv",
+      "group": "pictures"
     },
     {
       "name": "ComfyUI",
       "role": "Optional tool (More tools): the workshop for making and editing images and video.",
       "by": "Comfy Org / comfyanonymous",
       "license": "GPL-3.0",
-      "url": "https://github.com/comfyanonymous/ComfyUI"
+      "url": "https://github.com/comfyanonymous/ComfyUI",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/GPL-3.0-only.html"
     },
     {
       "name": "FaceFusion",
       "role": "Optional tool (More tools): face swap, lip-sync, face and frame restoration.",
       "by": "Henry Ruhs",
       "license": "OpenRAIL-AS",
-      "url": "https://github.com/facefusion/facefusion"
+      "url": "https://github.com/facefusion/facefusion",
+      "group": "pictures"
     },
     {
       "name": "Wan 2.2 TI2V 5B",
       "role": "The video model Datas downloads for making clips.",
       "by": "Wan-AI (Alibaba); GGUF by QuantStack; umt5-xxl encoder GGUF by city96; VAE repackaged by Comfy-Org",
       "license": "Apache-2.0 (as stated on the model card)",
-      "url": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B"
+      "url": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B",
+      "group": "pictures",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Qwen2.5-Math, Saul-7B, MedGemma",
       "role": "Specialist chat models offered on Home (math, legal texts, medical).",
       "by": "Alibaba Qwen; Equall; Google — GGUF by bartowski, mradermacher, Unsloth",
       "license": "Apache-2.0; MIT; Health AI Developer Foundations terms",
-      "url": "https://huggingface.co/bartowski/Qwen2.5-Math-7B-Instruct-GGUF"
+      "url": "https://huggingface.co/bartowski/Qwen2.5-Math-7B-Instruct-GGUF",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "FFmpeg (builds gathered by static-ffmpeg)",
       "role": "Reads cameras, recordings and video. Fetched once when it is not already on the computer, from one fixed commit and checked against its SHA-256.",
       "by": "FFmpeg project; builds by BtbN, gyan.dev, evermeet.cx and osxexperts.net, gathered by zackees",
       "license": "LGPL/GPL (FFmpeg, as published by each builder); MIT (static-ffmpeg)",
-      "url": "https://github.com/zackees/ffmpeg_bins"
+      "url": "https://github.com/zackees/ffmpeg_bins",
+      "group": "hardware"
     },
     {
       "name": "Hermes 4 (14B, 4.3 36B, 70B)",
       "role": "General chat AIs offered in the list of AIs.",
       "by": "Nous Research — built on Qwen3 14B, Seed-OSS 36B and Llama 3.1 70B; GGUF by bartowski, Nous Research, lmstudio-community",
       "license": "Apache-2.0 (14B, 4.3 36B); Llama 3 licence (70B) — as stated on the model cards",
-      "url": "https://huggingface.co/NousResearch"
+      "url": "https://huggingface.co/NousResearch",
+      "group": "models",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "Dolphin 3.0 (Llama 3.1 8B)",
       "role": "General chat AI offered in the list of AIs.",
       "by": "Cognitive Computations (Dolphin) — built on Meta Llama 3.1 8B",
       "license": "Llama 3.1 licence — as stated on the model card",
-      "url": "https://huggingface.co/dphn"
+      "url": "https://huggingface.co/dphn",
+      "group": "models"
     },
     {
       "name": "pypdf",
       "role": "Reads the PDF files you attach or keep at hand.",
       "by": "pypdf contributors",
       "license": "BSD-3-Clause",
-      "url": "https://github.com/py-pdf/pypdf"
+      "url": "https://github.com/py-pdf/pypdf",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/BSD-3-Clause.html"
     },
     {
       "name": "python-docx",
       "role": "Reads and writes Word documents (.docx).",
       "by": "python-openxml contributors",
       "license": "MIT",
-      "url": "https://github.com/python-openxml/python-docx"
+      "url": "https://github.com/python-openxml/python-docx",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "openpyxl",
       "role": "Reads and writes Excel spreadsheets (.xlsx).",
       "by": "openpyxl contributors",
       "license": "MIT",
-      "url": "https://openpyxl.readthedocs.io"
+      "url": "https://openpyxl.readthedocs.io",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "python-pptx",
       "role": "Reads and writes PowerPoint presentations (.pptx).",
       "by": "python-pptx contributors",
       "license": "MIT",
-      "url": "https://github.com/scanny/python-pptx"
+      "url": "https://github.com/scanny/python-pptx",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "fpdf2",
       "role": "Writes PDF files from the AI's answers.",
       "by": "fpdf2 contributors",
       "license": "LGPL-3.0-only",
-      "url": "https://py-pdf.github.io/fpdf2/"
+      "url": "https://py-pdf.github.io/fpdf2/",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/LGPL-3.0-only.html"
     },
     {
       "name": "markdown-it-py",
       "role": "Reads the structure of an answer (headings, lists, tables) so it can be saved as a document.",
       "by": "Executable Books contributors",
       "license": "MIT",
-      "url": "https://github.com/executablebooks/markdown-it-py"
+      "url": "https://github.com/executablebooks/markdown-it-py",
+      "group": "documents",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "cryptography",
       "role": "Creates each device's key and certificate for the encrypted link between your own devices.",
       "by": "Python Cryptographic Authority",
       "license": "Apache-2.0 OR BSD-3-Clause",
-      "url": "https://github.com/pyca/cryptography"
+      "url": "https://github.com/pyca/cryptography",
+      "group": "devices",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "PyQt6 + Qt WebEngine",
       "role": "The window on Linux.",
       "by": "Riverbank Computing; The Qt Company",
       "license": "GPL-3.0-only (PyQt6); LGPL v3 (Qt libraries) — from the packages' own metadata",
-      "url": "https://www.riverbankcomputing.com/software/pyqt/"
+      "url": "https://www.riverbankcomputing.com/software/pyqt/",
+      "group": "window"
     },
     {
       "name": "Asap",
       "role": "The typeface of the whole window.",
       "by": "The Asap Project Authors (Omnibus-Type)",
       "license": "SIL Open Font License 1.1",
-      "url": "https://github.com/Omnibus-Type/Asap"
+      "url": "https://github.com/Omnibus-Type/Asap",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/OFL-1.1.html"
     },
     {
       "name": "MuseoModerno",
       "role": "The typeface of the name \"Datas\".",
       "by": "The MuseoModerno Project Authors (Omnibus-Type)",
       "license": "SIL Open Font License 1.1",
-      "url": "https://github.com/Omnibus-Type/MuseoModerno"
+      "url": "https://github.com/Omnibus-Type/MuseoModerno",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/OFL-1.1.html"
     },
     {
       "name": "DejaVu fonts",
       "role": "The typeface inside the PDF files Datas writes (it covers many alphabets).",
       "by": "DejaVu fonts team, based on Bitstream Vera",
       "license": "Bitstream Vera licence; DejaVu changes in the public domain",
-      "url": "https://dejavu-fonts.github.io"
+      "url": "https://dejavu-fonts.github.io",
+      "group": "documents"
     },
     {
       "name": "Model Context Protocol (MCP)",
       "role": "The open standard Datas' agent speaks to use the functions other programs offer.",
       "by": "Model Context Protocol project",
       "license": "MIT (specification)",
-      "url": "https://modelcontextprotocol.io"
+      "url": "https://modelcontextprotocol.io",
+      "group": "services",
+      "license_url": "https://spdx.org/licenses/MIT.html"
     },
     {
       "name": "ArtCraft",
       "role": "Open creative apps the agent can work with; Datas can fetch its launcher.",
       "by": "storytold",
       "license": "MIT or Apache-2.0 — as stated on its site",
-      "url": "https://getartcraft.com/"
+      "url": "https://getartcraft.com/",
+      "group": "pictures"
     },
     {
       "name": "DuckDuckGo",
       "role": "Web search results, only when you switch internet on for a chat or the agent.",
       "by": "DuckDuckGo",
       "license": "online service",
-      "url": "https://duckduckgo.com"
+      "url": "https://duckduckgo.com",
+      "group": "services"
+    },
+    {
+      "name": "gguf-py",
+      "role": "Reads the header of a model file to measure exactly what it needs.",
+      "by": "ggml-org (part of llama.cpp)",
+      "license": "MIT",
+      "url": "https://github.com/ggml-org/llama.cpp/tree/master/gguf-py",
+      "group": "engine",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "QtPy",
+      "role": "Lets the Linux window use Qt.",
+      "by": "Spyder project contributors",
+      "license": "MIT",
+      "url": "https://github.com/spyder-ide/qtpy",
+      "group": "window",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "AndroidX (AppCompat, Core KTX) and Material Components",
+      "role": "Building blocks of the Android app's screens.",
+      "by": "Google / the Android Open Source Project",
+      "license": "Apache-2.0",
+      "url": "https://developer.android.com/jetpack/androidx",
+      "group": "phones",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    {
+      "name": "Kotlin and the Android Gradle Plugin",
+      "role": "Language and build tools of the Android app.",
+      "by": "JetBrains; Google",
+      "license": "Apache-2.0",
+      "url": "https://kotlinlang.org",
+      "group": "phones",
+      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    {
+      "name": "SwiftUI, Network.framework, CryptoKit, WebKit",
+      "role": "Apple's own frameworks the iPhone app is built on: screens, the encrypted link, the window that shows a computer's Datas.",
+      "by": "Apple",
+      "license": "Apple SDK terms (part of iOS)",
+      "url": "https://developer.apple.com/documentation/",
+      "group": "phones"
+    },
+    {
+      "name": "XcodeGen",
+      "role": "Generates the Xcode project of the iPhone app from a short text file.",
+      "by": "Yonas Kolb and contributors",
+      "license": "MIT",
+      "url": "https://github.com/yonaskolb/XcodeGen",
+      "group": "phones",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "Hatchling",
+      "role": "Builds the Python package.",
+      "by": "The Hatch project (PyPA)",
+      "license": "MIT",
+      "url": "https://hatch.pypa.io",
+      "group": "build",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "GitHub Actions (checkout, setup-python, setup-java, upload-artifact, attest-build-provenance) and action-gh-release",
+      "role": "Build, test and publish every version on clean machines; record where each file was built.",
+      "by": "GitHub; softprops",
+      "license": "MIT",
+      "url": "https://github.com/features/actions",
+      "group": "build",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "pytest, pytest-asyncio, Ruff, mypy",
+      "role": "Tests and code checks used while building Datas (not shipped).",
+      "by": "pytest-dev; Astral; the mypy project",
+      "license": "MIT",
+      "url": "https://docs.pytest.org",
+      "group": "build",
+      "license_url": "https://spdx.org/licenses/MIT.html"
+    },
+    {
+      "name": "FEMA and Ready.gov",
+      "role": "Offline survival library: Are You Ready? / ¿Está listo?, the CERT manual, the guide for older adults.",
+      "by": "Federal Emergency Management Agency (United States)",
+      "license": "US Government work (public domain in the USA)",
+      "url": "https://www.ready.gov",
+      "group": "survival"
+    },
+    {
+      "name": "CDC and US CPSC",
+      "role": "Offline survival library: making water safe, generators and carbon monoxide.",
+      "by": "Centers for Disease Control and Prevention; Consumer Product Safety Commission",
+      "license": "US Government work (public domain in the USA)",
+      "url": "https://www.cdc.gov",
+      "group": "survival"
+    },
+    {
+      "name": "WHO / WEDC technical notes",
+      "role": "Offline survival library: water, sanitation and hygiene in emergencies for a whole community.",
+      "by": "World Health Organization; Water, Engineering and Development Centre, Loughborough University",
+      "license": "© WHO — downloaded from the publisher for your own use",
+      "url": "https://wedc-knowledge.lboro.ac.uk/collections/tne/notes_emergencies.html",
+      "group": "survival"
+    },
+    {
+      "name": "Hesperian Health Guides",
+      "role": "Offline survival library: chapters of Where There Is No Doctor / Donde no hay doctor and A Community Guide to Environmental Health.",
+      "by": "Hesperian Health Guides",
+      "license": "Hesperian Open Copyright (non-profit use)",
+      "url": "https://hesperian.org",
+      "group": "survival"
+    },
+    {
+      "name": "US Army ATP 3-50.21 Survival",
+      "role": "Offline survival library: outdoor survival manual (approved for public release), from the copy kept by the Federation of American Scientists.",
+      "by": "US Department of the Army; Federation of American Scientists",
+      "license": "US Government work (public domain in the USA)",
+      "url": "https://irp.fas.org/doddir/army/",
+      "group": "survival"
+    },
+    {
+      "name": "Project Gutenberg",
+      "role": "Offline survival library: public-domain books (Mutual Aid, camp-craft, Walden, Robinson Crusoe, Verne, Don Quijote, Martín Fierro).",
+      "by": "Project Gutenberg volunteers",
+      "license": "Public domain in the USA (Project Gutenberg License)",
+      "url": "https://www.gutenberg.org",
+      "group": "survival"
+    },
+    {
+      "name": "Kiwix and Meshtastic",
+      "role": "Recommended in the survival guides (not included): offline Wikipedia/WikiMed, and text messages over LoRa radios with no phone network.",
+      "by": "Kiwix; the Meshtastic project",
+      "license": "GPL-3.0 (both)",
+      "url": "https://kiwix.org",
+      "group": "survival"
+    }
+  ],
+  "groups": [
+    {
+      "id": "engine",
+      "name": {
+        "en": "The engine that runs the AIs",
+        "es": "El motor que hace funcionar las IA"
+      }
+    },
+    {
+      "id": "models",
+      "name": {
+        "en": "The AIs (open models)",
+        "es": "Las IA (modelos abiertos)"
+      }
+    },
+    {
+      "id": "device",
+      "name": {
+        "en": "Reading your device",
+        "es": "Leer tu dispositivo"
+      }
+    },
+    {
+      "id": "window",
+      "name": {
+        "en": "The window and the local service",
+        "es": "La ventana y el servicio local"
+      }
+    },
+    {
+      "id": "voice",
+      "name": {
+        "en": "Voice",
+        "es": "Voz"
+      }
+    },
+    {
+      "id": "pictures",
+      "name": {
+        "en": "Pictures, video and creative apps",
+        "es": "Imágenes, video y apps creativas"
+      }
+    },
+    {
+      "id": "documents",
+      "name": {
+        "en": "Documents",
+        "es": "Documentos"
+      }
+    },
+    {
+      "id": "hardware",
+      "name": {
+        "en": "Camera, screen, printer and other devices",
+        "es": "Cámara, pantalla, impresora y otros aparatos"
+      }
+    },
+    {
+      "id": "devices",
+      "name": {
+        "en": "Linking your devices",
+        "es": "Vincular tus dispositivos"
+      }
+    },
+    {
+      "id": "phones",
+      "name": {
+        "en": "Phone apps",
+        "es": "Apps para teléfonos"
+      }
+    },
+    {
+      "id": "services",
+      "name": {
+        "en": "Standards and services",
+        "es": "Estándares y servicios"
+      }
+    },
+    {
+      "id": "survival",
+      "name": {
+        "en": "Offline survival library",
+        "es": "Biblioteca de supervivencia"
+      }
+    },
+    {
+      "id": "build",
+      "name": {
+        "en": "Building, testing and publishing",
+        "es": "Construir, probar y publicar"
+      }
+    },
+    {
+      "id": "ideas",
+      "name": {
+        "en": "Ideas and prior art",
+        "es": "Ideas y antecedentes"
+      }
     }
   ]
 }

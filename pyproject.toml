@@ -82,6 +82,9 @@ packages = ["datas"]
 "datas/learn/catalog.json" = "datas/learn/catalog.json"
 "datas/learn/lessons.en.md" = "datas/learn/lessons.en.md"
 "datas/learn/lessons.es.md" = "datas/learn/lessons.es.md"
+"datas/survival/catalog.json" = "datas/survival/catalog.json"
+"datas/survival/guides.en.md" = "datas/survival/guides.en.md"
+"datas/survival/guides.es.md" = "datas/survival/guides.es.md"
 
 [tool.ruff]
 line-length = 100

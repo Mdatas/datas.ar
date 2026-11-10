@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+import time
 from importlib import resources
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from datas.config import home
 from datas.words import Problem
 
 _lock = threading.Lock()
+RETRY_WAIT = 5.0  # seconds before trying a download again
 ASK_KINDS = {"guide", "sheet", "chapter", "book"}  # what the helper reads; novels are not
 
 
@@ -87,7 +89,9 @@ def state(lang: str = "en") -> dict:
         )
     kept = [i for i in items if i["have"]]
     return {
-        "topics": [{"id": t["id"], "name": t["name"].get(lang, t["name"]["en"])} for t in cat["topics"]],
+        "topics": [
+            {"id": t["id"], "name": t["name"].get(lang, t["name"]["en"])} for t in cat["topics"]
+        ],
         "items": items,
         "checked": cat.get("checked"),
         "guides": guide_sections(lang),
@@ -118,7 +122,14 @@ def fetch(item_id: str, progress=None, source: str | None = None) -> dict:  # no
                     timeout=httpx.Timeout(60, read=120),
                     headers={"User-Agent": "Datas.ar (+https://github.com/Mdatas/datas.ar)"},
                 ) as c:
-                    _download(source or it["url"], f, c, progress, "sha256:" + it["sha256"])
+                    for attempt in range(3):  # some sites answer empty once while warming up
+                        try:
+                            _download(source or it["url"], f, c, progress, "sha256:" + it["sha256"])
+                            break
+                        except (ValueError, httpx.HTTPError, OSError):
+                            if attempt == 2:
+                                raise
+                            time.sleep(RETRY_WAIT * (attempt + 1))
             except ValueError as e:
                 raise Problem(
                     "The file that arrived from {site} is not the one Datas checked, so it was "
@@ -178,6 +189,19 @@ def file_of(item_id: str) -> Path:
     if not f.is_file():
         raise Problem("That document is not on this device yet.")
     return f
+
+
+def text_of(item_id: str) -> str:
+    """The plain text kept for a document (works where a PDF cannot be shown, like a phone)."""
+    f, txt = _paths(_item(item_id))
+    if not f.is_file():
+        raise Problem("That document is not on this device yet.")
+    if not txt.is_file():
+        from datas import docs
+        from datas.config import write_text_safely
+
+        write_text_safely(txt, docs.extract_text(f.name, f.read_bytes()))
+    return txt.read_text("utf-8")
 
 
 def docs_text(lang: str = "en") -> list[dict]:

@@ -478,4 +478,10 @@ ES: dict[str, str] = {
     "Could not use {port}: {why}. Is the cable plugged in, and is another program using it?": "No se pudo usar {port}: {why}. ¿Está enchufado el cable? ¿Lo está usando otro programa?",
     "The device on {port} did not answer. Check its unit number ({unit}), the speed ({baud}) and the two wires (A and B).": "El aparato en {port} no respondió. Revisá su número de unidad ({unit}), la velocidad ({baud}) y los dos cables (A y B).",
     "The answer from {port} arrived damaged. Check the speed ({baud}) and the wiring.": "La respuesta de {port} llegó dañada. Revisá la velocidad ({baud}) y el cableado.",
+    # ---- offline survival library (datas/survival) ----
+    "That document is not in the library.": "Ese documento no está en la biblioteca.",
+    "That document has not been checked yet, so it is not offered.": "Ese documento todavía no fue verificado, así que no se ofrece.",
+    "The file that arrived from {site} is not the one Datas checked, so it was not kept. The publisher may have changed it; open its page instead: {page}": "El archivo que llegó de {site} no es el que Datas verificó, así que no se guardó. Puede que quien lo publica lo haya cambiado; abrí su página: {page}",
+    "Could not download it from {site} ({why}). Check the internet connection, or open its page: {page}": "No se pudo descargar de {site} ({why}). Revisá la conexión a internet, o abrí su página: {page}",
+    "That document is not on this device yet.": "Ese documento todavía no está en este dispositivo.",
 }

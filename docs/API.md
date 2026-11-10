@@ -213,6 +213,10 @@ has them.
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/api/link/peers/{id}` `{window}` | may that linked device open this device's Datas? (a phone: on from the start; a computer: off until switched on) |
+| GET | `/api/survival` | the survival guides and library: `{topics, items, guides, kept, kept_bytes, missing_bytes}` |
+| POST | `/api/survival/keep/{id}` · `/api/survival/keep-all` | download a document (or all of them) from its publisher, checked: a job |
+| DELETE | `/api/survival/keep/{id}` | remove a kept document |
+| GET | `/api/survival/file/{id}` · `/api/survival/text/{id}` | a kept document, as its file or as plain text |
 | GET | `/api/tools/long/helpers` | linked computers whose own AI could take parts of a long document now; `POST /api/tools/long` takes `devices: true` to share the parts out |
 | POST | `/api/link/peers/{id}/open` `{show?}` | open the Datas of that linked computer here: `{url, name, shown}` — a door on `127.0.0.1` that leads into the encrypted link; `show: false` only says where it is |
 

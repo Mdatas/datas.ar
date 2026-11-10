@@ -68,7 +68,14 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.4 (this release) — the things around the computer, phones, small computers
+## 0.5 (next) — offline survival, one place for how Datas works
+
+- [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 28 checked documents from FEMA, CDC, WHO, Hesperian, the US Army and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
+- [x] A weekly check that every library document still downloads and matches its checksum
+- [x] *About*: how Datas works in seven steps, and every part it is built on grouped, with official links and licence links; a test keeps every dependency credited
+- [ ] More Spanish documents in the library; Portuguese
+
+## 0.4 — the things around the computer, phones, small computers
 
 - [x] **Cameras, the screen, printers**: a photo or a picture of the screen in a chat for AIs that understand pictures; *Print on paper* for any answer — docs/HARDWARE.md
 - [x] **Boards and instruments** on a serial cable (Arduino, ESP32, 3D printers): listen from Tools; the agent reads and writes lines

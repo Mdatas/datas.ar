@@ -739,6 +739,65 @@ SCREENS.settings = async view => {
   loadUpd();
 };
 
+/* ======================= Offline survival ======================= */
+/* Datas' own guides (always here) and documents kept on this device for when there is no
+   internet; the "survival" helper answers from both with the smallest AI. */
+SCREENS.survival = async view => {
+  const wrap = page(view, t("surv_title"), t("surv_lead"));
+  let data = await api("/api/survival?lang=" + S.lang);
+  const mb = n => (Math.max(0.1, Math.round((n || 0) / 1e5) / 10)).toLocaleString(S.lang) + " MB";
+  const reload = async () => { data = await api("/api/survival?lang=" + S.lang); draw(); };
+  const ask = async () => {
+    const hs = await Chat.helpers();
+    Chat.fresh(hs.assistants.find(a => a.id === "survival") || hs.guide);
+    go("chat");
+  };
+  const keep = async (path, title) => {
+    const x = await Jobs.track(await api(path, { method: "POST" }), { title });
+    const r = x.result || {};
+    if (x.state === "done" && (r.failed || []).length) toast(t("surv_some_failed", { names: r.failed.join(", ") }), { ms: 12000 });
+    await reload();
+  };
+  const read = async it => {
+    const textView = async () => { const r = await api("/api/survival/text/" + it.id); return h("pre", { class: "small", style: "white-space:pre-wrap;max-height:70vh;overflow:auto", text: r.text }); };
+    const box = h("div", {}, it.format === "pdf"
+      ? h("iframe", { src: "/api/survival/file/" + it.id, title: it.title, style: "width:100%;height:70vh;border:0;border-radius:8px;background:#fff" })
+      : await textView());
+    openDialog({ title: it.title, wide: true, body: [box], actions: close => [
+      it.format === "pdf" && h("button", { class: "btn", onclick: guard(async () => { clear(box).append(await textView()); }) }, icon("doc", 18), t("surv_as_text")),
+      h("button", { class: "btn primary", onclick: close }, t("close"))] });
+  };
+  const head = h("div"), guides = h("div"), lib = h("div");
+  const draw = () => {
+    const missing = data.items.filter(i => !i.have);
+    add(clear(head),
+      h("div", { class: "row", style: "flex-wrap:wrap;gap:10px" },
+        h("button", { class: "btn primary", onclick: guard(ask) }, icon("chat", 18), t("surv_ask")),
+        missing.length
+          ? h("button", { class: "btn", onclick: guard(() => keep("/api/survival/keep-all", t("surv_title"))) }, icon("save", 18), t("surv_keep_all", { size: mb(data.missing_bytes) }))
+          : h("span", { class: "chip plain", text: t("surv_all_kept", { n: data.kept, size: mb(data.kept_bytes) }) })),
+      h("p", { class: "small muted", text: t("surv_ask_hint") }));
+    add(clear(guides), data.guides.map(g => more(g.title, h("div", { class: "md" }, md(g.text)))));
+    add(clear(lib), data.topics.map(tp => {
+      const items = data.items.filter(i => i.topic === tp.id);
+      if (!items.length) return null;
+      return h("div", {}, h("h3", { text: tp.name }), h("div", { class: "list" }, items.map(it => h("div", { class: "item" },
+        h("div", { class: "row" }, h("span", { class: "name grow" }, extLink(it.title, it.page)),
+          h("span", { class: "chip plain", text: it.lang === "es" ? "Español" : "English" }),
+          h("span", { class: "chip plain", text: mb(it.size) })),
+        h("div", { class: "muted", text: it.why }),
+        h("div", { class: "small muted" }, it.by + " · ", extLink(it.license, it.license_url)),
+        h("div", { class: "row", style: "margin-top:6px;gap:8px" },
+          it.have
+            ? [h("button", { class: "btn small", onclick: guard(() => read(it)) }, icon("book", 16), t("surv_read")),
+               h("button", { class: "btn small quiet", onclick: guard(async () => { await api("/api/survival/keep/" + it.id, { method: "DELETE" }); await reload(); }) }, t("surv_forget"))]
+            : h("button", { class: "btn small", onclick: guard(() => keep("/api/survival/keep/" + it.id, it.title)) }, icon("save", 16), t("surv_keep", { size: mb(it.size) })))))));
+    }));
+  };
+  wrap.append(head, sec(t("surv_guides"), t("surv_guides_sub"), guides), sec(t("surv_library"), t("surv_library_sub"), lib));
+  draw();
+};
+
 /* ======================= About ======================= */
 SCREENS.about = async view => {
   const s = await api("/api/sources");
@@ -751,9 +810,16 @@ SCREENS.about = async view => {
     h("div", { class: "row", style: "margin-top:16px" },
       h("button", { class: "btn", onclick: async () => { Chat.fresh((await Chat.helpers()).guide); go("chat"); } }, icon("info", 18), t("ask_guide")),
       h("button", { class: "btn", onclick: guard(async () => { await api("/api/shortcut/app", { method: "POST" }); toast(t("lib_shortcut_done")); }) }, t("about_shortcut"))),
-    sec(t("about_sources"), t("about_sources_sub"), h("div", { class: "list" }, s.sources.map(x => h("div", { class: "item" },
-      h("div", { class: "row" }, h("span", { class: "name grow" }, extLink(x.name, x.url)), h("span", { class: "chip plain", text: x.license })),
-      h("div", { class: "muted", text: x.role }), h("div", { class: "small muted", text: x.by }))))),
+    sec(t("about_how"), t("about_how_sub"), h("ol", { class: "how" }, [1, 2, 3, 4, 5, 6, 7].map(n => h("li", { text: t("about_how_" + n) }))),
+      h("p", { class: "small" }, [[t("about_doc_arch"), "ARCHITECTURE.md"], [t("about_doc_credits"), "CREDITS.md"], [t("about_doc_privacy"), "PRIVACY.md"], [t("about_doc_security"), "SECURITY.md"]]
+        .flatMap(([label, f], i) => [i ? " · " : "", extLink(label, s.project.repo + "/blob/main/docs/" + f)]))),
+    sec(t("about_sources"), t("about_sources_sub"), (s.groups || [{ id: null }]).map(g => {
+      const xs = s.sources.filter(x => !g.id || x.group === g.id);
+      return xs.length && h("div", {}, g.name && h("h3", { text: g.name[S.lang] || g.name.en }), h("div", { class: "list" }, xs.map(x => h("div", { class: "item" },
+        h("div", { class: "row" }, h("span", { class: "name grow" }, extLink(x.name, x.url)),
+          x.license_url ? h("span", { class: "chip plain" }, extLink(x.license, x.license_url)) : h("span", { class: "chip plain", text: x.license })),
+        h("div", { class: "muted", text: x.role }), h("div", { class: "small muted", text: x.by })))));
+    })),
     h("section", { class: "section" }, more(t("about_logs"), h("p", { class: "small muted", text: t("about_logs_hint") }), logs)));
   api("/api/logs").then(r => { logs.textContent = Object.entries(r).map(([k, v]) => "— " + k + " —\n" + (v || t("about_logs_empty"))).join("\n\n"); }).catch(() => {});
 };

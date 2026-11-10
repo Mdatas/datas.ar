@@ -15,6 +15,7 @@ import io
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -48,7 +49,11 @@ def main() -> int:
     with httpx.Client(follow_redirects=True, timeout=120, headers={"User-Agent": AGENT}) as c:
         for it in cat["items"]:
             try:
-                r = c.get(it["url"])
+                for attempt in range(4):  # some sites answer 202/429/503 while they warm up
+                    r = c.get(it["url"])
+                    if r.status_code not in (202, 429, 500, 502, 503, 504):
+                        break
+                    time.sleep(10 * (attempt + 1))
                 data = r.content
                 status = r.status_code
                 final = str(r.url)

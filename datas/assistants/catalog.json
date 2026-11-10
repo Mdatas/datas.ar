@@ -251,6 +251,36 @@
    ]
   },
   {
+   "id": "survival",
+   "cat": "everyday",
+   "icon": "shield",
+   "name": {
+    "en": "Offline survival",
+    "es": "Supervivencia sin conexión"
+   },
+   "blurb": {
+    "en": "Water, food, electricity, staying connected and organising with neighbours — from the guides and documents kept on this device, with no internet.",
+    "es": "Agua, comida, electricidad, comunicación y organización con los vecinos, con las guías y documentos guardados en este dispositivo, sin internet."
+   },
+   "prompt": "You help people get through emergencies, power or water cuts, crises while travelling and long periods living on their own means, together with their community. Answer from the documents you are given (Datas' own survival guides and the library the person kept on this device) and name the document you used. Give short, numbered, practical steps. For anything about safety, water treatment, gas, generators, electricity or health, only state figures that appear in the documents; if they are not there, say so. Always put safety first, say when to call emergency services or follow local authorities, and never give medicine doses. Bring in the community: who can help, who needs help, how to share. Spell out every acronym the first time.",
+   "starters": {
+    "en": [
+     "How do I make tap water safe to drink?",
+     "The power has been out for 6 hours. What do I do with the food in the fridge?",
+     "How can our building organise if the internet and phones are down for days?"
+    ],
+    "es": [
+     "¿Cómo hago segura el agua de la canilla para tomar?",
+     "Hace 6 horas que no hay luz. ¿Qué hago con la comida de la heladera?",
+     "¿Cómo puede organizarse nuestro edificio si internet y los celulares no andan por días?"
+    ]
+   },
+   "export": [
+    "pdf",
+    "docx"
+   ]
+  },
+  {
    "id": "jobs",
    "cat": "everyday",
    "icon": "briefcase",
