@@ -36,6 +36,26 @@ jobs:
             & dist\Datas\datas-cli.exe @args
             if ($LASTEXITCODE -ne 0) { throw "datas-cli.exe $args failed with exit code $LASTEXITCODE" }
           }
+      - name: open the real window (WebView2) and let it check itself
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          $env:DATAS_HOME = "$env:RUNNER_TEMP\datas-window"
+          $out = "$env:RUNNER_TEMP\window.json"
+          $p = Start-Process -FilePath dist\Datas\Datas.exe -ArgumentList 'open','--selfcheck',$out -Wait -PassThru
+          if (Test-Path $out) { Get-Content $out }
+          if ($p.ExitCode -ne 0) {
+            if (Test-Path "$env:DATAS_HOME\logs\datas.log") { Get-Content "$env:DATAS_HOME\logs\datas.log" -Tail 60 }
+            throw "the window self-check failed (exit code $($p.ExitCode))"
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: window-check-windows
+          path: |
+            ${{ runner.temp }}/window.json
+            ${{ runner.temp }}/window.png
+          if-no-files-found: ignore
       - name: inno setup
         run: |
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.v.outputs.version }} installer\windows\datas.iss

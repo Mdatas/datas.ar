@@ -119,12 +119,96 @@ This is a bug or a blocked port, not something you did. The details below are sa
     return "data:text/html;charset=utf-8," + __import__("urllib.parse").parse.quote(body)
 
 
+# ---------------------------------------------------------------------------
+# window self-check: open the real window, let the page say what it shows, close it
+# ---------------------------------------------------------------------------
+# Used by the installer builds on Windows, macOS and Linux (`Datas open --selfcheck out.json`):
+# the only way to know that the native window — WebView2, WKWebView or Qt WebEngine — really
+# shows the app on that system is to open it there. The page, loaded with ``?selfcheck``,
+# walks through its screens and reports to the local service; nothing is injected into it
+# (the window's own rules forbid running injected script, and that stays so).
+CHECKED_SCREENS = ("chat", "learn", "setup", "devices", "tools", "settings", "about")
+
+
+def _judge(seen: dict) -> list[str]:
+    """What is wrong with a window report; an empty list means the window works."""
+    from datas import __version__
+
+    bad = []
+    if seen.get("version") != __version__:
+        bad.append(f"the page reports version {seen.get('version')!r}, expected {__version__}")
+    if seen.get("wordmark") != "Datas" or (seen.get("nav") or 0) < 5:
+        bad.append("the side bar did not render")
+    screens = seen.get("screens") or {}
+    for name in CHECKED_SCREENS:
+        got = screens.get(name) or {}
+        if not got.get("parts") or (got.get("letters") or 0) < 20:
+            bad.append(f"the {name} screen is empty")
+    titles = {(screens.get(n) or {}).get("heading") for n in ("learn", "settings", "about")}
+    if len(titles) < 3 or "" in titles:
+        bad.append("moving between screens did not change what is shown")
+    for e in seen.get("errors") or []:
+        bad.append(f"script error: {e}")
+    return bad
+
+
+def _selfcheck(out: Path, port: int, server_up: bool) -> bool:
+    """Wait for the page's own report, judge it, write the result. Never raises."""
+    import json
+
+    from datas import __version__
+
+    t0 = time.time()
+    report: dict = {"ok": False, "datas": __version__, "server_up": server_up}
+    try:
+        seen = None
+        deadline = time.time() + 150
+        while server_up and seen is None and time.time() < deadline:
+            try:
+                with httpx.Client(timeout=3, trust_env=False) as c:
+                    seen = c.get(f"http://127.0.0.1:{port}/api/selfcheck").json().get("report")
+            except (httpx.HTTPError, ValueError):
+                seen = None
+            if seen is None:
+                time.sleep(1)
+        if seen is None:
+            report["problems"] = [
+                "the window opened but the page never reported: it did not load or its "
+                "scripts did not run"
+                if server_up
+                else "the local service did not start"
+            ]
+        else:
+            report["seen"] = seen
+            report["problems"] = _judge(seen)
+            report["ok"] = not report["problems"]
+        try:  # a picture of the screen for the build log, where the system allows one
+            from PIL import ImageGrab
+
+            shot = out.with_suffix(".png")
+            ImageGrab.grab().save(shot)
+            report["screenshot"] = str(shot)
+        except Exception as e:  # noqa: BLE001
+            report["screenshot_error"] = f"{type(e).__name__}: {e}"[:200]
+    except Exception:  # noqa: BLE001
+        report["error"] = traceback.format_exc()[-1500:]
+    report["seconds"] = round(time.time() - t0, 1)
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    except OSError as e:
+        _log(f"selfcheck: could not write {out}: {e}")
+    _log(f"selfcheck ok={report['ok']} in {report['seconds']}s")
+    return bool(report["ok"])
+
+
 def open_window(
     model_id: str | None = None,
     path: str = "/",
     title: str = "Datas.ar",
     width: int = 1120,
     height: int = 820,
+    selfcheck: Path | None = None,
 ) -> None:
     _attach_console_to_log()
     cfg = Config.load()
@@ -149,6 +233,8 @@ def open_window(
     url = f"http://127.0.0.1:{port}{path}"
     if model_id:
         url += ("&" if "?" in url else "?") + f"autorun={model_id}"
+    if selfcheck is not None:
+        url += ("&" if "?" in url else "?") + "selfcheck=1"
 
     def wait_for_server(limit: float) -> bool:
         deadline = time.time() + limit
@@ -173,12 +259,15 @@ def open_window(
             background_color="#F3F8FD",
             text_select=True,
         )
-        state = {"ok": False}
+        state = {"ok": False, "checked": None}
 
         def switch_when_ready():
             state["ok"] = wait_for_server(180)
             _log(f"server up={state['ok']}")
             win.load_url(url if state["ok"] else _error_page(port, logs_dir().parent))
+            if selfcheck is not None:
+                state["checked"] = _selfcheck(selfcheck, port, state["ok"])
+                win.destroy()
 
         def on_closed():
             if started_here and path == "/" and state["ok"]:
@@ -200,7 +289,18 @@ def open_window(
             except ImportError:
                 gui = None
         webview.start(switch_when_ready, private_mode=cfg.forget, gui=gui)
+        if selfcheck is not None:
+            raise SystemExit(0 if state["checked"] else 1)
     except Exception as e:  # pywebview unavailable → browser, keep serving until Ctrl-C
+        if selfcheck is not None:
+            import json
+
+            _log(f"selfcheck: no window could be opened ({e})")
+            selfcheck.write_text(
+                json.dumps({"ok": False, "error": f"no window: {type(e).__name__}: {e}"}),
+                encoding="utf-8",
+            )
+            raise SystemExit(1) from e
         _log(f"pywebview unavailable ({e}); opening the browser instead")
         ok = wait_for_server(60)
         webbrowser.open(url if ok else _log_path().as_uri())

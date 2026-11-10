@@ -533,5 +533,41 @@ async function boot() {
   go("chat");
   if (!S.priv.onboarded) welcome(); else hello();
   setInterval(tick, 6000);
+  const asked = new URLSearchParams(location.search);
+  if (asked.get("autorun")) autorun(asked.get("autorun"));
+  if (asked.has("selfcheck")) selfcheck();
 }
 document.addEventListener("DOMContentLoaded", boot);
+
+/* A desktop shortcut to one AI opens the window with ?autorun=<id>: start that AI. */
+async function autorun(id) {
+  try {
+    const lib = await Chat.library(true);
+    const it = lib.installed.find(x => x.model_id === id);
+    const st = S.status;
+    if (!it || (st.provider === "local" && st.server.running && st.server.model_id === id)) return;
+    await Chat.runModel(it);
+    await refreshStatus();
+  } catch (e) { oops(e); }
+}
+
+/* The installer builds open the real window with ?selfcheck: the page walks through its
+   screens and tells the local service what it saw (datas/desktop.py reads that report). */
+async function selfcheck() {
+  const errors = [];
+  addEventListener("error", e => errors.push(String(e.message || e)));
+  addEventListener("unhandledrejection", e => errors.push(String(e.reason)));
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const seen = { version: S.status.version, lang: S.lang, wordmark: ($("#side .wordmark") || {}).textContent || "",
+    nav: document.querySelectorAll("#side .nav .nav-item").length,
+    width: innerWidth, height: innerHeight, agent: navigator.userAgent, screens: {} };
+  for (const name of ["chat", "learn", "setup", "devices", "tools", "settings", "about"]) {
+    try {
+      go(name);
+      await wait(1500);
+      seen.screens[name] = { parts: $("#view").children.length, heading: (($("#view h1") || {}).textContent || "").slice(0, 80), letters: $("#view").textContent.length };
+    } catch (e) { errors.push(name + ": " + e); }
+  }
+  seen.errors = errors;
+  try { await api("/api/selfcheck", { body: seen }); } catch (e) { /* no report is itself the finding */ }
+}

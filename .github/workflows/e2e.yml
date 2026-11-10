@@ -1,0 +1,50 @@
+name: e2e
+# The test that downloads: the AI engine from GitHub, a real small AI and the voice parts
+# from Hugging Face, then a streamed answer, a question about a document, and speech turned
+# into text. Everything goes through the same local interface the window uses.
+# Runs when asked (Actions -> e2e -> Run workflow), every Monday, and for each release.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  real:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q libportaudio2
+      - name: install as a user would, with voice
+        run: pip install ".[voice]"
+      - name: a real AI, a real answer, a document, voice
+        shell: bash
+        run: |
+          export DATAS_HOME="$RUNNER_TEMP/datas-e2e"
+          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" --voice --report "$RUNNER_TEMP/e2e.json"
+      - name: logs
+        if: always()
+        shell: bash
+        run: |
+          tail -n 60 "$RUNNER_TEMP/serve.log" || true
+          tail -n 80 "$RUNNER_TEMP/datas-e2e/logs/llama-server.log" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-${{ matrix.os }}
+          path: ${{ runner.temp }}/e2e.json
+          if-no-files-found: ignore

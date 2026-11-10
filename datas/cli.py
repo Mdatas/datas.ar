@@ -71,11 +71,16 @@ def _default(ctx: typer.Context, version: bool = typer.Option(False, "--version"
 @app.command("open")
 def open_window(
     model: str | None = typer.Option(None, "--model", help="start this installed AI right away"),
+    selfcheck: Path | None = typer.Option(
+        None,
+        "--selfcheck",
+        help="open the window, check that it shows the app, write a report to this file, close",
+    ),
 ):
     """Open the Datas window (the default when you double-click the app)."""
     from datas.desktop import open_window as _open
 
-    _open(model_id=model)
+    _open(model_id=model, selfcheck=selfcheck)
 
 
 @app.command("open-url")

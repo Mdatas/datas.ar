@@ -42,6 +42,16 @@ jobs:
           dist/Datas/datas-cli images status > /dev/null
           dist/Datas/datas-cli apps list
           dist/Datas/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
+      - name: open the real window (Qt WebEngine) and let it check itself
+        timeout-minutes: 8
+        env:
+          QT_QPA_PLATFORM: offscreen
+          # the build machine does not allow the browser part its sandbox; users' systems do
+          QTWEBENGINE_CHROMIUM_FLAGS: --no-sandbox
+        run: |
+          export DATAS_HOME="$RUNNER_TEMP/datas-window"
+          dist/Datas/Datas open --selfcheck "$RUNNER_TEMP/window.json" || { cat "$RUNNER_TEMP/window.json"; tail -n 60 "$DATAS_HOME/logs/datas.log"; exit 1; }
+          cat "$RUNNER_TEMP/window.json"
       - name: prune unused Qt libraries
         run: python installer/linux/prune-qt.py dist/Datas
       - name: deb
@@ -58,6 +68,9 @@ jobs:
           docker run --rm -v "$PWD/dist/linux:/pkg:ro" debian:bookworm bash -ec '
             apt-get update -q >/dev/null && apt-get install -y -q /pkg/datas_${{ steps.v.outputs.version }}_amd64.deb >/dev/null
             datas-cli --version && datas-cli scan && test -f /usr/share/applications/datas.desktop
+            # the installed window, with only the system libraries the package asks for
+            QT_QPA_PLATFORM=offscreen datas open --selfcheck /tmp/window.json || { cat /tmp/window.json; exit 1; }
+            grep -q "\"ok\": true" /tmp/window.json
             apt-get remove -y -q datas >/dev/null && test ! -e /opt/datas'
       - name: build + test the Arch package
         run: |
@@ -116,6 +129,20 @@ jobs:
           dist/Datas.app/Contents/MacOS/datas-cli voice status
           dist/Datas.app/Contents/MacOS/datas-cli apps list
           dist/Datas.app/Contents/MacOS/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
+      - name: open the real window (WKWebView) and let it check itself
+        timeout-minutes: 8
+        run: |
+          export DATAS_HOME="$RUNNER_TEMP/datas-window"
+          dist/Datas.app/Contents/MacOS/Datas open --selfcheck "$RUNNER_TEMP/window.json" || { cat "$RUNNER_TEMP/window.json"; tail -n 60 "$DATAS_HOME/logs/datas.log"; exit 1; }
+          cat "$RUNNER_TEMP/window.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: window-check-macos
+          path: |
+            ${{ runner.temp }}/window.json
+            ${{ runner.temp }}/window.png
+          if-no-files-found: ignore
       - name: dmg
         run: installer/macos/build-dmg.sh ${{ steps.v.outputs.version }}
       - uses: actions/upload-artifact@v4

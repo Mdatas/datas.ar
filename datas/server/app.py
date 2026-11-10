@@ -1206,6 +1206,23 @@ def pool_nodes(refresh: bool = True, seconds: float = 2.5) -> dict:
 # ---------------------------------------------------------------------------
 
 
+_window_report: dict | None = None
+
+
+@app.post("/api/selfcheck")
+async def selfcheck_report(request: Request) -> dict:
+    """The window, opened with ``?selfcheck``, says what it showed (see datas/desktop.py)."""
+    global _window_report
+    body = await request.json()
+    _window_report = body if isinstance(body, dict) else None
+    return {"ok": True}
+
+
+@app.get("/api/selfcheck")
+def selfcheck_read() -> dict:
+    return {"report": _window_report}
+
+
 @app.get("/api/hello")
 def hello() -> dict:
     """Called once per app start by the UI: says what was found from an earlier install."""
