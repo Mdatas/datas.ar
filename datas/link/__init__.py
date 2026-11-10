@@ -19,6 +19,15 @@ How they talk from then on
     server run by anyone. The Wi-Fi router, the internet provider and other people on the same
     network see only encrypted traffic, and a device that was never paired cannot connect.
 
+Phones and tablets (the Datas apps)
+    A phone pairs with the same one-time code, but it brings no certificate of its own:
+    it invents a long random secret and proves, with the code, that the secret is its.
+    From then on it connects with TLS 1.3, accepts only this device's exact certificate,
+    and shows its secret inside that encrypted connection. This device keeps only a
+    fingerprint (SHA-256) of the secret. A linked phone can ask how this device is and —
+    if you allow it — open this device's Datas window through the link ("window" below).
+    It cannot pair other devices, lend or borrow memory, or reach anything else.
+
 See docs/DEVICES.md for the plain-language version and the limits.
 """
 
@@ -362,21 +371,40 @@ class LinkManager:
         tmp.write_text(json.dumps(self._peers, indent=1), encoding="utf-8")
         tmp.replace(self._peers_path())
 
-    def _add_peer(self, pid: str, name: str, cert: str, address: str) -> dict:
+    def _add_peer(
+        self, pid: str, name: str, cert: str, address: str, kind: str = "device", os: str = ""
+    ) -> dict:
         self._peers[pid] = {
             "name": " ".join(str(name).split())[:60] or "device",
             "cert": cert,
             "address": address,
             "added": time.time(),
         }
+        if kind == "app":  # a phone or tablet: known by the fingerprint of its secret
+            self._peers[pid].update(kind="app", os=str(os)[:20], window=True)
         self._save_peers()
-        if self._ctx is not None:
+        if self._ctx is not None and cert:
             try:
                 self._ctx.load_verify_locations(cadata=cert)
             except ssl.SSLError:
                 pass
         self._dirty = True
         return self._peers[pid]
+
+    def is_app(self, pid: str) -> bool:
+        return self._peers.get(pid, {}).get("kind") == "app"
+
+    def _computers(self) -> list[str]:
+        """Linked devices this one can call (phones only call in)."""
+        return [pid for pid in self._peers if not self.is_app(pid)]
+
+    def set_peer(self, pid: str, window: bool | None = None) -> dict:
+        if pid not in self._peers:
+            raise LinkError("that device is not linked")
+        if window is not None and self.is_app(pid):
+            self._peers[pid]["window"] = bool(window)
+            self._save_peers()
+        return self.peer_public(pid)
 
     def unpair(self, pid: str) -> bool:
         if pid not in self._peers:
@@ -401,7 +429,7 @@ class LinkManager:
     async def _serve(self, on: bool) -> None:
         if on and self._server is None:
             self._ctx = server_context(
-                self.key_p, self.crt_p, [p["cert"] for p in self._peers.values()]
+                self.key_p, self.crt_p, [p["cert"] for p in self._peers.values() if p.get("cert")]
             )
             self._server = await asyncio.start_server(
                 self._handle, "0.0.0.0", self.cfg.link_port, ssl=self._ctx, limit=4 * BUF
@@ -513,13 +541,25 @@ class LinkManager:
             if op == "pair":
                 await self._op_pair(msg, reader, writer)
                 return
+            if not pid and isinstance(msg.get("auth"), str):
+                # a phone: no certificate; it shows its secret inside the encrypted connection
+                try:
+                    cand = hashlib.sha256(bytes.fromhex(msg["auth"])).hexdigest()
+                except ValueError:
+                    cand = ""
+                pid = cand if self.is_app(cand) else None
             if not pid or pid not in self._peers:
                 await send(writer, {"ok": False, "error": "this device is not linked to that one"})
                 return
             self._seen(pid, writer, msg)
+            if self.is_app(pid) and op not in ("info", "window"):
+                await send(writer, {"ok": False, "error": "a phone cannot ask for that"})
+                return
             if op == "info":
                 info = await self.loop.run_in_executor(None, self.info)
                 await send(writer, {"ok": True, **info})
+            elif op == "window":
+                await self._op_window(pid, reader, writer)
             elif op == "sync":
                 await self._op_sync(msg, reader, writer)
             elif op == "rpc":
@@ -550,6 +590,8 @@ class LinkManager:
         st["online"], st["fails"], st["seen"] = True, 0, time.time()
         peername = writer.get_extra_info("peername")
         port = msg.get("port")
+        if self.is_app(pid):
+            return  # a phone is never called back
         if peername and isinstance(port, int) and 0 < port < 65536:
             addr = f"{peername[0]}:{port}"
             if self._peers[pid].get("address") != addr:
@@ -565,9 +607,15 @@ class LinkManager:
                 {"ok": False, "error": "that device is not showing a pairing code right now"},
             )
             return
+        app = bool(msg.get("app"))
         try:
-            cert = str(msg["cert"])
-            fp_c = fingerprint(cert)
+            if app:
+                cert, fp_c = "", str(msg["id"]).lower()
+                if len(fp_c) != 64 or len(bytes.fromhex(fp_c)) != 32:
+                    raise ValueError("bad id")
+            else:
+                cert = str(msg["cert"])
+                fp_c = fingerprint(cert)
             n_c = bytes.fromhex(msg["nonce"])
         except (KeyError, ValueError):
             await send(writer, {"ok": False, "error": "bad pairing request"})
@@ -590,9 +638,12 @@ class LinkManager:
         self.pairing = None  # a code works once
         peername = writer.get_extra_info("peername") or ("?", 0)
         port = msg.get("port") if isinstance(msg.get("port"), int) else self.cfg.link_port
-        self._add_peer(fp_c, msg.get("name") or peername[0], cert, f"{peername[0]}:{port}")
+        if app:
+            self._add_peer(fp_c, msg.get("name") or "phone", "", "", "app", msg.get("os") or "")
+        else:
+            self._add_peer(fp_c, msg.get("name") or peername[0], cert, f"{peername[0]}:{port}")
         st = self.status.setdefault(fp_c, {})
-        st["online"], st["fails"] = True, 0
+        st["online"], st["fails"], st["seen"] = True, 0, time.time()
         await send(
             writer,
             {"ok": True, "proof": proof(key, b"server", self.id, fp_c, n_s, n_c).hex()},
@@ -702,7 +753,7 @@ class LinkManager:
 
     async def _sync_all(self) -> dict:
         done, errors = [], []
-        for pid in list(self._peers):
+        for pid in self._computers():
             if not self.status.get(pid, {}).get("online"):
                 continue
             try:
@@ -780,6 +831,34 @@ class LinkManager:
             return
         await send(writer, {"ok": True})
         await splice(reader, writer, r2, w2)
+
+    # ---- op: this device's Datas window, for a linked phone -------------------------
+    async def _op_window(self, pid: str, reader, writer) -> None:  # noqa: ANN001
+        """Join the encrypted connection to the local service, so the phone's app can show
+        this device's Datas. The service is told which of its connections come this way
+        (``core.remote_clients``) and refuses, on those, what should only be done at the
+        device itself (see ``remote_refusal`` in datas/server/app.py)."""
+        if not self._peers[pid].get("window"):
+            await send(
+                writer,
+                {"ok": False, "error": "that device did not allow this one to open its Datas"},
+            )
+            return
+        try:
+            r2, w2 = await asyncio.open_connection("127.0.0.1", self.core.http_port, limit=4 * BUF)
+        except OSError as e:
+            await send(
+                writer, {"ok": False, "error": f"Datas is not answering on that device ({e})"}
+            )
+            return
+        me = w2.get_extra_info("sockname")[:2]
+        self.core.remote_clients[me] = pid
+        try:
+            await send(writer, {"ok": True})
+            await splice(reader, writer, r2, w2)
+        finally:
+            self.core.remote_clients.pop(me, None)
+            self.status.setdefault(pid, {})["seen"] = time.time()
 
     async def _ensure_tunnel(self, pid: str) -> int:
         """A door on this device (127.0.0.1) that leads, encrypted, to the worker on ``pid``."""
@@ -970,8 +1049,12 @@ class LinkManager:
         self._call(self._refresh(), 30)
 
     async def _refresh(self) -> None:
-        if self._peers:
-            await asyncio.gather(*(self._check(pid) for pid in list(self._peers)))
+        for pid in self._peers:  # a phone counts as present for a minute after it last called
+            if self.is_app(pid):
+                st = self.status.setdefault(pid, {})
+                st["online"] = time.time() - st.get("seen", 0) < 60
+        if self._computers():
+            await asyncio.gather(*(self._check(pid) for pid in self._computers()))
 
     async def _background(self) -> None:
         tick = 0
@@ -1001,7 +1084,7 @@ class LinkManager:
                     self.cfg.link_sync_chats
                     and not self.cfg.forget
                     and (self._dirty or time.time() - self.last_sync > 120)
-                    and any(s.get("online") for s in self.status.values())
+                    and any(self.status.get(p, {}).get("online") for p in self._computers())
                 ):
                     await self._sync_all()
             except Exception:  # noqa: BLE001 - the loop must outlive any single failure
@@ -1076,7 +1159,7 @@ class LinkManager:
 
     def _rediscover(self) -> None:
         """A linked device that changed address (new Wi-Fi lease) is found again by its id."""
-        offline = [pid for pid in self._peers if not self.status.get(pid, {}).get("online")]
+        offline = [pid for pid in self._computers() if not self.status.get(pid, {}).get("online")]
         if not offline or self._server is None:
             return
         for d in self.nearby(1.5):
@@ -1095,15 +1178,19 @@ class LinkManager:
         st = self.status.get(pid, {})
         info = st.get("info") or {}
         mem = (info.get("ram_budget", 0) + info.get("vram_budget", 0)) / 2**30
+        app = p.get("kind") == "app"
         return {
             "id": pid,
             "short_id": short_id(pid),
             "name": p["name"],
+            "kind": "app" if app else "device",
+            "window": bool(p.get("window")) if app else False,
+            "seen": st.get("seen"),
             "address": p["address"],
             "added": p.get("added"),
-            "online": bool(st.get("online")),
-            "error": st.get("error", "") if not st.get("online") else "",
-            "os": info.get("os", ""),
+            "online": (time.time() - st.get("seen", 0) < 60) if app else bool(st.get("online")),
+            "error": st.get("error", "") if not st.get("online") and not app else "",
+            "os": p.get("os", "") if app else info.get("os", ""),
             "version": info.get("version", ""),
             "memory_gib": round(mem, 1),
             "shares_memory": bool(info.get("share_memory")),

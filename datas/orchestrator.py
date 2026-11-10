@@ -115,6 +115,9 @@ class Datas:
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
         self.http_port = self.cfg.ui_port  # where the local API listens (set by the server)
+        # connections to the local service that come from a linked phone through the encrypted
+        # link: (address, port) as the service sees them -> the phone's id (datas/link)
+        self.remote_clients: dict[tuple, str] = {}
         self._agent_windows: list[subprocess.Popen] = []
         self._lock = threading.Lock()
         # ---- sleeping when idle, waking on the next message ----

@@ -64,6 +64,44 @@ def _hostname(value: str) -> str:
     return v.rsplit(":", 1)[0] if v.count(":") == 1 else v
 
 
+# What a linked phone may not do when it opens this device's Datas through the link. A phone
+# can be lost or borrowed; these are the things that reach beyond Datas itself — the room
+# (microphone, camera, screen), the computer (commands, programs, other devices) — or that
+# cannot be undone.
+REMOTE_REFUSED: tuple[tuple[str, str], ...] = (
+    ("ANY", "/api/shutdown"),
+    ("ANY", "/api/open"),
+    ("ANY", "/api/open-url"),
+    ("ANY", "/api/pick-file"),
+    ("ANY", "/api/voice/listen/"),
+    ("ANY", "/api/things/"),
+    ("WRITE", "/api/link"),
+    ("WRITE", "/api/mcp"),
+    ("WRITE", "/api/updates/app"),
+    ("WRITE", "/api/privacy/wipe"),
+    ("WRITE", "/api/programs/"),
+    ("WRITE", "/api/apps/"),
+)
+
+
+def remote_refusal(method: str, path: str) -> str | None:
+    """Why a request arriving from a linked phone is refused, or None if it may go on."""
+    write = method not in ("GET", "HEAD", "OPTIONS")
+    for kind, prefix in REMOTE_REFUSED:
+        hit = path == prefix.rstrip("/") or path.startswith(
+            prefix if prefix.endswith("/") else prefix + "/"
+        )
+        if hit and (kind == "ANY" or write):
+            return "This can only be done at the computer itself, not from a linked phone."
+    return None
+
+
+def remote_peer(request: Request) -> str | None:
+    """The id of the linked phone this request comes from, if it came through the link."""
+    c = request.client
+    return core.remote_clients.get((c.host, c.port)) if c else None
+
+
 @app.middleware("http")
 async def local_only(request: Request, call_next):
     ok = LOCAL_HOSTS | ALLOWED_HOSTS
@@ -82,6 +120,10 @@ async def local_only(request: Request, call_next):
             return JSONResponse(
                 {"detail": "Requests from other web pages are not accepted."}, status_code=403
             )
+    if remote_peer(request):
+        why = remote_refusal(request.method, request.url.path)
+        if why:
+            return JSONResponse({"detail": why}, status_code=403)
     resp = await call_next(request)
     resp.headers.setdefault("X-Content-Type-Options", "nosniff")
     resp.headers.setdefault("Referrer-Policy", "no-referrer")
@@ -163,8 +205,15 @@ def _start_background() -> None:
 
 
 @app.get("/api/status")
-def status() -> dict:
-    return core.status()
+def status(request: Request) -> dict:
+    st = core.status()
+    pid = remote_peer(request)
+    if pid:  # the window is being shown on a linked phone: it adapts (no "open this file"…)
+        st["remote"] = {
+            "device": core.link_manager().name,
+            "phone": core.link_manager().peer_public(pid)["name"],
+        }
+    return st
 
 
 @app.get("/api/spec")
@@ -1101,6 +1150,15 @@ def link_unpair(pid: str) -> dict:
     return {"removed": _link().unpair(pid)}
 
 
+class LinkPeerOptions(BaseModel):
+    window: bool | None = None  # a phone: may it open this device's Datas?
+
+
+@app.post("/api/link/peers/{pid}")
+def link_peer_options(pid: str, body: LinkPeerOptions) -> dict:
+    return _link_call(_link().set_peer, pid, body.window)
+
+
 @app.post("/api/link/options")
 def link_options(body: LinkOptions) -> dict:
     lm = _link()
@@ -1839,10 +1897,16 @@ class AgentBody(BaseModel):
 
 
 @app.post("/api/agent/run")
-def agent_run(body: AgentBody):
+def agent_run(body: AgentBody, request: Request):
     from datas.agents import AgentConfig, run_agent
     from datas.agents.folders import resolve_grant
 
+    if remote_peer(request) and (body.allow_shell or getattr(body, "devices", False)):
+        raise HTTPException(
+            403,
+            "From a linked phone the agent cannot run commands or use the computer's devices. "
+            "Switch those on at the computer itself.",
+        )
     try:
         roots = [resolve_grant(f) for f in body.folders]
     except ValueError as e:

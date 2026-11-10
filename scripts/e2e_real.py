@@ -165,7 +165,7 @@ def run(a: argparse.Namespace) -> int:
     items = found.get("chats", found) if isinstance(found, dict) else found
     step(
         "the chat is saved and found by search",
-        any(x.get("id") == saved.get("id") for x in items),
+        any(x.get("id") == saved.get("chat_id") for x in items),
         "",
         time.time() - t,
     )

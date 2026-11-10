@@ -30,7 +30,7 @@ def used() -> tuple[set[str], set[str]]:
         if not path.exists():
             continue
         for call in _calls(path.read_text(encoding="utf-8")):
-            head = call.split(",", 1)[0] if "{" in call else call   # skip the {name: value} part
+            head = call.split(",", 1)[0] if "{" in call else call  # skip the {name: value} part
             for lit in LITERAL.findall(head):
                 (prefixes if lit.endswith("_") else keys).add(lit)
     return keys, prefixes
