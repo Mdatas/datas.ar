@@ -19,6 +19,9 @@ datas = [
     (os.path.join(ROOT, "datas", "sources.json"), "datas"),
     (os.path.join(ROOT, "datas", "apps", "apps.json"), os.path.join("datas", "apps")),
     (os.path.join(ROOT, "datas", "assistants", "catalog.json"), os.path.join("datas", "assistants")),
+    (os.path.join(ROOT, "datas", "learn", "catalog.json"), os.path.join("datas", "learn")),
+    (os.path.join(ROOT, "datas", "learn", "lessons.en.md"), os.path.join("datas", "learn")),
+    (os.path.join(ROOT, "datas", "learn", "lessons.es.md"), os.path.join("datas", "learn")),
     # whole folders: the window (pages, style, scripts, fonts, icons) and the fonts used in PDFs
     (os.path.join(ROOT, "datas", "server", "ui"), os.path.join("datas", "server", "ui")),
     (os.path.join(ROOT, "datas", "fonts"), os.path.join("datas", "fonts")),

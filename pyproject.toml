@@ -70,6 +70,9 @@ packages = ["datas"]
 "datas/sources.json" = "datas/sources.json"
 "datas/apps/apps.json" = "datas/apps/apps.json"
 "datas/assistants/catalog.json" = "datas/assistants/catalog.json"
+"datas/learn/catalog.json" = "datas/learn/catalog.json"
+"datas/learn/lessons.en.md" = "datas/learn/lessons.en.md"
+"datas/learn/lessons.es.md" = "datas/learn/lessons.es.md"
 "datas/server/ui" = "datas/server/ui"
 "datas/fonts" = "datas/fonts"
 

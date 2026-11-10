@@ -18,6 +18,7 @@ import threading
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # this copy, not an installed one
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 if hasattr(os, "geteuid") and os.geteuid() == 0:
     os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
@@ -60,10 +61,17 @@ def main() -> None:
             time.sleep(0.2)
 
     from PyQt6.QtCore import QEventLoop, QTimer, QUrl
+    from PyQt6.QtWebEngineCore import QWebEnginePage
     from PyQt6.QtWebEngineWidgets import QWebEngineView
     from PyQt6.QtWidgets import QApplication
 
     qt = QApplication(sys.argv[:1])
+
+    class Page(QWebEnginePage):
+        """Prints what the page writes to its console, so script errors are not missed."""
+
+        def javaScriptConsoleMessage(self, level, message, line, source):  # noqa: N802
+            print(f"  [page] {message} ({source.rsplit('/', 1)[-1]}:{line})")
 
     def pump(seconds: float) -> None:
         loop = QEventLoop()
@@ -73,6 +81,7 @@ def main() -> None:
     def shot(name: str, size: str, js: str, path: str = "/", wait: float = a.wait) -> None:
         w, h = (int(x) for x in size.split("x"))
         view = QWebEngineView()
+        view.setPage(Page(view))
         view.resize(w, h)
         view.show()
         loaded = {"ok": False}
@@ -102,6 +111,7 @@ def main() -> None:
             ("create", "go('create')"),
             ("tools", "go('tools')"),
             ("devices", "go('devices')"),
+            ("learn", "go('learn')"),
             ("settings", "go('settings')"),
             ("about", "go('about')"),
         ]

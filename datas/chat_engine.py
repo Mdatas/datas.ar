@@ -276,8 +276,8 @@ def friendly_error(status: int, body: str) -> str:
     if "exceed_context_size" in low or "context size" in low or "context length" in low:
         return (
             "This chat (with its documents) is longer than this AI can keep in mind at once. "
-            "Start a new chat, attach fewer documents, or choose a longer memory in Add an AI → "
-            "Advanced options."
+            "Start a new chat, attach fewer documents, or let the AI keep more text in mind "
+            "(Settings, The AI)."
         )
     if status in (401, 403):
         return "The service refused the key. Check the API key in Settings → Paid services."

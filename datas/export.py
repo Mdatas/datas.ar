@@ -741,7 +741,14 @@ def export_code(code: str, lang: str = "", title: str = "") -> Path:
 def allowed(path: str | Path) -> Path:
     """Only files Datas itself wrote may be opened through the API."""
     p = Path(path).resolve()
-    roots = [exports_dir().resolve(), (home() / "images").resolve(), (home() / "agent").resolve()]
+    from datas.config import models_dir
+
+    roots = [
+        exports_dir().resolve(),
+        (home() / "images").resolve(),
+        (home() / "agent").resolve(),
+        models_dir().resolve(),  # "Open the AI folder" in My AIs
+    ]
     if not any(p == r or r in p.parents for r in roots) or not p.exists():
         raise PermissionError("not a file made by Datas")
     return p

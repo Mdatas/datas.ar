@@ -7,7 +7,8 @@ client = TestClient(app)
 
 def test_ui_served():
     r = client.get("/")
-    assert r.status_code == 200 and "Datas" in r.text and "/api/recommend" in r.text
+    assert r.status_code == 200 and "Datas" in r.text and "/ui/app.js" in r.text
+    assert "/api/recommend" in client.get("/ui/screens.js").text
 
 
 def test_spec_and_recommend():

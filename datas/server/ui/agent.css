@@ -1,0 +1,38 @@
+/* Datas — the agent's window. Colours and type come from app.css; these are its own pieces. */
+body.agent { overflow: auto; font-size: 15.5px; }
+.agent header { display: flex; gap: 12px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+.agent header .where { font-weight: 600; color: var(--muted); }
+.agent .spacer { flex: 1; }
+.agent main { max-width: 920px; margin: 0 auto; padding: 14px 20px 48px; display: block; }
+.agent .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin: 14px 0; }
+.agent .card > b { font-size: 17px; }
+.agent textarea { min-height: 96px; }
+.agent input[type="text"], .agent input[type="time"], .agent select { width: auto; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.agent button { min-height: 38px; padding: 7px 15px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; cursor: pointer; }
+.agent button:hover { border-color: var(--sky); }
+.agent button:disabled { opacity: .55; cursor: default; }
+.agent button.primary { background: var(--sun); border-color: var(--sun); color: var(--sun-ink); }
+.agent button.danger { color: var(--bad); }
+.agent button.small { min-height: 30px; padding: 3px 11px; font-size: 14px; }
+.agent .fine { color: var(--muted); font-size: 14px; }
+.agent label.switch { display: inline-flex; align-items: center; gap: 9px; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 14.5px; user-select: none; }
+.agent label.switch i { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.agent label.switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px var(--shade); transition: transform .15s; }
+.agent label.switch.on i { background: var(--sky-deep); }
+.agent label.switch.on i::after { transform: translateX(16px); }
+.agent label.switch.danger.on i { background: var(--bad); }
+.agent .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.agent .chip { padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 14.5px; font-weight: 600; background: var(--surface); color: var(--ink); user-select: none; }
+.agent .chip.on { background: var(--sky-soft); border-color: var(--sky); color: var(--sky-deep); }
+.agent .steps { display: flex; flex-direction: column; gap: 8px; max-height: 440px; overflow: auto; padding: 4px 0; margin-top: 8px; }
+.agent .step { padding: 10px 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent .step.tool { border-left: 4px solid var(--sky); }
+.agent .step.result { color: var(--muted); font: 12.5px/1.45 var(--mono); max-height: 150px; overflow: auto; }
+.agent .step.final { border-color: var(--ok); background: var(--ok-soft); }
+.agent .step.error { border-color: var(--bad); color: var(--bad); }
+.agent #askCard { border-color: var(--sun) !important; box-shadow: 0 0 0 3px var(--warn-soft); }
+.agent table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin-top: 8px; }
+.agent td, .agent th { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.agent ul { margin: 8px 0 0; padding-left: 20px; }
+.agent .res { white-space: pre-wrap; font: 12.5px/1.45 var(--mono); color: var(--muted); max-height: 230px; overflow: auto; background: var(--bg); border-radius: 10px; padding: 9px; }
+.agent details > summary { cursor: pointer; }

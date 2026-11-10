@@ -117,14 +117,11 @@ def test_sources_skills_library_agent_page():
 
 
 def test_ui_has_simple_flow_and_translations():
-    html = client.get("/").text
-    for key in (
-        "Run — check my computer",
-        "Remember me",
-        "Forget everything",
-        "Compared with the paid AIs",
-        'data-use="images"',
-        "nav_about",
-    ):
-        assert key in html
-    assert "Correr — revisar mi computadora" in html  # Spanish strings present
+    from tests import ui_keys
+
+    d = ui_keys.dictionary()
+    # the first-run choices, the one-button start and the plain verdicts exist in both languages
+    for key in ("mode_remember", "mode_forget", "get_this", "f_like", "use_images", "nav_about"):
+        assert d["en"][key] and d["es"][key] and d["en"][key] != d["es"][key]
+    assert d["en"]["mode_forget"] == "Forget" and d["es"]["mode_forget"] == "Olvidar"
+    assert 'src="/ui/i18n.js"' in client.get("/").text

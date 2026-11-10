@@ -1,0 +1,442 @@
+{
+  "version": 1,
+  "checked": "2026-11-09",
+  "levels": [
+    {"id": 1, "name": {"en": "New to AI", "es": "Recién empiezo"}},
+    {"id": 2, "name": {"en": "Everyday use", "es": "Uso cotidiano"}},
+    {"id": 3, "name": {"en": "Confident", "es": "Con confianza"}},
+    {"id": 4, "name": {"en": "Building with AI", "es": "Construir con IA"}},
+    {"id": 5, "name": {"en": "Expert", "es": "Nivel experto"}}
+  ],
+  "paths": [
+    {
+      "id": "start",
+      "name": {"en": "Start here", "es": "Empezá acá"},
+      "blurb": {"en": "What AI is, in plain words. No background needed.", "es": "Qué es la IA, en palabras simples. No hace falta saber nada antes."},
+      "items": ["lesson:what-is-ai", "lesson:how-chat-ai-works", "lesson:daily-life", "elements-of-ai", "genai-for-everyone", "ai-fluency", "karpathy-intro-llm"]
+    },
+    {
+      "id": "use",
+      "name": {"en": "Use it well", "es": "Usarla bien"},
+      "blurb": {"en": "Ask clearly, check what comes back, keep private things private.", "es": "Pedir con claridad, revisar lo que responde y cuidar lo privado."},
+      "items": ["lesson:ask-well", "lesson:check-answers", "lesson:privacy-basics", "ai-fluency", "learn-prompting", "prompting-guide", "anthropic-prompting"]
+    },
+    {
+      "id": "life",
+      "name": {"en": "Daily life", "es": "En la vida diaria"},
+      "blurb": {"en": "Home, study, paperwork, plans — and the three things to be careful with.", "es": "Casa, estudio, trámites, planes — y las tres cosas con las que conviene tener cuidado."},
+      "items": ["lesson:daily-life", "lesson:ask-well", "lesson:check-answers", "lesson:privacy-basics", "elements-of-ai"]
+    },
+    {
+      "id": "local",
+      "name": {"en": "AI on your own device", "es": "IA en tu propio dispositivo"},
+      "blurb": {"en": "Why local and open AI matters, and what the numbers on a model mean.", "es": "Por qué importa la IA local y abierta, y qué significan los números de un modelo."},
+      "items": ["lesson:local-vs-cloud", "lesson:sizes-and-memory", "datas-privacy", "datas-recommender", "datas-devices", "osaid", "huggingface", "llamacpp"]
+    },
+    {
+      "id": "how",
+      "name": {"en": "How it works", "es": "Cómo funciona"},
+      "blurb": {"en": "From the idea in pictures to the maths and the code.", "es": "De la idea en imágenes a la matemática y el código."},
+      "items": ["lesson:how-chat-ai-works", "3b1b-gpt", "karpathy-intro-llm", "illustrated-transformer", "google-mlcc", "karpathy-zero-to-hero", "fastai", "d2l"]
+    },
+    {
+      "id": "build",
+      "name": {"en": "Build with it", "es": "Construir con IA"},
+      "blurb": {"en": "Apps, agents, connections to other programs — and how to do it safely.", "es": "Aplicaciones, agentes, conexiones con otros programas — y cómo hacerlo con seguridad."},
+      "items": ["lesson:agents-tools", "ms-genai-beginners", "hf-agents-course", "mcp-intro", "owasp-llm", "llamacpp", "datas-api"]
+    },
+    {
+      "id": "expert",
+      "name": {"en": "Go deep", "es": "A fondo"},
+      "blurb": {"en": "University courses, textbooks and the original papers.", "es": "Cursos universitarios, libros de texto y los artículos originales."},
+      "items": ["fastai", "karpathy-zero-to-hero", "d2l", "cs224n", "attention-paper", "ai-safety-report", "ai-index"]
+    },
+    {
+      "id": "history",
+      "name": {"en": "Where it came from", "es": "De dónde viene"},
+      "blurb": {"en": "Seventy-five years in a few minutes, then the sources.", "es": "Setenta y cinco años en pocos minutos, y después las fuentes."},
+      "items": ["lesson:history-short", "owid-history", "turing-1950", "attention-paper"]
+    },
+    {
+      "id": "today",
+      "name": {"en": "Where it stands today", "es": "Dónde está hoy"},
+      "blurb": {"en": "Yearly reports built on data rather than headlines.", "es": "Informes anuales hechos con datos, no con titulares."},
+      "items": ["ai-index", "state-of-ai", "ai-safety-report", "ilia", "ilo-jobs"]
+    },
+    {
+      "id": "future",
+      "name": {"en": "Where it may go", "es": "Hacia dónde puede ir"},
+      "blurb": {"en": "Informed people disagree. These readings were chosen to disagree with each other.", "es": "Gente informada no se pone de acuerdo. Estas lecturas fueron elegidas porque discuten entre sí."},
+      "items": ["lesson:debates", "ai-safety-report", "normal-technology", "loving-grace", "ai-2027", "ilo-jobs"]
+    },
+    {
+      "id": "who",
+      "name": {"en": "Who is who", "es": "Quién es quién"},
+      "blurb": {"en": "Companies, communities, governments, international bodies — and you.", "es": "Empresas, comunidades, gobiernos, organismos internacionales — y vos."},
+      "items": ["lesson:who-is-who", "ai-index", "state-of-ai", "huggingface", "osaid", "oecd-principles", "un-governing"]
+    },
+    {
+      "id": "policy",
+      "name": {"en": "Rules and public policy", "es": "Reglas y política pública"},
+      "blurb": {"en": "Laws, treaties, principles and voluntary frameworks, with links to the official texts.", "es": "Leyes, tratados, principios y marcos voluntarios, con enlaces a los textos oficiales."},
+      "items": ["lesson:policy-map", "eu-ai-policy", "eu-ai-act-explorer", "eu-ai-act", "coe-convention", "oecd-principles", "unesco-ethics", "un-governing", "nist-rmf", "ar-recomendaciones"]
+    },
+    {
+      "id": "ethics",
+      "name": {"en": "Ethics, safety and rights", "es": "Ética, seguridad y derechos"},
+      "blurb": {"en": "What can go wrong, for whom, and what is being done about it.", "es": "Qué puede salir mal, para quién, y qué se está haciendo al respecto."},
+      "items": ["lesson:check-answers", "lesson:debates", "unesco-ethics", "ai-safety-report", "owasp-llm", "normal-technology", "coe-convention"]
+    },
+    {
+      "id": "work",
+      "name": {"en": "At work and in business", "es": "En el trabajo y la empresa"},
+      "blurb": {"en": "Bringing AI into a team without losing control of quality or data.", "es": "Sumar IA a un equipo sin perder el control de la calidad ni de los datos."},
+      "items": ["lesson:adopt-steps", "genai-for-everyone", "ai-fluency", "ilo-jobs", "nist-rmf", "owasp-llm", "eu-ai-policy"]
+    },
+    {
+      "id": "education",
+      "name": {"en": "Teaching and learning", "es": "Enseñar y aprender"},
+      "blurb": {"en": "Guidance for teachers, students and schools.", "es": "Orientaciones para docentes, estudiantes y escuelas."},
+      "items": ["unesco-genai-edu", "unesco-teachers", "unesco-students", "elements-of-ai", "ai-fluency"]
+    },
+    {
+      "id": "social",
+      "name": {"en": "Social projects and nonprofits", "es": "Proyectos sociales y organizaciones"},
+      "blurb": {"en": "Using AI for a mission, with the people you serve in mind.", "es": "Usar IA para una misión, pensando en las personas a las que servís."},
+      "items": ["lesson:adopt-steps", "bridgespan-resources", "equitable-ai", "nten-state", "fair-lac", "unesco-ethics"]
+    },
+    {
+      "id": "gov",
+      "name": {"en": "Government and public services", "es": "Gobierno y servicios públicos"},
+      "blurb": {"en": "How public offices use AI, and the duties that come with it.", "es": "Cómo usa IA el sector público, y las obligaciones que eso trae."},
+      "items": ["lesson:adopt-steps", "oecd-governing-intro", "oecd-governing", "uk-playbook", "ar-recomendaciones", "fair-lac", "nist-rmf", "coe-convention"]
+    },
+    {
+      "id": "es",
+      "name": {"en": "In Spanish", "es": "En español"},
+      "blurb": {"en": "Material available in Spanish.", "es": "Material disponible en español."},
+      "items": ["elements-of-ai", "unesco-ethics", "ilia", "ar-recomendaciones", "fair-lac", "ilo-jobs", "ai-safety-report", "un-governing", "unesco-genai-edu", "owasp-llm"]
+    }
+  ],
+  "items": [
+    {
+      "id": "elements-of-ai", "title": "Elements of AI", "by": "University of Helsinki & MinnaLearn",
+      "url": "https://www.elementsofai.com/", "kind": "course", "level": 1, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "A free course for people with no technical background: what AI is, what it can and cannot do. You can choose Spanish on the site.", "es": "Curso gratuito para quienes no vienen de lo técnico: qué es la IA, qué puede y qué no. En el sitio se puede elegir español."}
+    },
+    {
+      "id": "genai-for-everyone", "title": "Generative AI for Everyone", "by": "Andrew Ng, DeepLearning.AI",
+      "url": "https://www.coursera.org/learn/generative-ai-for-everyone", "kind": "course", "level": 1, "lang": ["en"],
+      "why": {"en": "A non-technical course on what generative AI does well and badly, with examples from work and home.", "es": "Curso no técnico sobre qué hace bien y mal la IA generativa, con ejemplos del trabajo y de la casa."}
+    },
+    {
+      "id": "ai-fluency", "title": "AI Fluency: Framework & Foundations", "by": "Anthropic",
+      "url": "https://www.anthropic.com/ai-fluency", "kind": "course", "level": 2, "lang": ["en"], "cost": "free",
+      "why": {"en": "Twelve short lessons (about 3–4 hours) on working with AI effectively, ethically and safely.", "es": "Doce lecciones cortas (unas 3–4 horas) para trabajar con IA de forma eficaz, ética y segura."}
+    },
+    {
+      "id": "karpathy-intro-llm", "title": "[1hr Talk] Intro to Large Language Models", "by": "Andrej Karpathy", "year": 2023,
+      "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g", "kind": "video", "level": 2, "minutes": 60, "lang": ["en"], "cost": "free",
+      "why": {"en": "One hour for a general audience: what a language model is, how it is trained, where it may go, and its security problems.", "es": "Una hora para público general: qué es un modelo de lenguaje, cómo se entrena, hacia dónde puede ir y sus problemas de seguridad."}
+    },
+    {
+      "id": "3b1b-gpt", "title": "But what is a GPT? Visual intro to transformers", "by": "3Blue1Brown (Grant Sanderson)", "year": 2024,
+      "url": "https://3blue1brown.com/lessons/gpt", "kind": "video", "level": 3, "minutes": 27, "lang": ["en"], "cost": "free",
+      "why": {"en": "Animations instead of formulas: how text becomes numbers and how the model chooses the next word.", "es": "Animaciones en vez de fórmulas: cómo el texto se vuelve números y cómo el modelo elige la palabra siguiente."}
+    },
+    {
+      "id": "learn-prompting", "title": "Learn Prompting", "by": "Learn Prompting",
+      "url": "https://learnprompting.org/", "kind": "course", "level": 2, "lang": ["en"],
+      "why": {"en": "Step-by-step lessons on writing instructions for an AI, starting from zero.", "es": "Lecciones paso a paso para escribir instrucciones a una IA, desde cero."}
+    },
+    {
+      "id": "prompting-guide", "title": "Prompt Engineering Guide", "by": "DAIR.AI",
+      "url": "https://www.promptingguide.ai/", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "An open reference of techniques for asking AI models, from the basics to advanced methods.", "es": "Una referencia abierta de técnicas para pedirle cosas a los modelos, de lo básico a lo avanzado."}
+    },
+    {
+      "id": "anthropic-prompting", "title": "Prompt engineering overview", "by": "Anthropic documentation",
+      "url": "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "A model maker's own advice on clear instructions, examples and structure. Most of it applies to any model.", "es": "Los consejos de un fabricante de modelos sobre instrucciones claras, ejemplos y estructura. Casi todo sirve para cualquier modelo."}
+    },
+    {
+      "id": "illustrated-transformer", "title": "The Illustrated Transformer", "by": "Jay Alammar",
+      "url": "https://jalammar.github.io/illustrated-transformer/", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The well-known picture-by-picture walk through the design behind today's language models.", "es": "El conocido recorrido, figura por figura, por el diseño que está detrás de los modelos de lenguaje actuales."}
+    },
+    {
+      "id": "google-mlcc", "title": "Machine Learning Crash Course", "by": "Google",
+      "url": "https://developers.google.com/machine-learning/crash-course/", "kind": "course", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "How machines learn from data, with exercises. Some maths and a little code.", "es": "Cómo aprenden las máquinas a partir de datos, con ejercicios. Algo de matemática y un poco de código."}
+    },
+    {
+      "id": "karpathy-zero-to-hero", "title": "Neural Networks: Zero to Hero", "by": "Andrej Karpathy",
+      "url": "https://karpathy.ai/zero-to-hero.html", "kind": "course", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "Build neural networks from nothing, in code, up to a small GPT. You need to know some Python.", "es": "Construir redes neuronales desde cero, en código, hasta llegar a un GPT chico. Hay que saber algo de Python."}
+    },
+    {
+      "id": "fastai", "title": "Practical Deep Learning for Coders", "by": "fast.ai",
+      "url": "https://course.fast.ai/", "kind": "course", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "For people who can code: train real models first, learn the theory afterwards.", "es": "Para quienes saben programar: primero entrenar modelos reales, después la teoría."}
+    },
+    {
+      "id": "d2l", "title": "Dive into Deep Learning", "by": "A. Zhang, Z. Lipton, M. Li, A. Smola",
+      "url": "https://d2l.ai/", "kind": "book", "level": 5, "lang": ["en"], "cost": "free",
+      "why": {"en": "An open, interactive textbook: every idea comes with the maths and with code you can run.", "es": "Un libro de texto abierto e interactivo: cada idea viene con su matemática y con código que se puede ejecutar."}
+    },
+    {
+      "id": "cs224n", "title": "CS224N: Natural Language Processing with Deep Learning", "by": "Stanford University",
+      "url": "https://web.stanford.edu/class/cs224n/", "kind": "course", "level": 5, "lang": ["en"],
+      "why": {"en": "A full university course on language AI. The course page publishes its slides and readings.", "es": "Un curso universitario completo sobre IA del lenguaje. La página publica sus diapositivas y lecturas."}
+    },
+    {
+      "id": "attention-paper", "title": "Attention Is All You Need", "by": "A. Vaswani and others", "year": 2017,
+      "url": "https://arxiv.org/abs/1706.03762", "kind": "paper", "level": 5, "lang": ["en"], "cost": "free",
+      "why": {"en": "The research paper that introduced the Transformer, the design used by today's language models.", "es": "El artículo científico que presentó el Transformer, el diseño que usan los modelos de lenguaje actuales."}
+    },
+    {
+      "id": "ms-genai-beginners", "title": "Generative AI for Beginners", "by": "Microsoft",
+      "url": "https://microsoft.github.io/generative-ai-for-beginners/", "kind": "course", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "Twenty-one lessons on building applications with generative AI, published openly on GitHub.", "es": "Veintiuna lecciones para construir aplicaciones con IA generativa, publicadas en abierto en GitHub."}
+    },
+    {
+      "id": "hf-agents-course", "title": "AI Agents Course", "by": "Hugging Face",
+      "url": "https://huggingface.co/learn/agents-course/unit0/introduction", "kind": "course", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "From what an agent is to building one that uses tools.", "es": "Desde qué es un agente hasta construir uno que usa herramientas."}
+    },
+    {
+      "id": "mcp-intro", "title": "Model Context Protocol: introduction", "by": "Model Context Protocol project",
+      "url": "https://modelcontextprotocol.io/introduction", "kind": "guide", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "The open standard Datas uses to let an AI work with other programs (the Connections list in Tools).", "es": "El estándar abierto que usa Datas para que una IA trabaje con otros programas (la lista Conexiones, en Herramientas)."}
+    },
+    {
+      "id": "owasp-llm", "title": "OWASP Top 10 for LLM Applications (2025)", "by": "OWASP GenAI Security Project",
+      "url": "https://genai.owasp.org/llm-top-10/", "kind": "guide", "level": 4, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "The ten most important security risks when building with language models, each with ways to reduce it. The site lists a Spanish translation.", "es": "Los diez riesgos de seguridad más importantes al construir con modelos de lenguaje, cada uno con formas de reducirlo. El sitio ofrece traducción al español."}
+    },
+    {
+      "id": "llamacpp", "title": "llama.cpp", "by": "ggml-org and contributors",
+      "url": "https://github.com/ggml-org/llama.cpp", "kind": "site", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "The open-source engine Datas uses to run language models on ordinary computers.", "es": "El motor de código abierto que usa Datas para ejecutar modelos de lenguaje en computadoras comunes."}
+    },
+    {
+      "id": "huggingface", "title": "Hugging Face", "by": "Hugging Face",
+      "url": "https://huggingface.co", "kind": "site", "level": 3, "lang": ["en"],
+      "why": {"en": "The public library where most open AI models are published — including the ones Datas downloads.", "es": "La biblioteca pública donde se publican casi todos los modelos abiertos — incluidos los que descarga Datas."}
+    },
+    {
+      "id": "osaid", "title": "The Open Source AI Definition 1.0", "by": "Open Source Initiative", "year": 2024,
+      "url": "https://opensource.org/ai", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "What 'open source' should mean for an AI system: the freedom to use, study, modify and share it.", "es": "Qué debería significar «código abierto» en un sistema de IA: libertad para usarlo, estudiarlo, modificarlo y compartirlo."}
+    },
+    {
+      "id": "datas-privacy", "title": "How Datas keeps things private", "by": "Datas.ar",
+      "url": "https://github.com/Mdatas/datas.ar/blob/main/docs/PRIVACY.md", "kind": "guide", "level": 2, "lang": ["en"], "cost": "free",
+      "why": {"en": "Exactly what stays on your device, what can leave it, and when.", "es": "Exactamente qué queda en tu dispositivo, qué puede salir y cuándo."}
+    },
+    {
+      "id": "datas-recommender", "title": "How Datas decides what your device can run", "by": "Datas.ar",
+      "url": "https://github.com/Mdatas/datas.ar/blob/main/docs/RECOMMENDER.md", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The reasoning behind 'runs well', 'slow' and 'does not fit'.", "es": "El razonamiento detrás de «anda bien», «lento» y «no entra»."}
+    },
+    {
+      "id": "datas-devices", "title": "Linking your own devices", "by": "Datas.ar",
+      "url": "https://github.com/Mdatas/datas.ar/blob/main/docs/DEVICES.md", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "How pairing and encryption between your devices work, what is shared, and the limits.", "es": "Cómo funcionan el emparejado y el cifrado entre tus dispositivos, qué se comparte y cuáles son los límites."}
+    },
+    {
+      "id": "datas-api", "title": "Use Datas from your own programs", "by": "Datas.ar",
+      "url": "https://github.com/Mdatas/datas.ar/blob/main/docs/API.md", "kind": "guide", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "The local address other programs can use to talk to the AI running on your device.", "es": "La dirección local que otros programas pueden usar para hablar con la IA que corre en tu dispositivo."}
+    },
+    {
+      "id": "owid-history", "title": "The brief history of artificial intelligence", "by": "Max Roser, Our World in Data", "year": 2022,
+      "url": "https://ourworldindata.org/brief-history-of-ai", "kind": "article", "level": 2, "lang": ["en"], "cost": "free",
+      "why": {"en": "A short history told with charts: how quickly the abilities of AI systems have grown.", "es": "Una historia breve contada con gráficos: qué tan rápido crecieron las capacidades de los sistemas de IA."}
+    },
+    {
+      "id": "turing-1950", "title": "Computing Machinery and Intelligence", "by": "Alan Turing", "year": 1950,
+      "url": "https://academic.oup.com/mind/article/LIX/236/433/986238", "kind": "paper", "level": 3, "lang": ["en"],
+      "why": {"en": "The article that asked 'Can machines think?' and proposed the imitation game. Still very readable.", "es": "El artículo que preguntó «¿Pueden pensar las máquinas?» y propuso el juego de la imitación. Todavía se lee muy bien."}
+    },
+    {
+      "id": "ai-index", "title": "AI Index Report 2026", "by": "Stanford HAI", "year": 2026,
+      "url": "https://hai.stanford.edu/ai-index/2026-ai-index-report", "kind": "report", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The yearly picture of AI in numbers: research, industry, the economy, policy and public opinion.", "es": "La foto anual de la IA en números: investigación, industria, economía, políticas y opinión pública."}
+    },
+    {
+      "id": "state-of-ai", "title": "State of AI Report", "by": "Nathan Benaich, Air Street Capital", "year": 2026,
+      "url": "https://www.stateof.ai/", "kind": "report", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "An independent yearly slide report on research, industry, politics and safety. Written by an investor; read it with that in mind.", "es": "Un informe anual independiente, en diapositivas, sobre investigación, industria, política y seguridad. Lo escribe un inversor; conviene leerlo sabiéndolo."}
+    },
+    {
+      "id": "ilia", "title": "Índice Latinoamericano de Inteligencia Artificial (ILIA) 2025", "by": "CEPAL & CENIA", "year": 2025,
+      "url": "https://www.cepal.org/es/publicaciones/82514-indice-latinoamericano-inteligencia-artificial-ilia-2025", "kind": "report", "level": 3, "lang": ["es", "en"], "cost": "free",
+      "why": {"en": "How 19 countries of Latin America and the Caribbean are doing on AI: enabling factors, research and adoption, governance. An English edition exists.", "es": "Cómo están 19 países de América Latina y el Caribe en IA: factores habilitantes, investigación y adopción, gobernanza."}
+    },
+    {
+      "id": "ilo-jobs", "title": "Generative AI and jobs: a 2025 update", "by": "International Labour Organization", "year": 2025,
+      "url": "https://www.ilo.org/node/706776", "kind": "report", "level": 3, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "Which occupations are most exposed to generative AI, and why most jobs are more likely to change than to disappear. Also offered in Spanish.", "es": "Qué ocupaciones están más expuestas a la IA generativa, y por qué es más probable que la mayoría de los trabajos cambie a que desaparezca. También en español."}
+    },
+    {
+      "id": "ai-safety-report", "title": "International AI Safety Report 2026", "by": "Chair: Yoshua Bengio, with more than 100 experts", "year": 2026,
+      "url": "https://internationalaisafetyreport.org/publications", "kind": "report", "level": 3, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "The shared scientific review of what general-purpose AI can do, its risks and the safeguards. Summaries and translations into the six UN languages are on the same page.", "es": "La revisión científica compartida sobre qué puede hacer la IA de propósito general, sus riesgos y las salvaguardas. En la misma página hay resúmenes y traducciones a los seis idiomas de la ONU."}
+    },
+    {
+      "id": "normal-technology", "title": "AI as Normal Technology", "by": "Arvind Narayanan & Sayash Kapoor", "year": 2025,
+      "url": "https://www.aisnakeoil.com/p/ai-as-normal-technology", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The case that AI is a powerful but ordinary technology, like electricity or the internet: slow to spread and governable.", "es": "El argumento de que la IA es una tecnología poderosa pero normal, como la electricidad o internet: se difunde despacio y se puede gobernar."}
+    },
+    {
+      "id": "loving-grace", "title": "Machines of Loving Grace", "by": "Dario Amodei", "year": 2024,
+      "url": "https://darioamodei.com/machines-of-loving-grace", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The head of an AI company on what powerful AI could do for health, poverty and peace if things go right. An optimistic view from inside the industry.", "es": "El director de una empresa de IA sobre lo que una IA poderosa podría hacer por la salud, la pobreza y la paz si las cosas salen bien. Una mirada optimista desde adentro de la industria."}
+    },
+    {
+      "id": "ai-2027", "title": "AI 2027", "by": "AI Futures Project", "year": 2025,
+      "url": "https://ai-2027.com/", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "A detailed scenario of very fast progress and loss of control. A forecast to argue with, not a prediction; its authors have since lengthened their timelines.", "es": "Un escenario detallado de avance muy rápido y pérdida de control. Un pronóstico para discutir, no una predicción; sus autores después alargaron sus plazos."}
+    },
+    {
+      "id": "eu-ai-policy", "title": "Regulatory framework for AI", "by": "European Commission",
+      "url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai", "kind": "guide", "level": 2, "lang": ["en"], "cost": "free",
+      "why": {"en": "The Commission's own plain summary of the EU AI Act: the risk levels and the dates.", "es": "El resumen en lenguaje llano de la propia Comisión sobre la Ley de IA de la UE: los niveles de riesgo y las fechas."}
+    },
+    {
+      "id": "eu-ai-act-explorer", "title": "EU AI Act Explorer", "by": "artificialintelligenceact.eu (independent site)",
+      "url": "https://artificialintelligenceact.eu/", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The same law made browsable, with summaries and a timeline. Useful, but not an official source.", "es": "La misma ley en formato navegable, con resúmenes y cronología. Útil, pero no es una fuente oficial."}
+    },
+    {
+      "id": "eu-ai-act", "title": "Artificial Intelligence Act — Regulation (EU) 2024/1689", "by": "European Union", "year": 2024,
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", "kind": "law", "level": 4, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "The official text of the first broad law on AI. The page offers every official EU language.", "es": "El texto oficial de la primera ley amplia sobre IA. La página lo ofrece en todos los idiomas oficiales de la UE, incluido el español."}
+    },
+    {
+      "id": "coe-convention", "title": "Framework Convention on Artificial Intelligence and Human Rights, Democracy and the Rule of Law", "by": "Council of Europe", "year": 2024,
+      "url": "https://www.coe.int/ai", "kind": "law", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "The first international legally binding treaty on AI, open for signature since September 2024.", "es": "El primer tratado internacional jurídicamente vinculante sobre IA, abierto a la firma desde septiembre de 2024."}
+    },
+    {
+      "id": "oecd-principles", "title": "OECD AI Principles", "by": "OECD",
+      "url": "https://oecd.ai/en/ai-principles", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "The first intergovernmental standard on AI (2019, updated 2024): five values and five recommendations for governments.", "es": "El primer estándar intergubernamental sobre IA (2019, actualizado en 2024): cinco valores y cinco recomendaciones para los gobiernos."}
+    },
+    {
+      "id": "unesco-ethics", "title": "Recomendación sobre la ética de la inteligencia artificial", "by": "UNESCO", "year": 2021,
+      "url": "https://unesdoc.unesco.org/ark:/48223/pf0000381137_spa", "kind": "law", "level": 3, "lang": ["es"], "cost": "free",
+      "why": {"en": "The global ethics standard for AI adopted by UNESCO's member states. This link opens the Spanish edition; the record lists the other languages.", "es": "El estándar mundial de ética de la IA adoptado por los Estados miembros de la UNESCO, en su edición en español."}
+    },
+    {
+      "id": "un-governing", "title": "Governing AI for Humanity", "by": "UN Secretary-General's High-level Advisory Body on AI", "year": 2024,
+      "url": "https://www.un.org/ai-advisory-body", "kind": "report", "level": 4, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "Seven recommendations for governing AI worldwide, including the countries usually left out of the conversation. The page offers the six UN languages.", "es": "Siete recomendaciones para gobernar la IA a escala mundial, incluyendo a los países que suelen quedar fuera de la conversación. La página lo ofrece en español."}
+    },
+    {
+      "id": "nist-rmf", "title": "AI Risk Management Framework (AI RMF 1.0)", "by": "NIST, United States", "year": 2023,
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework", "kind": "guide", "level": 4, "lang": ["en"], "cost": "free",
+      "why": {"en": "A voluntary method — govern, map, measure, manage — for handling AI risks in any organisation. A revision is under way.", "es": "Un método voluntario — gobernar, mapear, medir, gestionar — para manejar los riesgos de la IA en cualquier organización. Está en revisión."}
+    },
+    {
+      "id": "ar-recomendaciones", "title": "Recomendaciones para una Inteligencia Artificial Fiable (Disposición 2/2023)", "by": "Subsecretaría de Tecnologías de la Información, Argentina", "year": 2023,
+      "url": "https://www.argentina.gob.ar/normativa/nacional/384656/texto", "kind": "law", "level": 3, "lang": ["es"], "cost": "free",
+      "why": {"en": "Argentina's official recommendations for public-sector AI projects: ethical principles and what to do at each stage. In Spanish.", "es": "Las recomendaciones oficiales de Argentina para proyectos de IA del sector público: principios éticos y qué hacer en cada etapa."}
+    },
+    {
+      "id": "fair-lac", "title": "fAIr LAC: adopción ética y responsable de la inteligencia artificial en América Latina y el Caribe", "by": "Banco Interamericano de Desarrollo (BID)", "year": 2020,
+      "url": "https://publications.iadb.org/es/fair-lac-adopcion-etica-y-responsable-de-la-inteligencia-artificial-en-america-latina-y-el-caribe", "kind": "report", "level": 3, "lang": ["es", "en"], "cost": "free",
+      "why": {"en": "The Inter-American Development Bank on responsible AI for social services in the region: challenges, opportunities, lines of action.", "es": "El BID sobre la IA responsable en los servicios sociales de la región: desafíos, oportunidades y líneas de acción."}
+    },
+    {
+      "id": "unesco-genai-edu", "title": "Guidance for generative AI in education and research", "by": "UNESCO", "year": 2023,
+      "url": "https://unesdoc.unesco.org/ark:/48223/pf0000386693", "kind": "guide", "level": 3, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "UNESCO's first global guidance for schools, universities and ministries on generative AI. A Spanish edition exists.", "es": "La primera orientación mundial de la UNESCO para escuelas, universidades y ministerios sobre IA generativa. Existe edición en español."}
+    },
+    {
+      "id": "unesco-teachers", "title": "AI competency framework for teachers", "by": "UNESCO", "year": 2024,
+      "url": "https://unesdoc.unesco.org/ark:/48223/pf0000391104", "kind": "guide", "level": 3, "lang": ["en", "es"], "cost": "free",
+      "why": {"en": "Fifteen competencies in five areas that teachers need in the age of AI, at three levels of progress.", "es": "Quince competencias en cinco áreas que necesitan los docentes en la era de la IA, con tres niveles de avance."}
+    },
+    {
+      "id": "unesco-students", "title": "AI competency framework for students", "by": "UNESCO", "year": 2024,
+      "url": "https://unesdoc.unesco.org/ark:/48223/pf0000391105", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "What students should learn about AI: a human-centred mindset, ethics, techniques, and system design.", "es": "Qué deberían aprender los estudiantes sobre IA: mirada centrada en las personas, ética, técnicas y diseño de sistemas."}
+    },
+    {
+      "id": "bridgespan-resources", "title": "Compiled social-sector AI resources", "by": "The Bridgespan Group",
+      "url": "https://www.bridgespan.org/insights/compiled-social-sector-ai-resources", "kind": "guide", "level": 2, "lang": ["en"], "cost": "free",
+      "why": {"en": "A maintained list of guides, playbooks and policy templates for nonprofits starting with AI.", "es": "Una lista actualizada de guías, manuales y modelos de política para organizaciones sociales que empiezan con IA."}
+    },
+    {
+      "id": "equitable-ai", "title": "Equitable AI Adoption Framework", "by": "Project Evident (published on data.org)",
+      "url": "https://data.org/resources/equitable-ai-adoption-framework/", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "A tool built around real use cases to help nonprofits adopt AI in line with equity, safety and responsibility.", "es": "Una herramienta basada en casos reales para que las organizaciones adopten IA de acuerdo con la equidad, la seguridad y la responsabilidad."}
+    },
+    {
+      "id": "nten-state", "title": "State of Nonprofit AI Adoption and Governance", "by": "NTEN & The Bridgespan Group", "year": 2026,
+      "url": "https://www.nten.org/publications/state-of-nonprofit-ai", "kind": "report", "level": 3, "lang": ["en"],
+      "why": {"en": "A survey of how nonprofits are actually using and governing AI.", "es": "Una encuesta sobre cómo usan y gobiernan la IA, en la práctica, las organizaciones sin fines de lucro."}
+    },
+    {
+      "id": "oecd-governing-intro", "title": "Governing with artificial intelligence: are governments ready?", "by": "OECD", "year": 2024,
+      "url": "https://oecd.ai/en/wonk/governing-with-artificial-intelligence", "kind": "article", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "A short overview of the benefits and risks of AI inside government, and what a public office needs before starting.", "es": "Un panorama breve de los beneficios y riesgos de la IA dentro del Estado, y qué necesita una oficina pública antes de empezar."}
+    },
+    {
+      "id": "oecd-governing", "title": "Governing with Artificial Intelligence: The State of Play and Way Forward in Core Government Functions", "by": "OECD", "year": 2025,
+      "url": "https://doi.org/10.1787/795de142-en", "kind": "report", "level": 4, "lang": ["en"],
+      "why": {"en": "How governments really use AI: 200 cases across 11 functions, the risks, and a framework for trustworthy use.", "es": "Cómo usan realmente la IA los gobiernos: 200 casos en 11 funciones, los riesgos y un marco para un uso confiable."}
+    },
+    {
+      "id": "uk-playbook", "title": "AI Playbook for the UK Government", "by": "UK Government Digital Service", "year": 2025,
+      "url": "https://www.gov.uk/government/publications/ai-playbook-for-the-uk-government", "kind": "guide", "level": 3, "lang": ["en"], "cost": "free",
+      "why": {"en": "Ten principles and practical guidance for public servants using AI. Written to be read by non-specialists.", "es": "Diez principios y orientación práctica para empleados públicos que usan IA. Escrito para no especialistas."}
+    }
+  ],
+  "glossary": [
+    {"term": {"en": "AI (artificial intelligence)", "es": "IA (inteligencia artificial)"}, "short": {"en": "Software that learned patterns from examples instead of following hand-written rules.", "es": "Programas que aprendieron patrones a partir de ejemplos en vez de seguir reglas escritas a mano."}},
+    {"term": {"en": "Model", "es": "Modelo"}, "short": {"en": "The file that holds what an AI learned. It is what you download and run.", "es": "El archivo que guarda lo que una IA aprendió. Es lo que se descarga y se ejecuta."}},
+    {"term": {"en": "LLM (large language model)", "es": "LLM (modelo grande de lenguaje)"}, "short": {"en": "A model trained on text that writes by predicting the next piece of text.", "es": "Un modelo entrenado con texto que escribe prediciendo el fragmento de texto que sigue."}},
+    {"term": {"en": "Parameters", "es": "Parámetros"}, "short": {"en": "The numbers inside a model. \"7B\" means seven billion of them.", "es": "Los números que hay dentro de un modelo. «7B» significa siete mil millones."}},
+    {"term": {"en": "Token", "es": "Token"}, "short": {"en": "A word or a piece of a word. Models read and write in tokens.", "es": "Una palabra o un pedazo de palabra. Los modelos leen y escriben en tokens."}},
+    {"term": {"en": "Context", "es": "Contexto"}, "short": {"en": "How much text a model can keep in mind at once.", "es": "Cuánto texto puede tener presente un modelo a la vez."}},
+    {"term": {"en": "Prompt", "es": "Instrucción (prompt)"}, "short": {"en": "What you write to the AI.", "es": "Lo que le escribís a la IA."}},
+    {"term": {"en": "System prompt", "es": "Instrucción de sistema"}, "short": {"en": "Standing instructions the AI receives before the conversation starts; a helper is mostly this.", "es": "Instrucciones fijas que la IA recibe antes de empezar la conversación; un ayudante es sobre todo eso."}},
+    {"term": {"en": "Training", "es": "Entrenamiento"}, "short": {"en": "Making a model learn from data. Done once, by its maker, on very large computers.", "es": "Hacer que un modelo aprenda de los datos. Lo hace una vez su fabricante, en computadoras muy grandes."}},
+    {"term": {"en": "Fine-tuning", "es": "Ajuste fino"}, "short": {"en": "Extra training of an existing model for a particular task or style.", "es": "Entrenamiento adicional de un modelo existente para una tarea o un estilo en particular."}},
+    {"term": {"en": "Inference", "es": "Inferencia"}, "short": {"en": "Using a trained model to get answers. This is what happens on your device.", "es": "Usar un modelo ya entrenado para obtener respuestas. Es lo que ocurre en tu dispositivo."}},
+    {"term": {"en": "Hallucination", "es": "Alucinación"}, "short": {"en": "A confident answer that is false or invented.", "es": "Una respuesta dicha con seguridad que es falsa o inventada."}},
+    {"term": {"en": "Open weights", "es": "Pesos abiertos"}, "short": {"en": "A model whose file anyone may download and run on their own device.", "es": "Un modelo cuyo archivo cualquiera puede descargar y ejecutar en su propio dispositivo."}},
+    {"term": {"en": "Open source", "es": "Código abierto"}, "short": {"en": "Software whose code anyone may read, change and share.", "es": "Programas cuyo código cualquiera puede leer, cambiar y compartir."}},
+    {"term": {"en": "Quantization", "es": "Cuantización"}, "short": {"en": "Storing a model's numbers with fewer digits so it needs less memory, at a small cost in quality.", "es": "Guardar los números de un modelo con menos dígitos para que ocupe menos memoria, con una pequeña pérdida de calidad."}},
+    {"term": {"en": "GGUF", "es": "GGUF"}, "short": {"en": "The file format llama.cpp uses for models that run on ordinary computers.", "es": "El formato de archivo que usa llama.cpp para modelos que corren en computadoras comunes."}},
+    {"term": {"en": "CPU", "es": "CPU (procesador)"}, "short": {"en": "The computer's main processor.", "es": "El procesador principal de la computadora."}},
+    {"term": {"en": "GPU", "es": "GPU (placa de video)"}, "short": {"en": "The graphics card. It runs AI much faster than the main processor.", "es": "La placa de video. Ejecuta IA mucho más rápido que el procesador principal."}},
+    {"term": {"en": "RAM", "es": "RAM (memoria de trabajo)"}, "short": {"en": "The computer's working memory.", "es": "La memoria de trabajo de la computadora."}},
+    {"term": {"en": "VRAM", "es": "VRAM (memoria de video)"}, "short": {"en": "The graphics card's own memory. A model that fits there runs fastest.", "es": "La memoria propia de la placa de video. Un modelo que entra ahí corre más rápido."}},
+    {"term": {"en": "Local AI", "es": "IA local"}, "short": {"en": "AI that runs on your own device. Nothing you write leaves it.", "es": "IA que corre en tu propio dispositivo. Nada de lo que escribís sale de ahí."}},
+    {"term": {"en": "Cloud AI", "es": "IA en la nube"}, "short": {"en": "AI that runs on a company's computers; your messages travel there over the internet.", "es": "IA que corre en las computadoras de una empresa; tus mensajes viajan hasta ahí por internet."}},
+    {"term": {"en": "API", "es": "API"}, "short": {"en": "A way for programs to talk to each other. Online AI services are used through one.", "es": "Una forma de que los programas hablen entre sí. Los servicios de IA en línea se usan a través de una."}},
+    {"term": {"en": "API key", "es": "Clave de API"}, "short": {"en": "A personal password that lets a program use a paid online service on your account.", "es": "Una contraseña personal que permite a un programa usar un servicio pago en línea con tu cuenta."}},
+    {"term": {"en": "Agent", "es": "Agente"}, "short": {"en": "An AI that is allowed to take steps and use tools to finish a task.", "es": "Una IA a la que se le permite dar pasos y usar herramientas para terminar una tarea."}},
+    {"term": {"en": "Tool", "es": "Herramienta"}, "short": {"en": "Something an agent can do: read a file, search the web, save a document.", "es": "Algo que un agente puede hacer: leer un archivo, buscar en la web, guardar un documento."}},
+    {"term": {"en": "MCP (Model Context Protocol)", "es": "MCP (Model Context Protocol)"}, "short": {"en": "An open standard for connecting an AI to other programs.", "es": "Un estándar abierto para conectar una IA con otros programas."}},
+    {"term": {"en": "RAG (retrieval-augmented generation)", "es": "RAG (generación con recuperación)"}, "short": {"en": "Finding the relevant passages in your documents and handing them to the model with your question.", "es": "Buscar los pasajes relevantes en tus documentos y dárselos al modelo junto con tu pregunta."}},
+    {"term": {"en": "Embedding", "es": "Embedding (representación numérica)"}, "short": {"en": "A list of numbers that captures the meaning of a text, used to find similar texts.", "es": "Una lista de números que captura el significado de un texto; sirve para encontrar textos parecidos."}},
+    {"term": {"en": "Multimodal", "es": "Multimodal"}, "short": {"en": "A model that handles more than text: pictures, sound or video.", "es": "Un modelo que maneja más que texto: imágenes, sonido o video."}},
+    {"term": {"en": "Vision model", "es": "Modelo con visión"}, "short": {"en": "A model that can look at pictures you give it.", "es": "Un modelo que puede mirar las imágenes que le das."}},
+    {"term": {"en": "Speech-to-text", "es": "Voz a texto"}, "short": {"en": "Turning speech into written text.", "es": "Convertir lo hablado en texto escrito."}},
+    {"term": {"en": "Text-to-speech", "es": "Texto a voz"}, "short": {"en": "Reading text aloud with a synthetic voice.", "es": "Leer un texto en voz alta con una voz sintética."}},
+    {"term": {"en": "Diffusion model", "es": "Modelo de difusión"}, "short": {"en": "The kind of model most image generators use; it builds a picture step by step out of noise.", "es": "El tipo de modelo que usan casi todos los generadores de imágenes; arma la imagen paso a paso a partir de ruido."}},
+    {"term": {"en": "Reasoning model", "es": "Modelo de razonamiento"}, "short": {"en": "A model that works through a problem in steps before answering. Slower, often better at hard tasks.", "es": "Un modelo que resuelve el problema por pasos antes de responder. Más lento, y a menudo mejor en tareas difíciles."}},
+    {"term": {"en": "Temperature", "es": "Temperatura"}, "short": {"en": "A setting for how predictable or how varied the answers are.", "es": "Un ajuste que define qué tan previsibles o variadas son las respuestas."}},
+    {"term": {"en": "Benchmark", "es": "Prueba comparativa (benchmark)"}, "short": {"en": "A standard test used to compare models. Useful, and easy to over-read.", "es": "Una prueba estándar para comparar modelos. Útil, y fácil de sobreinterpretar."}},
+    {"term": {"en": "Bias", "es": "Sesgo"}, "short": {"en": "A systematic unfairness or distortion a model picked up from its data.", "es": "Una injusticia o distorsión sistemática que el modelo tomó de sus datos."}},
+    {"term": {"en": "Prompt injection", "es": "Inyección de instrucciones"}, "short": {"en": "Hidden instructions in a web page or document that try to steer an AI.", "es": "Instrucciones escondidas en una página web o un documento que intentan dirigir a una IA."}},
+    {"term": {"en": "Licence", "es": "Licencia"}, "short": {"en": "The terms under which you may use a model or a program.", "es": "Las condiciones bajo las cuales se puede usar un modelo o un programa."}},
+    {"term": {"en": "Encryption", "es": "Cifrado"}, "short": {"en": "Scrambling data so that only the intended devices can read it.", "es": "Codificar los datos para que solo los dispositivos previstos puedan leerlos."}},
+    {"term": {"en": "AGI (artificial general intelligence)", "es": "IAG (inteligencia artificial general)"}, "short": {"en": "A hypothetical AI able to do most intellectual work as well as people. Experts disagree on what it means and on when, or whether, it will arrive.", "es": "Una IA hipotética capaz de hacer la mayor parte del trabajo intelectual tan bien como las personas. Los especialistas no coinciden en qué significa ni en cuándo, o si, llegará."}}
+  ]
+}

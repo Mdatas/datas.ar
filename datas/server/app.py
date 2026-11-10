@@ -25,7 +25,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
-from datas import __version__, assistants, chat_engine, chats, docs, library, shortcuts
+from datas import __version__, assistants, chat_engine, chats, docs, learn, library, shortcuts
 from datas import export as exporter
 from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
@@ -86,11 +86,12 @@ async def local_only(request: Request, call_next):
     resp.headers.setdefault("X-Content-Type-Options", "nosniff")
     resp.headers.setdefault("Referrer-Policy", "no-referrer")
     if request.url.path in ("/", "/agent"):
-        # the window loads only its own files; pictures may be data: (previews) or blob:
+        # the window loads only its own files and runs only its own script files (no script
+        # written into a page can run); pictures may be data: (previews) or blob:
         resp.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; "
-            "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self'; "
             "connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
             "form-action 'none'",
         )
@@ -1729,6 +1730,79 @@ def open_exported(body: OpenBody) -> dict:
     except (ValueError, OSError) as e:
         raise HTTPException(400, str(e)) from e
     return {"opened": True}
+
+
+# ---------------------------------------------------------------------------
+# Learn: lessons, a glossary and a hand-checked list of outside material
+# ---------------------------------------------------------------------------
+@app.get("/api/learn")
+def learn_index(lang: str | None = None) -> dict:
+    return learn.listing(lang or core.cfg.lang, core.cfg)
+
+
+@app.get("/api/learn/lesson/{lesson_id}")
+def learn_lesson(lesson_id: str, lang: str | None = None) -> dict:
+    le = learn.lesson(lesson_id, lang or core.cfg.lang)
+    if not le:
+        raise HTTPException(404, "no such lesson")
+    return le
+
+
+class LearnMark(BaseModel):
+    ref: str
+    done: bool = True
+
+
+@app.post("/api/learn/progress")
+def learn_progress(body: LearnMark) -> dict:
+    try:
+        saved = learn.mark(body.ref, body.done, core.cfg)
+    except KeyError:
+        raise HTTPException(404, "no such lesson or link") from None
+    return {"saved": saved, "done": learn.progress(core.cfg)}
+
+
+@app.post("/api/pick-file")
+def pick_file() -> dict:
+    """Let the person choose an AI file (.gguf) with the system's own "open file" window.
+    That window exists only inside the Datas window; in a plain browser tab the answer is
+    ``available: false`` and the page offers a box to type the place instead."""
+    try:
+        import webview
+
+        win = webview.windows[0] if webview.windows else None
+    except Exception:  # noqa: BLE001 - pywebview missing or not running
+        win = None
+    if win is None:
+        return {"available": False, "path": None}
+    try:
+        kind = getattr(getattr(webview, "FileDialog", None), "OPEN", None)
+        if kind is None:
+            kind = webview.OPEN_DIALOG
+        picked = win.create_file_dialog(
+            kind, allow_multiple=False, file_types=("AI model files (*.gguf)", "All files (*.*)")
+        )
+    except Exception as e:  # noqa: BLE001 - a window toolkit without file dialogs
+        return {"available": False, "path": None, "error": str(e)}
+    return {"available": True, "path": str(picked[0]) if picked else None}
+
+
+class OpenUrl(BaseModel):
+    url: str
+
+
+@app.post("/api/open-url")
+def open_url(body: OpenUrl) -> dict:
+    """Open a web address in the user's usual browser (links in Learn, About, model pages).
+    Web addresses only — never a file, a program or any other scheme."""
+    import webbrowser
+    from urllib.parse import urlsplit
+
+    url = body.url.strip()
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise HTTPException(400, "only web addresses can be opened")
+    return {"opened": bool(webbrowser.open(url))}
 
 
 @app.get("/agent", response_class=HTMLResponse)

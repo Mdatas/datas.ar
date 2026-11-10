@@ -86,12 +86,13 @@ def _serve(port: int) -> None:
 
 
 def _loading_page() -> str:
-    body = """<!doctype html><html><head><meta charset="utf-8"><title>Datas.ar</title>
-<style>body{background:#0e1116;color:#e6e9ee;font-family:Segoe UI,Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-.b{text-align:center}.d{font-family:Consolas,monospace;font-size:28px;font-weight:700}.d b{color:#74acdf}p{color:#9aa4b5}
-.bar{width:220px;height:6px;background:#1b212b;border-radius:4px;margin:18px auto;overflow:hidden}.bar i{display:block;width:40%;height:100%;background:#74acdf;border-radius:4px;animation:m 1.2s infinite ease-in-out}
-@keyframes m{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}</style></head><body><div class="b">
-<div class="d">Datas<b>.ar</b></div><div class="bar"><i></i></div><p>Starting… / Iniciando…<br><small>The first start after installing can take a minute.</small></p></div></body></html>"""
+    body = """<!doctype html><html><head><meta charset="utf-8"><title>Datas</title>
+<style>body{background:#F3F8FD;color:#0F2742;font-family:Segoe UI,Asap,Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.b{text-align:center}.d{font-size:34px;font-weight:700;letter-spacing:-.01em}p{color:#4A5F7A}
+.bar{width:230px;height:8px;background:#E4F0FB;border-radius:4px;margin:18px auto;overflow:hidden}.bar i{display:block;width:40%;height:100%;background:#F6B40E;border-radius:4px;animation:m 1.2s infinite ease-in-out}
+@keyframes m{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+@media (prefers-color-scheme: dark){body{background:#0B1626;color:#EAF2FB}p{color:#9DB3CC}.bar{background:#18304D}}</style></head><body><div class="b">
+<div class="d">Datas</div><div class="bar"><i></i></div><p>Starting… / Iniciando…<br><small>The first start after installing can take a minute.</small></p></div></body></html>"""
     return "data:text/html;charset=utf-8," + __import__("urllib.parse").parse.quote(body)
 
 
@@ -103,10 +104,10 @@ def _error_page(port: int, cfg_home: Path) -> str:
         )
     except OSError:
         pass
-    body = f"""<!doctype html><html><head><meta charset="utf-8"><title>Datas.ar</title>
-<style>body{{background:#0e1116;color:#e6e9ee;font-family:Segoe UI,Inter,Arial,sans-serif;padding:40px;max-width:900px;margin:auto}}
-h1{{color:#f2a93b}} pre{{background:#151a21;border:1px solid #273040;border-radius:10px;padding:14px;white-space:pre-wrap;font-size:12px;color:#9aa4b5}}
-code{{background:#151a21;padding:2px 6px;border-radius:6px}}</style></head><body>
+    body = f"""<!doctype html><html><head><meta charset="utf-8"><title>Datas</title>
+<style>body{{background:#F3F8FD;color:#0F2742;font-family:Segoe UI,Asap,Inter,Arial,sans-serif;padding:40px;max-width:900px;margin:auto}}
+h1{{color:#85340A}} pre{{background:#fff;border:1px solid #D5E3F1;border-radius:10px;padding:14px;white-space:pre-wrap;font-size:12px;color:#4A5F7A}}
+code{{background:#E4F0FB;padding:2px 6px;border-radius:6px}}</style></head><body>
 <h1>Datas could not start its local service</h1>
 <p>The window opened, but the part of Datas that does the work did not start on <code>127.0.0.1:{port}</code>.
 This is a bug or a blocked port, not something you did. The details below are saved in<br><code>{html.escape(str(_log_path()))}</code>
@@ -169,7 +170,7 @@ def open_window(
             width=width,
             height=height,
             min_size=(760, 560),
-            background_color="#0E1116",
+            background_color="#F3F8FD",
             text_select=True,
         )
         state = {"ok": False}
