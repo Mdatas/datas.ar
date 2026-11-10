@@ -7,6 +7,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write   # attach the installer to a release when run on a v* tag
+
 jobs:
   apk:
     runs-on: ubuntu-latest

@@ -179,10 +179,25 @@ def user_path() -> Path:
     return home() / "catalog.json"
 
 
+def update_path() -> Path:
+    """A newer list fetched from the project on request (Settings → Updates). The bundled list
+    is never modified; deleting this file goes back to it."""
+    return home() / "catalog.update.json"
+
+
 @lru_cache(maxsize=1)
 def load() -> Catalog:
-    """Bundled catalog, merged with the user's catalog.json (user entries win by id)."""
-    base = Catalog.model_validate_json(bundled_path().read_text())
+    """The newest of {bundled list, updated list}, merged with the user's catalog.json
+    (user entries win by id)."""
+    base = Catalog.model_validate_json(bundled_path().read_text(encoding="utf-8"))
+    upd = update_path()
+    if upd.exists():
+        try:
+            newer = Catalog.model_validate_json(upd.read_text(encoding="utf-8"))
+            if newer.models and (newer.generated or "") > (base.generated or ""):
+                base = newer
+        except (ValueError, OSError):
+            pass  # a damaged update file is ignored: the bundled list always works
     up = user_path()
     if up.exists():
         user = Catalog.model_validate_json(up.read_text())

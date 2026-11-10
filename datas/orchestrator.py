@@ -99,6 +99,7 @@ class Datas:
         self.server = LlamaServer(self.cfg)
         self.jobs: dict[str, Job] = {}
         self.recorder = voice_engine.Recorder()
+        image_engine.set_tag(self.cfg.sd_tag)
         self.sd = image_engine.SdServer(self.cfg)
         from datas.apps import AppManager
 
@@ -696,7 +697,7 @@ class Datas:
         if not self.server.running() and self.cfg.provider in ("local", "pool"):
             return "error", "No AI was running when the task came due.", ""
         acfg = AgentConfig(
-            base_url=f"http://127.0.0.1:{self.cfg.ui_port}/v1",
+            base_url=f"http://127.0.0.1:{self.http_port}/v1",
             roots=[Path(f) for f in t.folders],
             allow_shell=t.allow_shell,
             allow_network=t.internet,

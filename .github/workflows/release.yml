@@ -1,0 +1,40 @@
+name: release
+
+# One button to publish a version: Actions → release → Run workflow → type the version.
+# It creates the tag and the release on the current commit, then builds every installer on
+# that tag; each build attaches its files to the release when it finishes (10–25 minutes).
+# The app's "Check for updates" reads this releases page.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, e.g. 0.3.0 — must equal __version__ in datas/__init__.py"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: the version typed must be the version in the code
+        run: |
+          CODE=$(python3 -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('datas/__init__.py').read()).group(1))")
+          PROJ=$(python3 -c "import re;print(re.search(r'(?m)^version = \"(.+?)\"', open('pyproject.toml').read()).group(1))")
+          echo "typed=$VERSION code=$CODE pyproject=$PROJ"
+          test "$CODE" = "$VERSION" && test "$PROJ" = "$VERSION"
+      - name: create the release and its tag on this commit
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "Datas.ar $VERSION" --generate-notes
+      - name: build the installers on that tag (each attaches its files to the release)
+        run: |
+          gh workflow run windows-installer.yml --ref "v$VERSION"
+          gh workflow run desktop-installers.yml --ref "v$VERSION"
+          gh workflow run android.yml --ref "v$VERSION"

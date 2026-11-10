@@ -8,6 +8,9 @@ import pytest
 if not os.environ.get("DATAS_HOME"):
     os.environ["DATAS_HOME"] = tempfile.mkdtemp(prefix="datas-test-")
 
+# The test client calls the app as "testserver"; the app answers only to local names.
+os.environ.setdefault("DATAS_ALLOW_HOSTS", "testserver")
+
 from datas.hardware.detect import GPU, DeviceSpec  # noqa: E402
 
 G = 2**30

@@ -24,7 +24,7 @@ from pathlib import Path
 
 import httpx
 
-from datas.config import Config, logs_dir
+from datas.config import Config, logs_dir, rotate_log
 
 _server_error: str | None = None
 
@@ -35,6 +35,7 @@ def _log_path() -> Path:
 
 def _attach_console_to_log() -> None:
     """pythonw / windowed exe: stdout & stderr are None. Point them at the log file."""
+    rotate_log(_log_path(), 2 * 2**20)
     try:
         fh = open(_log_path(), "a", encoding="utf-8", errors="replace", buffering=1)
     except OSError:
@@ -127,9 +128,6 @@ def open_window(
     _attach_console_to_log()
     cfg = Config.load()
     port = cfg.ui_port
-    url = f"http://127.0.0.1:{port}{path}"
-    if model_id:
-        url += ("&" if "?" in url else "?") + f"autorun={model_id}"
     _log(
         f"open_window path={path} model={model_id} python={sys.version.split()[0]} exe={sys.executable}"
     )
@@ -137,9 +135,19 @@ def open_window(
     started_here = False
     if not _already_running(port):
         if not _port_free(port):
-            _log(f"port {port} is busy but does not answer as Datas")
+            # Another program has the port: take the next free one and remember it, so every
+            # part of Datas (agent window, shortcuts, command line) finds the app there.
+            for cand in range(port + 1, port + 40):
+                if _port_free(cand) and cand not in (cfg.llama_port, cfg.sd_port, cfg.link_port):
+                    _log(f"port {port} is used by another program; using {cand} from now on")
+                    cfg.ui_port = port = cand
+                    cfg.save()
+                    break
         threading.Thread(target=_serve, args=(port,), daemon=True, name="datas-server").start()
         started_here = True
+    url = f"http://127.0.0.1:{port}{path}"
+    if model_id:
+        url += ("&" if "?" in url else "?") + f"autorun={model_id}"
 
     def wait_for_server(limit: float) -> bool:
         deadline = time.time() + limit

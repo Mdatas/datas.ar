@@ -30,7 +30,7 @@ import subprocess
 import tarfile
 import zipfile
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
@@ -64,6 +64,9 @@ class AssetChoice:
     name: str
     url: str
     extra: list[tuple[str, str]]  # (name, url) companions, e.g. cudart pack
+    # "sha256:<hex>" per file name, as published by GitHub with the release (when the API is
+    # reachable); downloads are checked against it
+    digests: dict[str, str] = field(default_factory=dict)
 
 
 def _gh_headers() -> dict[str, str]:
@@ -226,7 +229,11 @@ def resolve(
                 a = _match(assets, pats)
                 if a:
                     return AssetChoice(
-                        tag, a["name"], a["browser_download_url"], _companions(assets, a["name"])
+                        tag,
+                        a["name"],
+                        a["browser_download_url"],
+                        _companions(assets, a["name"]),
+                        {x["name"]: x["digest"] for x in assets if x.get("digest")},
                     )
                 raise RuntimeError(f"Release {tag} has no asset matching {pats}")
         except httpx.HTTPError:
@@ -257,10 +264,18 @@ def resolve(
 
 
 def _download(
-    url: str, dest: Path, client: httpx.Client, progress: ProgressCB | None = None
+    url: str,
+    dest: Path,
+    client: httpx.Client,
+    progress: ProgressCB | None = None,
+    digest: str | None = None,
 ) -> Path:
+    """``digest`` ("sha256:<hex>"): the file is deleted and an error raised when it differs."""
+    import hashlib
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
+    h = hashlib.sha256()
     with client.stream("GET", url) as r:
         r.raise_for_status()
         total = int(r.headers.get("Content-Length", 0)) or None
@@ -268,9 +283,18 @@ def _download(
         with tmp.open("wb") as f:
             for chunk in r.iter_bytes(1 << 20):
                 f.write(chunk)
+                h.update(chunk)
                 done += len(chunk)
                 if progress:
                     progress(done, total)
+    if total and tmp.stat().st_size != total:
+        tmp.unlink(missing_ok=True)
+        raise OSError(f"Incomplete download of {dest.name}; try again.")
+    if digest and digest.startswith("sha256:") and digest[7:].lower() != h.hexdigest():
+        tmp.unlink(missing_ok=True)
+        raise ValueError(
+            f"{dest.name} does not match the checksum published with the release; it was deleted."
+        )
     tmp.replace(dest)
     return dest
 
@@ -324,11 +348,22 @@ def install(
             log(f"llama.cpp {choice.tag} already installed ({dest_dir})")
             return dest_dir
         log(f"Downloading llama.cpp {choice.tag}: {choice.name}")
-        archive = _download(choice.url, runtime_dir() / "downloads" / choice.name, client, progress)
+        archive = _download(
+            choice.url,
+            runtime_dir() / "downloads" / choice.name,
+            client,
+            progress,
+            choice.digests.get(choice.name),
+        )
+        if choice.digests.get(choice.name):
+            log("Checksum matches the one published with the release.")
         _extract(archive, dest_dir)
+        archive.unlink(missing_ok=True)  # the archive is not needed once unpacked
         for name, url in choice.extra:
             log(f"Downloading companion: {name}")
-            comp = _download(url, runtime_dir() / "downloads" / name, client, progress)
+            comp = _download(
+                url, runtime_dir() / "downloads" / name, client, progress, choice.digests.get(name)
+            )
             # cudart DLLs must sit next to llama-server.exe
             server = find_binary(dest_dir, "llama-server")
             _extract(comp, server.parent if server else dest_dir)

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import httpx
 
-from datas.config import Config, logs_dir
+from datas.config import Config, logs_dir, rotate_log
 from datas.runtime import llamacpp
 
 
@@ -61,6 +61,7 @@ class LlamaServer:
         exe = llamacpp.binary(self.cfg, "llama-server")
         port = port or self.cfg.llama_port
         log_path = logs_dir() / "llama-server.log"
+        rotate_log(log_path)
         quiet = getattr(self.cfg, "forget", False) or not getattr(self.cfg, "keep_logs", True)
         self._log_fh = open(os.devnull, "ab") if quiet else log_path.open("ab")
         if quiet and "--log-disable" not in args:

@@ -42,6 +42,17 @@ def logs_dir() -> Path:
     return p
 
 
+def rotate_log(path: Path, max_bytes: int = 5 * 2**20) -> None:
+    """Keep logs small: past ``max_bytes`` the file becomes ``<name>.1`` (one old copy kept)."""
+    try:
+        if path.exists() and path.stat().st_size > max_bytes:
+            old = path.with_name(path.name + ".1")
+            old.unlink(missing_ok=True)
+            path.replace(old)
+    except OSError:
+        pass
+
+
 def agent_workspace() -> Path:
     p = home() / "agent-workspace"
     p.mkdir(parents=True, exist_ok=True)
@@ -108,6 +119,8 @@ class Config:
     # or cuda / rocm / vulkan / cpu) and the port of its local server
     image_backend: str = "auto"
     sd_port: int = 8422
+    # stable-diffusion.cpp build in use ("" = the one this version was tested with)
+    sd_tag: str = ""
     # Look of the window: "auto" follows the computer's light/dark setting, or "day" / "night"
     theme: str = "auto"
     # Put the AI to sleep after this many quiet minutes to give the memory back (0 = never);

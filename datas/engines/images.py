@@ -130,9 +130,22 @@ def _guess_assets(tag: str) -> list[dict]:
     return [{"name": n, "url": DOWNLOAD.format(tag=tag, asset=n), "size": None} for n in names]
 
 
-def installed_dir(tag: str = KNOWN_GOOD_TAG) -> Path | None:
-    d = sd_dir() / tag
-    return d if binary(d) else None
+_ACTIVE_TAG = ""  # "" = the build this version of Datas was tested with
+
+
+def set_tag(tag: str) -> None:
+    """Choose which installed build is used (Settings → Updates). Empty = the tested one."""
+    global _ACTIVE_TAG
+    _ACTIVE_TAG = tag or ""
+
+
+def active_tag() -> str:
+    return _ACTIVE_TAG or KNOWN_GOOD_TAG
+
+
+def installed_dir(tag: str | None = None) -> Path | None:
+    d = sd_dir() / (tag or active_tag())
+    return d if d.exists() and binary(d) else None
 
 
 def binary(d: Path) -> Path | None:
@@ -143,9 +156,10 @@ def binary(d: Path) -> Path | None:
 
 
 def ensure_runtime(
-    spec: DeviceSpec, cfg: Config, job: Job | None = None, tag: str = KNOWN_GOOD_TAG
+    spec: DeviceSpec, cfg: Config, job: Job | None = None, tag: str | None = None
 ) -> Path:
     say = job.say if job else print
+    tag = tag or active_tag()
     d = sd_dir() / tag
     exe = binary(d) if d.exists() else None
     if exe:

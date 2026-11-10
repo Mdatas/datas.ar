@@ -14,6 +14,7 @@ requests for anyone who can reach it.
 from __future__ import annotations
 
 import json
+import os
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,65 @@ from datas.recommend.engine import default_headroom, headroom_for_mode, wants_fo
 
 app = FastAPI(title="Datas.ar", version=__version__, docs_url="/api/docs", redoc_url=None)
 core = Datas()
+
+# ---------------------------------------------------------------------------
+# Who may talk to the local API
+# ---------------------------------------------------------------------------
+# The API listens on this device only, but a web page open in the user's browser can still
+# *send* requests to 127.0.0.1. Two checks stop a stranger's page from driving Datas:
+#   * Host: the request must be addressed to this device by a local name. A page that makes
+#     its own domain point at 127.0.0.1 ("DNS rebinding") arrives with that domain as Host.
+#   * Origin / Sec-Fetch-Site: a request that changes something must come from Datas' own
+#     window, or from a program that is not a browser page (scripts and SDKs send neither).
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
+ALLOWED_HOSTS: set[str] = {
+    h.strip().lower() for h in os.environ.get("DATAS_ALLOW_HOSTS", "").split(",") if h.strip()
+}
+
+
+def allow_hosts(*names: str) -> None:
+    """Used when the user starts the server on the network on purpose (``datas serve --host``)."""
+    ALLOWED_HOSTS.update(n.lower() for n in names if n)
+
+
+def _hostname(value: str) -> str:
+    v = value.strip().lower()
+    if v.startswith("["):  # [ipv6]:port
+        return v.split("]")[0] + "]"
+    return v.rsplit(":", 1)[0] if v.count(":") == 1 else v
+
+
+@app.middleware("http")
+async def local_only(request: Request, call_next):
+    ok = LOCAL_HOSTS | ALLOWED_HOSTS
+    if _hostname(request.headers.get("host", "")) not in ok:
+        return JSONResponse(
+            {"detail": "This address is not one Datas answers to (see docs/SECURITY.md)."},
+            status_code=403,
+        )
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        origin = request.headers.get("origin")
+        site = request.headers.get("sec-fetch-site")
+        bad_origin = bool(origin) and (
+            origin == "null" or _hostname(origin.split("://", 1)[-1]) not in ok
+        )
+        if bad_origin or (site and site not in ("same-origin", "none")):
+            return JSONResponse(
+                {"detail": "Requests from other web pages are not accepted."}, status_code=403
+            )
+    resp = await call_next(request)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    if request.url.path in ("/", "/agent"):
+        # the window loads only its own files; pictures may be data: (previews) or blob:
+        resp.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
+            "connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
+            "form-action 'none'",
+        )
+    return resp
 
 
 def ui_dir() -> Path:
@@ -642,6 +702,129 @@ def providers_active(body: ActiveBody) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Updates and going back (datas.updates). Network only when the user asks.
+# ---------------------------------------------------------------------------
+
+
+class TagBody(BaseModel):
+    tag: str | None = None
+
+
+class AppUpdateBody(BaseModel):
+    version: str | None = None  # None = the newest; or an earlier one to go back
+
+
+@app.get("/api/updates")
+def updates_installed() -> dict:
+    from datas import updates
+
+    return updates.installed(core)
+
+
+@app.post("/api/updates/check")
+def updates_check() -> dict:
+    from datas import updates
+
+    return updates.check(core)
+
+
+def _update_job(title: str, fn) -> dict:  # noqa: ANN001
+    job = core._job("update", title)  # noqa: SLF001
+    return core._run_job(job, fn).to_dict()  # noqa: SLF001
+
+
+@app.post("/api/updates/engine")
+def updates_engine(body: TagBody) -> dict:
+    """Install a newer engine beside the current one, try it, go back by itself if it fails."""
+    from datas import updates
+    from datas.runtime import llamacpp
+
+    tag = body.tag or llamacpp.latest_tag()
+    if not tag:
+        raise HTTPException(502, "Could not find the newest engine version (no connection?)")
+    return _update_job(f"Engine {tag}", lambda j: updates.switch_engine(core, tag, j))
+
+
+@app.post("/api/updates/engine/rollback")
+def updates_engine_rollback() -> dict:
+    from datas import updates
+
+    return _update_job("Engine: previous version", lambda j: updates.rollback_engine(core, j))
+
+
+@app.post("/api/updates/engine/cleanup")
+def updates_engine_cleanup() -> dict:
+    from datas import updates
+
+    return updates.remove_old_engines(core)
+
+
+@app.post("/api/updates/images")
+def updates_images(body: TagBody) -> dict:
+    from datas import updates
+
+    if not body.tag:
+        raise HTTPException(400, "which version?")
+    return _update_job(
+        f"Image engine {body.tag}", lambda j: updates.switch_images(core, body.tag, j)
+    )
+
+
+@app.post("/api/updates/images/rollback")
+def updates_images_rollback() -> dict:
+    from datas import updates
+
+    return _update_job("Image engine: previous version", lambda j: updates.rollback_images(core, j))
+
+
+@app.post("/api/updates/catalog")
+def updates_catalog() -> dict:
+    from datas import updates
+
+    try:
+        return updates.update_catalog()
+    except Exception as e:  # noqa: BLE001 - no connection, malformed list
+        raise HTTPException(502, f"The list of AIs could not be updated: {e}") from e
+
+
+@app.delete("/api/updates/catalog")
+def updates_catalog_rollback() -> dict:
+    from datas import updates
+
+    return updates.rollback_catalog()
+
+
+@app.post("/api/updates/app")
+def updates_app(body: AppUpdateBody) -> dict:
+    """Download the installer of the newest release (or of an earlier one, to go back) and open
+    it. The installer keeps AIs, chats and settings."""
+    from datas import updates
+
+    def run(j) -> dict:  # noqa: ANN001
+        with httpx.Client(timeout=30, follow_redirects=True, headers=updates._headers()) as c:  # noqa: SLF001
+            info = updates.check_app(c)
+        pick = None
+        if body.version:
+            pick = next(
+                (r for r in [info["latest"], *info["older"]] if r and r["version"] == body.version),
+                None,
+            )
+        else:
+            pick = info["latest"]
+        if not pick:
+            raise RuntimeError("That version was not found on the releases page.")
+        if not pick["asset"]:
+            raise RuntimeError(
+                f"Release {pick['version']} has no installer for this computer. See {pick['page']}"
+            )
+        path = updates.download_installer(pick["asset"], j)
+        how = updates.open_installer(path)
+        return {"version": pick["version"], "path": str(path), "opened": how, "page": pick["page"]}
+
+    return _update_job("Datas update", run)
+
+
+# ---------------------------------------------------------------------------
 # Linked devices (datas.link): pairing, presence, shared memory, chat sync
 # ---------------------------------------------------------------------------
 
@@ -838,6 +1021,12 @@ def hello() -> dict:
     prev = core.cfg.last_version
     first_run_of_version = prev != ver
     if first_run_of_version:
+        try:  # the settings as the previous version left them, in case the user goes back
+            from datas import updates
+
+            updates.backup_settings(prev)
+        except Exception:  # noqa: BLE001
+            pass
         core.cfg.last_version = ver
         core.cfg.save()
     models = library.installed()
@@ -1379,7 +1568,7 @@ def agent_run(body: AgentBody):
     core.agent_stop.clear()
     ask = body.ask if body.ask in ("all", "risky", "none") else "risky"
     acfg = AgentConfig(
-        base_url=f"http://127.0.0.1:{core.cfg.ui_port}/v1",
+        base_url=f"http://127.0.0.1:{core.http_port}/v1",
         roots=roots,
         allow_shell=body.allow_shell,
         allow_network=body.internet,
@@ -1703,6 +1892,13 @@ def serve(host: str = "127.0.0.1", port: int | None = None, open_browser: bool =
 
     port = port or core.cfg.ui_port
     set_http_port(port)
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        # The user chose to put Datas on the network: answer to this machine's names there.
+        import socket
+
+        from datas.link import local_addresses
+
+        allow_hosts(host, socket.gethostname(), socket.gethostname() + ".local", *local_addresses())
     if open_browser:
         threading.Timer(
             1.0,
