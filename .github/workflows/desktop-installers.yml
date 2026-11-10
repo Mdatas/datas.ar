@@ -282,6 +282,21 @@ jobs:
           export DATAS_HOME="$RUNNER_TEMP/datas-window"
           dist/Datas.app/Contents/MacOS/Datas open --selfcheck "$RUNNER_TEMP/window.json" || { cat "$RUNNER_TEMP/window.json"; tail -n 60 "$DATAS_HOME/logs/datas.log"; exit 1; }
           cat "$RUNNER_TEMP/window.json"
+      - name: start at login (LaunchAgent), status, link code without a window, remove
+        timeout-minutes: 5
+        run: |
+          set -e
+          export DATAS_HOME="$RUNNER_TEMP/datas-service"
+          dist/Datas.app/Contents/MacOS/datas-cli service install
+          plutil -p ~/Library/LaunchAgents/ar.datas.service.plist
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8420/api/status > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8420/api/status | head -c 200; echo
+          dist/Datas.app/Contents/MacOS/datas-cli service status
+          dist/Datas.app/Contents/MacOS/datas-cli link code
+          dist/Datas.app/Contents/MacOS/datas-cli service remove
+          sleep 3
+          test ! -e ~/Library/LaunchAgents/ar.datas.service.plist
+          if curl -sf http://127.0.0.1:8420/api/status > /dev/null; then echo "still running after remove"; exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

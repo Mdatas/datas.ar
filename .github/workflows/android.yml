@@ -61,16 +61,23 @@ jobs:
             Datas-release.apk
       - name: checksum files (SHA-256)
         run: for f in Datas-debug.apk Datas-release.apk; do sha256sum "$f" > "$f.sha256"; cat "$f.sha256"; done
+      - name: name it for the release page (Datas-<version>-android.apk)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          N="Datas-${GITHUB_REF_NAME#v}-android.apk"
+          cp Datas-release.apk "$N"
+          sha256sum "$N" > "$N.sha256"; cat "$N.sha256"
+          echo "APK=$N" >> "$GITHUB_ENV"
       - name: attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Datas-release.apk
-            Datas-release.apk.sha256
+            ${{ env.APK }}
+            ${{ env.APK }}.sha256
       - name: signed provenance — a public, verifiable record that this file was built here from this commit
         if: startsWith(github.ref, 'refs/tags/v')
         continue-on-error: true
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: Datas-release.apk
+          subject-path: ${{ env.APK }}

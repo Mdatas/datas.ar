@@ -7,9 +7,12 @@ import sys
 def _utf8_console() -> None:
     # Windows consoles default to a legacy code page that cannot print "→" or "·";
     # a windowed (no-console) exe has no stdout at all. Never let either crash the app.
+    import os
+
     for name in ("stdout", "stderr"):
         stream = getattr(sys, name, None)
-        if stream is None:
+        if stream is None:  # Datas.exe started with no window (the background service)
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
             continue
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")

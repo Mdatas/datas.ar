@@ -89,6 +89,7 @@ REMOTE_REFUSED: tuple[tuple[str, str], ...] = (
     ("ANY", "/api/voice/listen/"),
     ("ANY", "/api/things/"),
     ("WRITE", "/api/link"),
+    ("WRITE", "/api/service"),
     ("WRITE", "/api/mcp"),
     ("WRITE", "/api/updates/app"),
     ("WRITE", "/api/privacy/wipe"),
@@ -2479,6 +2480,39 @@ class OfferBody(BaseModel):
 @app.post("/api/pool/offer")
 def pool_offer(body: OfferBody) -> dict:
     return core.set_pool_offer(body.on)
+
+
+class ServiceBody(BaseModel):
+    on: bool
+
+
+@app.get("/api/service")
+def service_state() -> dict:
+    """Does Datas start with the computer (or the login)? {supported, installed, running…}"""
+    from datas import service
+    from datas.words import Problem
+
+    try:
+        return {"supported": True, **service.status()}
+    except Problem as e:
+        return {"supported": False, "why": e.say(core.cfg.lang)}
+
+
+@app.post("/api/service")
+def service_switch(body: ServiceBody) -> dict:
+    """Start Datas with the computer, with no window (on), or stop doing so (off)."""
+    from datas import service
+    from datas.words import Problem, tr
+
+    try:
+        if body.on:
+            r = service.install()
+            r["notes"] = [tr(n, core.cfg.lang) for n in r.get("notes", [])]
+            return r
+        # off: only what makes it start next time; the Datas showing this window keeps running
+        return service.remove(stop=False)
+    except Problem as e:
+        raise HTTPException(400, e.say(core.cfg.lang)) from e
 
 
 @app.post("/api/shutdown")

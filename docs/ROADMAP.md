@@ -68,7 +68,7 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.5 (next) — offline survival, one place for how Datas works
+## 0.5 (this release) — offline survival, start with the computer everywhere, one place for how Datas works
 
 - [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 27 checked documents from FEMA, CDC, CPSC, WHO, Hesperian and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
 - [x] A weekly check that every library document still downloads and matches its checksum
@@ -115,7 +115,8 @@ Status:
 - [ ] Download queue, pause and resume from the window, cleaning up unused AIs
 - [ ] Measured speed stored per AI and shown next to the speed class
 - [x] Linux: start with the computer and run tasks with no window (`datas-cli service install`)
-- [ ] Tray icon; the same background service on Windows and macOS
+- [x] Start with the computer on Windows (your own Run list) and macOS (a LaunchAgent): Settings → *Start Datas with the computer*, or `datas-cli service install`
+- [ ] Tray icon
 - [ ] Learn: a scheduled re-check of every link; more material in Spanish and Portuguese
 
 **AIs and engines**

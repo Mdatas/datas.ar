@@ -268,13 +268,15 @@ def install(model_id: str = typer.Argument(None), quant: str | None = None, visi
     con.print(f"\n[green]Installed[/] {model_id} {quant} → {path}")
 
 
-def _datas_is_open() -> bool:
+def _datas_is_open(port: int | None = None) -> bool:
     """Is a Datas already answering on this device (the window or the background service)?"""
     import httpx
 
     try:
         r = httpx.get(
-            f"http://127.0.0.1:{Config.load().ui_port}/api/status", timeout=2, trust_env=False
+            f"http://127.0.0.1:{port or Config.load().ui_port}/api/status",
+            timeout=2,
+            trust_env=False,
         )
         return r.status_code == 200 and "version" in r.json()
     except (httpx.HTTPError, ValueError):
@@ -386,8 +388,22 @@ def run(
 
 
 @app.command()
-def serve(host: str = "127.0.0.1", port: int | None = None, no_browser: bool = False):
+def serve(
+    host: str = "127.0.0.1",
+    port: int | None = None,
+    no_browser: bool = False,
+    home: str | None = typer.Option(None, help="keep Datas' data in this folder (DATAS_HOME)"),
+):
     """Start the web UI + API (default: http://127.0.0.1:8420)."""
+    import os
+
+    if home:  # the background service of a copy that keeps its data in a folder of its own
+        os.environ["DATAS_HOME"] = home
+    if _datas_is_open(port):
+        # already running (the window, or the service started twice): nothing to do, and a
+        # clean exit, so the system does not keep starting it again
+        con.print("Datas is already running on this computer.")
+        raise typer.Exit(0)
     from datas.server.app import serve as _serve
 
     con.print(

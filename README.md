@@ -117,7 +117,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 | **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in [`installer/linux/README.md`](installer/linux/README.md). |
 | **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
-| **Android** | `Datas-release.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
+| **Android** | `Datas-<version>-android.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
 | **iPhone, iPad** (iOS 15+) | No file to download: Apple only allows apps signed with an Apple account. The app in [`ios/`](ios/README.md) links to your computers and uses their Datas; with a Mac and your own Apple ID you can put it on your phone. |
 | **Anything with Python 3.10+** | `pip install datas-ar && datas` |
 
@@ -125,8 +125,9 @@ Needs a 64-bit computer (or an arm64 phone). No account. The first start downloa
 engine (llama.cpp, 30–200 MB depending on your graphics card); each AI is a one-time download
 of 0.4–20 GB depending on what fits.
 
-Until a release is published, the installers are produced by the project's GitHub Actions
-(*windows-installer*, *desktop-installers*) on every change.
+Every release page starts with a table that says which file is for which device. To keep Datas
+running with no window after you log in (scheduled tasks, phones and other devices using it):
+*Settings → Start Datas with the computer* — on Windows, macOS and Linux.
 
 ## What is not there yet
 

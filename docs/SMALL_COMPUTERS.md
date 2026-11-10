@@ -70,6 +70,15 @@ datas-cli service remove      stop starting it; AIs, chats and settings stay
 `datas-cli run` notices that Datas is already running as a service and starts the AI there,
 so there is never a second engine beside it.
 
+### On a Windows PC or a Mac
+
+The same is in *Settings → Start Datas with the computer* (or `datas-cli service install`):
+on **Windows** it is an entry in your own "Run" list (`HKEY_CURRENT_USER\…\Run`, where every
+app that starts with Windows goes) that starts `Datas.exe serve --no-browser` with no window;
+on **macOS** a LaunchAgent, `~/Library/LaunchAgents/ar.datas.service.plist`. Both start when
+you log in, run as you, need no administrator, and are removed by switching it off (or
+`datas-cli service remove`). Opening the Datas window then shows that same running Datas.
+
 ### Starting before anyone logs in
 
 A computer without a screen has nobody logging in. `service install` asks the system to start

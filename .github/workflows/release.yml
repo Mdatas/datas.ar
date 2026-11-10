@@ -32,7 +32,10 @@ jobs:
           echo "typed=$VERSION code=$CODE pyproject=$PROJ"
           test "$CODE" = "$VERSION" && test "$PROJ" = "$VERSION"
       - name: create the release and its tag on this commit
-        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "Datas.ar $VERSION" --generate-notes
+        run: |
+          sed "s/{version}/$VERSION/g" installer/RELEASE_NOTES.md > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "Datas.ar $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" --generate-notes
       - name: build the installers on that tag (each attaches its files to the release)
         run: |
           gh workflow run windows-installer.yml --ref "v$VERSION"

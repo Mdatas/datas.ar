@@ -676,11 +676,20 @@ SCREENS.settings = async view => {
     } }, icon("trash", 18), t("set_wipe"))));
   if (!forget) { api("/api/memory").then(r => { notes.value = r.text || ""; }).catch(() => {}); loadCtx().catch(() => {}); }
   // --- the AI
+  const svcBox = h("div", { style: "margin-top:12px" });
   wrap.append(sec(t("set_ai"), null,
     h("label", { class: "field" }, t("set_sleep"), h("span", { class: "hint", text: t("set_sleep_hint") }),
       h("select", { onchange: e => post("/api/settings", { idle_sleep_min: +e.target.value }) }, [10, 30, 60, 180, 0].map(n => h("option", { value: n, selected: n === settings.idle_sleep_min }, n ? t("set_sleep_min", { n }) : t("set_sleep_never"))))),
     h("label", { class: "field", style: "margin-top:12px" }, t("set_context"), h("span", { class: "hint", text: t("set_context_hint") }),
-      h("select", { onchange: e => post("/api/settings", { context: +e.target.value }) }, [2048, 4096, 8192, 16384, 32768].map(n => h("option", { value: n, selected: n === settings.context }, t("ctx_" + n)))))));
+      h("select", { onchange: e => post("/api/settings", { context: +e.target.value }) }, [2048, 4096, 8192, 16384, 32768].map(n => h("option", { value: n, selected: n === settings.context }, t("ctx_" + n))))),
+    svcBox));
+  if (!isRemote()) api("/api/service").then(sv => {
+    if (!sv.supported) return;
+    add(clear(svcBox), switchRow(t("set_service"), t("set_service_hint"), sv.installed, v => guard(async () => {
+      const r = await api("/api/service", { body: { on: v } });
+      if (v) toast([t("set_service_on")].concat(r.notes || []).join(" "), { ms: 9000 });
+    })()));
+  }).catch(() => {});
   // --- paid services
   const pName = h("input", { type: "text", placeholder: t("paid_name") }), pUrl = h("input", { type: "text", placeholder: "https://…/v1" }), pKey = h("input", { type: "password", placeholder: t("paid_key"), autocomplete: "off" }), pModel = h("input", { type: "text", placeholder: t("paid_model") });
   const preset = h("select", { onchange: e => { const k = e.target.value; if (k) { pName.value = k.split(" ")[0]; pUrl.value = provs.presets[k]; } } }, h("option", { value: "" }, t("paid_preset")), Object.keys(provs.presets).map(k => h("option", { value: k }, k)));

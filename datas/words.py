@@ -312,10 +312,9 @@ ES: dict[str, str] = {
     "Getting FFmpeg, the free program that reads cameras and recordings…": "Bajando FFmpeg, "
     "el programa libre que lee cámaras y grabaciones…",
     # ---- starting with the computer (datas/service.py) ------------------------------------
-    "Starting Datas with the computer is only available on Linux for now. On Windows and "
-    "macOS, leave Datas open (it uses almost nothing while the AI sleeps).": "Que Datas "
-    "arranque con la computadora por ahora solo está disponible en Linux. En Windows y "
-    "macOS, dejá Datas abierto (casi no usa nada mientras la IA duerme).",
+    "Starting Datas with the computer is available on Linux, Windows and macOS. Start it "
+    "yourself with: datas-cli serve --no-browser": "Que Datas arranque con la computadora "
+    "está disponible en Linux, Windows y macOS. Arrancalo vos con: datas-cli serve --no-browser",
     "This system has no systemd, the part of Linux that Datas uses to start with the "
     "computer. Start it yourself with: datas-cli serve --no-browser": "Este sistema no "
     "tiene systemd, la parte de Linux que Datas usa para arrancar con la computadora. "
@@ -484,4 +483,6 @@ ES: dict[str, str] = {
     "The file that arrived from {site} is not the one Datas checked, so it was not kept. The publisher may have changed it; open its page instead: {page}": "El archivo que llegó de {site} no es el que Datas verificó, así que no se guardó. Puede que quien lo publica lo haya cambiado; abrí su página: {page}",
     "Could not download it from {site} ({why}). Check the internet connection, or open its page: {page}": "No se pudo descargar de {site} ({why}). Revisá la conexión a internet, o abrí su página: {page}",
     "That document is not on this device yet.": "Ese documento todavía no está en este dispositivo.",
+    "Datas starts when you log in to this Mac.": "Datas arranca cuando iniciás sesión en esta Mac.",
+    "Datas starts when you log in to Windows.": "Datas arranca cuando iniciás sesión en Windows.",
 }
