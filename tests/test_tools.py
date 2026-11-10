@@ -125,3 +125,120 @@ def test_tools_api_refuses_what_it_cannot_use():
     assert c.post("/api/tools/transcribe?name=a.mp3", content=b"").status_code == 400
     assert c.post("/api/tools/long", json={"mode": "summary", "text": ""}).status_code == 400
     assert c.post("/api/tools/long", json={"mode": "poem", "text": "x"}).status_code == 400
+
+
+def test_a_long_document_is_shared_out_between_this_device_and_linked_ones(monkeypatch):
+    """Many hands: each device takes the next part as soon as it is free. The result is the
+    same text, in the same order, as when one device does it all — also when a helper
+    drops out half way."""
+    import hashlib
+    import threading
+    import time
+
+    core = Datas(Config())
+    who, lock = [], threading.Lock()
+
+    def fake_ask(core_, prompt, max_tokens=None, provider=None):  # noqa: ANN001
+        hand = provider or "here"
+        if prompt.startswith("These are notes"):
+            assert provider is None  # the final summary is written by this device
+            return "Main point."
+        with lock:
+            if hand == "pi" and any(h == "pi" for h, _ in who):
+                raise RuntimeError("unplugged")  # the Pi answers one part, then is gone
+            who.append((hand, prompt))
+        time.sleep(0.01)
+        return hashlib.sha256(prompt.encode()).hexdigest()[:10]
+
+    monkeypatch.setattr(tools, "_ask", fake_ask)
+    text = "\n\n".join(f"Paragraph {i}. " + "word " * 120 for i in range(40))
+    alone = tools.long_document(core, text, "translate", "en", ctx_tokens=1024)
+    assert alone["helped"] == [] and alone["dropped"] == [] and alone["parts"] > 8
+    assert alone["shares"] == {}
+    who.clear()
+
+    said = []
+
+    class Job:
+        phase = ""
+
+        def progress(self, done, total):  # noqa: ANN001
+            assert 0 < done <= total
+
+        def say(self, line):  # noqa: ANN001
+            said.append(line)
+
+    hands = [
+        {"name": "Desk", "provider": "desk", "context": 4096},
+        {"name": "Pi", "provider": "pi", "context": 1024},
+    ]
+    # this device has room for 8192, the Pi for 1024: the parts are cut for the smallest
+    shared = tools.long_document(core, text, "translate", "en", 8192, job=Job(), hands=hands)
+    assert shared["parts"] == alone["parts"] and shared["markdown"] == alone["markdown"]
+    assert shared["helped"] == ["Desk"] and shared["dropped"] == ["Pi"]
+    took = {hand: sum(1 for h, _ in who if h == hand) for hand in ("here", "desk", "pi")}
+    assert took["pi"] == 1 and took["here"] >= 1 and took["desk"] >= 1, took
+    assert sum(took.values()) == shared["parts"]  # nothing twice, nothing lost
+    assert shared["shares"] == {"this device": took["here"], "Desk": took["desk"], "Pi": 1}
+    assert any("Pi stopped answering" in line for line in said)
+    assert any("shared between this device and Desk, Pi" in line for line in said)
+
+    # a summary: the parts are shared, the final text is this device's
+    who.clear()
+    r = tools.long_document(core, text, "summary", "en", 8192, title="Report", hands=hands[:1])
+    assert r["markdown"] == "# Report\n\nMain point." and r["helped"] == ["Desk"]
+    # one part only: nothing to share
+    one = tools.long_document(core, "One short paragraph.", "translate", "en", 8192, hands=hands)
+    assert one["parts"] == 1 and one["helped"] == []
+
+    # if this device's own AI fails, the job fails as it would alone
+    def broken(core_, prompt, max_tokens=None, provider=None):  # noqa: ANN001
+        if provider is None:
+            raise RuntimeError("No AI is running. Start one in My AIs first.")
+        time.sleep(0.01)
+        return "x"
+
+    monkeypatch.setattr(tools, "_ask", broken)
+    with pytest.raises(RuntimeError, match="No AI is running"):
+        tools.long_document(core, text, "translate", "en", 8192, hands=hands[:1])
+
+
+def test_only_linked_devices_with_an_ai_of_their_own_are_asked_to_help():
+    core = Datas(Config())
+    assert tools.helpers(core) == []  # nothing linked
+
+    class Link:
+        peers = {
+            "a" * 64: {"name": "Desk", "online": True, "in_use": False,
+                       "ai": {"available": True, "name": "Qwen3 8B", "context": 4096}},
+            "b" * 64: {"name": "Asleep", "online": False, "in_use": False,
+                       "ai": {"available": True}},
+            "c" * 64: {"name": "No AI there", "online": True, "in_use": False, "ai": {}},
+            "d" * 64: {"name": "Already the AI in use", "online": True, "in_use": True,
+                       "ai": {"available": True}},
+        }  # fmt: skip
+
+        def _computers(self):
+            return list(self.peers)
+
+        def peer_public(self, pid):
+            return self.peers[pid]
+
+    core.link = Link()
+    (h,) = tools.helpers(core)
+    assert h["name"] == "Desk" and h["ai"] == "Qwen3 8B" and h["context"] == 4096
+    assert h["provider"].kind == "linked" and h["provider"].base_url.endswith(
+        f"/link/{'a' * 64}/v1"
+    )
+
+    from fastapi.testclient import TestClient
+
+    from datas.server import app as server
+
+    old = server.core.link
+    server.core.link = Link()
+    try:
+        r = TestClient(server.app, base_url="http://127.0.0.1").get("/api/tools/long/helpers")
+        assert r.json() == {"devices": [{"name": "Desk", "ai": "Qwen3 8B"}]}
+    finally:
+        server.core.link = old

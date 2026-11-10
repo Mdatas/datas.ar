@@ -33,7 +33,8 @@ certificate on both sides.
   thing in an encrypted tunnel.
 - **Cameras, printers, boards and your smart home** are used only when you ask, or when the
   agent asks you and you allow it. All of it is off for the agent until you switch it on for
-  a task, and none of it can be reached from a linked phone.
+  a task, and none of it can be reached from a linked phone or through another computer's
+  window.
   → [docs/HARDWARE.md](docs/HARDWARE.md)
 
 ## Reporting a problem

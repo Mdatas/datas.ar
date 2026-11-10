@@ -77,7 +77,11 @@ def test_a_phone_pairs_and_opens_the_computers_datas(computer):
 
     # the computer's Datas, through the link
     status, body = phone.http(p, "GET", "/api/status")
-    assert status == 200 and body["remote"] == {"device": "Device A", "phone": "Marta's phone"}
+    assert status == 200 and body["remote"] == {
+        "device": "Device A",
+        "phone": "Marta's phone",
+        "kind": "app",
+    }
     assert "remote" not in a.http.get("/api/status").json()  # at the computer itself: not remote
     status, page = phone.http(p, "GET", "/")
     assert status == 200 and "/ui/app.js" in page

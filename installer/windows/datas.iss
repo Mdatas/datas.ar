@@ -4,10 +4,10 @@
 ;     installs into the user's Programs folder (no admin password needed), Desktop + Start Menu
 ;     icons, then shows what was kept (AIs, chats, notes) — no other questions asked
 ;   * Uninstall: "delete everything" or "keep my AIs, chats and notes"
-;   iscc /DAppVersion=0.3.0 installer\windows\datas.iss
+;   iscc /DAppVersion=0.4.0 installer\windows\datas.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.3.0"
+  #define AppVersion "0.4.0"
 #endif
 #define AppName "Datas.ar"
 #define AppExe "Datas.exe"

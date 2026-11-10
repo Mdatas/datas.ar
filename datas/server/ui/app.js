@@ -260,10 +260,12 @@ function openMenu(anchor, items) {
   return close;
 }
 /* Web addresses open in the person's own browser, never inside this window. */
-/* S.status.remote: this window is being shown on a linked phone, through the encrypted link.
-   What "open" means changes: a web address opens on the phone; a saved file stays on the computer. */
+/* S.status.remote: this window is being shown on a linked device (a phone, or another computer
+   of the same person), through the encrypted link. What "open" means changes: a web address
+   opens on the device in front of the person; a saved file stays on the computer. */
 const isRemote = () => !!(S.status && S.status.remote);
 async function openUrl(url) {
+  if (isRemote() && S.status.remote.kind === "device") { window.open(url, "_blank", "noopener"); return; }   // another computer: its own browser
   if (isRemote()) { location.assign(url); return; }   // the phone app hands web addresses to the phone's browser
   try { await api("/api/open-url", { body: { url } }); } catch (e) { window.open(url, "_blank", "noopener"); }
 }
@@ -420,7 +422,7 @@ function renderShell() {
 function renderFoot() {
   const foot = $("#sideFoot");
   if (!foot || !S.priv) return;
-  if (isRemote()) {   // shown on a linked phone: say where things are
+  if (isRemote()) {   // shown on a linked device: say where things are
     add(clear(foot), icon("devices", 16), h("span", { text: t("remote_on", { device: S.status.remote.device }) }),
       h("div", { class: "remote-note" }, icon("lock", 16), h("span", { text: t(S.priv.memory_mode === "forget" ? "foot_forget" : "remote_kept", { device: S.status.remote.device }) })));
     return;

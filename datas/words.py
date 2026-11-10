@@ -321,19 +321,19 @@ ES: dict[str, str] = {
     "tiene systemd, la parte de Linux que Datas usa para arrancar con la computadora. "
     "Arrancalo vos con: datas-cli serve --no-browser",
     # ---- the local service: who may ask for what (datas/server/app.py) --------------------
-    "This can only be done at the computer itself, not from a linked phone.": "Esto solo se "
-    "puede hacer en la computadora misma, no desde un teléfono vinculado.",
+    "This can only be done at the computer itself, not from a linked device.": "Esto solo se "
+    "puede hacer en la computadora misma, no desde un dispositivo vinculado.",
     "This address is not one Datas answers to (see docs/SECURITY.md).": "Datas no responde "
     "en esta dirección (ver docs/SECURITY.md).",
     "Requests from other web pages are not accepted.": "No se aceptan pedidos de otras "
     "páginas web.",
-    "From a linked phone the agent cannot run commands or use the computer's devices. Switch "
-    "those on at the computer itself.": "Desde un teléfono vinculado el agente no puede "
+    "From a linked device the agent cannot run commands or use the computer's devices. Switch "
+    "those on at the computer itself.": "Desde un dispositivo vinculado el agente no puede "
     "ejecutar comandos ni usar los aparatos de la computadora. Activá eso en la computadora "
     "misma.",
-    "From a linked phone, a task that runs by itself cannot be given commands or the "
+    "From a linked device, a task that runs by itself cannot be given commands or the "
     "computer's devices, and one that has them cannot be changed. Do that at the computer.": ""
-    "Desde un teléfono vinculado no se le pueden dar comandos ni los aparatos de la "
+    "Desde un dispositivo vinculado no se le pueden dar comandos ni los aparatos de la "
     "computadora a una tarea que corre sola, y una que ya los tiene no se puede cambiar. "
     "Hacelo en la computadora.",
     "There is nothing to print.": "No hay nada para imprimir.",
@@ -434,4 +434,44 @@ ES: dict[str, str] = {
     "Built to solve math problems step by step (English and Chinese); not meant for general chat or other subjects. Always check the result.": "Hecha para resolver problemas de matemática paso a paso (en inglés y en chino); no está pensada para charlar de todo ni para otros temas. Revisá siempre el resultado.",
     "Trained on English-language legal text (mostly US/UK/EU law): reads, summarises and drafts legal language. Not a lawyer, not trained on Argentine or other local law; check everything with a professional.": "Entrenada con textos legales en inglés (sobre todo derecho de Estados Unidos, el Reino Unido y la Unión Europea): lee, resume y redacta lenguaje legal. No es un abogado ni fue entrenada con derecho argentino ni con otro derecho local; revisá todo con un profesional.",
     "Understands medical text and medical images (X-rays, skin, pathology slides). A research tool, not a doctor and not approved for diagnosis; its own license terms apply.": "Entiende textos médicos e imágenes médicas (radiografías, piel, preparados de patología). Es una herramienta de investigación, no un médico, y no está aprobada para diagnosticar; valen las condiciones de su propia licencia.",
+    # ---- linking devices (datas/link) --------------------------------------------------------
+    "message too large": "el mensaje es demasiado grande",
+    "unexpected message": "llegó un mensaje que no se esperaba",
+    "type the address shown on the other device": "escribí la dirección que muestra el otro dispositivo",
+    "the address should look like 192.168.1.20:8424": "la dirección tiene que parecerse a 192.168.1.20:8424",
+    "the code has {n} letters and digits": "el código tiene {n} letras y números",
+    "the other device did not identify itself": "el otro dispositivo no se identificó",
+    "that is this same device": "ese es este mismo dispositivo",
+    "the other device is not waiting for a code": "el otro dispositivo no está esperando un código",
+    "wrong or expired code": "el código es incorrecto o ya venció",
+    "the other device could not prove it knows the code — nothing was linked": "el otro dispositivo no pudo demostrar que conoce el código; no se vinculó nada",
+    "this device is not linked to that one": "este dispositivo no está vinculado con ese",
+    "a phone cannot ask for that": "un teléfono no puede pedir eso",
+    "unknown request": "pedido desconocido",
+    "that device is not showing a pairing code right now": "ese dispositivo no está mostrando un código en este momento",
+    "bad pairing request": "el pedido de vinculación llegó mal formado",
+    "wrong code": "código incorrecto",
+    "chat sync is off on that device": "en ese dispositivo está apagado «mantener los mismos chats»",
+    "sync refused": "el otro dispositivo no aceptó sincronizar los chats",
+    "In Forget mode nothing is saved, so there is nothing to sync.": "En modo Olvidar no se guarda nada, así que no hay nada para sincronizar.",
+    "the engine's worker could not start on that device": "el ayudante del motor no pudo arrancar en ese dispositivo",
+    "the engine's worker did not start in time": "el ayudante del motor no arrancó a tiempo",
+    "that device is not sharing its memory": "ese dispositivo no está prestando su memoria",
+    "that device is busy running its own AI": "ese dispositivo está ocupado con su propia IA",
+    "that device did not allow this one to open its Datas": "ese dispositivo no le dio permiso a este para abrir su Datas",
+    "refused": "no fue aceptado",
+    "a phone has no Datas to open": "un teléfono no tiene un Datas para abrir",
+    "{name} has not allowed this computer to open its Datas. On {name}: Devices → {me} → "
+    "switch on “May open Datas on this computer”. If it has no screen, type there: "
+    'datas-cli link window "{me}" on': "{name} no le dio permiso a esta computadora para "
+    "abrir su Datas. En {name}: Dispositivos → {me} → activá «Puede abrir Datas de esta "
+    'computadora». Si no tiene pantalla, escribí ahí: datas-cli link window "{me}" on',
+    "not available over the link": "eso no está disponible a través del vínculo",
+    "that device is not running an AI of its own": "ese dispositivo no tiene una IA propia en marcha",
+    "no AI is running on that device": "no hay ninguna IA en marcha en ese dispositivo",
+    "the other device refused": "el otro dispositivo no aceptó",
+    "the device at that address is not the one that was linked": "el dispositivo que está en esa dirección no es el que se vinculó",
+    "Could not open port {port} on this device ({why}). Another program may be using it.": "No se pudo abrir el puerto {port} en este dispositivo ({why}). Puede que otro programa lo esté usando.",
+    "Could not reach {address}. Check that Datas is open on the other device, that it shows the pairing code, and that both are on the same network (or that the address is reachable). ({why})": "No se pudo llegar a {address}. Fijate que Datas esté abierto en el otro dispositivo, que muestre el código y que los dos estén en la misma red (o que se pueda llegar a esa dirección). ({why})",
+    "Could not reach that device ({why}). Is it on, and is Datas open on it?": "No se pudo llegar a ese dispositivo ({why}). ¿Está prendido y tiene Datas abierto?",
 }

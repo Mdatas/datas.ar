@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish, e.g. 0.3.0 — must equal __version__ in datas/__init__.py"
+        description: "Version to publish, e.g. 0.4.0 — must equal __version__ in datas/__init__.py"
         required: true
         type: string
 

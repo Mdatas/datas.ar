@@ -97,6 +97,11 @@ def main() -> int:
     ap.add_argument(
         "--hardware", action="store_true", help="also test FFmpeg, the camera and the screen"
     )
+    ap.add_argument(
+        "--link",
+        action="store_true",
+        help="also start a second Datas here and test linking, sharing work and opening its window",
+    )
     ap.add_argument("--report", default="")
     ap.add_argument("--serve", action="store_true", help="start `datas serve` here, stop it after")
     ap.add_argument("--serve-log", default="serve.log")
@@ -283,7 +288,11 @@ def run(a: argparse.Namespace) -> int:
     if a.hardware:
         hardware(c, a)
 
-    # 7. stop the AI; the service stays
+    # 7. a second real Datas on this machine stands in for another computer of the person
+    if a.link:
+        linked(c, a)
+
+    # 8. stop the AI; the service stays
     t = time.time()
     c.post("/api/stop")
     time.sleep(2)
@@ -358,6 +367,196 @@ def hardware(c: httpx.Client, a: argparse.Namespace) -> None:
             f"{body.get('width')}x{body.get('height')} picture" if got else said[:160],
             time.time() - t,
         )
+
+
+MINUTES = "\n\n".join(
+    f"Item {i}. The neighbourhood committee met on day {i} of the month. "
+    f"It agreed to buy {i + 3} chairs and {i * 2 + 1} lamps for room {100 + i}, "
+    f"to repaint the door of flat {i + 10}, and to ask the plumber to come before day {i + 7}. "
+    f"Marta voted for, Jorge voted against, and the treasurer said the cost of {i * 15 + 40} "
+    "pesos fits this year's budget. The next step is to collect three price quotes, compare "
+    "them at the following meeting and write down who is responsible for each purchase."
+    for i in range(1, 49)
+)  # about 24,000 characters: several parts for an AI with a 4096-token working memory
+
+
+def linked(c: httpx.Client, a: argparse.Namespace) -> None:
+    """Two real Datas, each with a real AI, linked with a one-time code over TLS 1.3: one
+    answers with the other's AI, a long document is shared out between both AIs, and one
+    opens the other's Datas. The second one runs here with its own folder and ports."""
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    from datas.config import home
+
+    def free_port() -> int:
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            return s.getsockname()[1]
+
+    t = time.time()
+    home_b = Path(tempfile.mkdtemp(prefix="datas-laptop-"))
+    for part in ("models", "llamacpp"):  # the same AI and engine, without a second download
+        if (home() / part).is_dir():
+            shutil.copytree(home() / part, home_b / part, symlinks=True)
+    ui_b = free_port()
+    (home_b / "config.json").write_text(
+        json.dumps(
+            {
+                "ui_port": ui_b,
+                "link_port": free_port(),
+                "llama_port": free_port(),
+                "rpc_port": free_port(),
+                "memory_mode": "remember",
+                "onboarded": True,
+                "device_name": "Laptop",
+            }
+        ),
+        encoding="utf-8",
+    )
+    log = open(Path(a.serve_log).with_name("laptop.log"), "w", encoding="utf-8")  # noqa: SIM115
+    proc = subprocess.Popen(
+        [sys.executable, "-X", "faulthandler", "-m", "datas", "serve", "--port", str(ui_b),
+         "--no-browser"],
+        env=dict(os.environ, DATAS_HOME=str(home_b)),
+        stdout=log,
+        stderr=subprocess.STDOUT,
+    )  # fmt: skip
+    b = httpx.Client(base_url=f"http://127.0.0.1:{ui_b}", timeout=60, trust_env=False)
+    try:
+        up = False
+        for _ in range(90):
+            try:
+                up = b.get("/api/status").status_code == 200
+                break
+            except httpx.HTTPError:
+                time.sleep(1)
+        if not step("a second Datas starts beside the first", up, f"port {ui_b}", time.time() - t):
+            return
+
+        # link them with a one-time code
+        t = time.time()
+        pairing = c.post("/api/link/pairing").json()
+        code = pairing["pairing"]["code"]
+        port = pairing.get("port") or 8424
+        r = b.post("/api/link/pair", json={"address": f"127.0.0.1:{port}", "code": code})
+        ok = r.status_code == 200
+        if not step(
+            "two real Datas link with a one-time code",
+            ok,
+            r.json()["peer"]["name"] if ok else r.text[:200],
+            time.time() - t,
+        ):
+            return
+        ida = r.json()["peer"]["id"]
+        idb = b.get("/api/link").json()["device"]["id"]
+        name_a = r.json()["peer"]["name"]
+
+        # the second one answers with the AI of the first
+        t = time.time()
+        seen = {}
+        for _ in range(30):
+            seen = b.get("/api/link", params={"refresh": 1}).json()["peers"][0]
+            if seen["online"] and (seen.get("ai") or {}).get("available"):
+                break
+            time.sleep(1)
+        b.post(f"/api/link/use/{ida}")
+        answer, errors = "", ["not tried"]
+        try:
+            answer, errors = chat(b, "Answer with one word: what colour is the sky on a clear day?")
+        except httpx.HTTPError as e:
+            errors = [f"{type(e).__name__}: {e}"]
+        step(
+            "one Datas answers with the AI of the other, through the link",
+            bool(answer.strip()) and not errors,
+            repr(answer.strip()[:80]) if answer.strip() else "; ".join(errors)[:200],
+            time.time() - t,
+        )
+
+        # the second one starts an AI of its own, so there are two AIs to share work between
+        t = time.time()
+        job = wait_job(
+            b,
+            b.post(
+                "/api/run", json={"model_id": a.model, "quant": a.quant, "context": 4096}
+            ).json(),
+            1500,
+        )
+        own_ai = step(
+            "the second Datas starts an AI of its own",
+            job["state"] == "done",
+            job.get("error") or "",
+            time.time() - t,
+        )
+        t = time.time()
+        helpers = []
+        for _ in range(40 if own_ai else 0):
+            c.get("/api/link", params={"refresh": 1})
+            helpers = c.get("/api/tools/long/helpers").json()["devices"]
+            if helpers:
+                break
+            time.sleep(1)
+        job = {"state": "not started", "result": None}
+        if helpers:
+            job = wait_job(
+                c,
+                c.post(
+                    "/api/tools/long",
+                    json={"mode": "summary", "lang": "en", "devices": True, "text": MINUTES},
+                ).json(),
+                1500,
+            )
+        res = job.get("result") or {}
+        shares = res.get("shares") or {}
+        step(
+            "a long document is shared out between the two AIs",
+            job["state"] == "done"
+            and res.get("parts", 0) >= 2
+            and shares.get("Laptop", 0) >= 1
+            and shares.get("this device", 0) >= 1
+            and len(res.get("markdown") or "") > 40,
+            f"{res.get('parts')} parts, written by {shares}; dropped out: {res.get('dropped')}"
+            if res
+            else (job.get("error") or f"no helper was offered: {helpers}"),
+            time.time() - t,
+        )
+
+        # the second one opens the Datas of the first, once the first allows it
+        t = time.time()
+        before = b.post(f"/api/link/peers/{ida}/open", json={"show": False}).status_code
+        c.post(f"/api/link/peers/{idb}", json={"window": True})
+        r = b.post(f"/api/link/peers/{ida}/open", json={"show": False})
+        remote, refused = {}, 0
+        if r.status_code == 200:
+            with httpx.Client(base_url=r.json()["url"], timeout=60, trust_env=False) as door:
+                remote = door.get("/api/status").json().get("remote") or {}
+                refused = door.post("/api/things/screen", json={}).status_code
+        step(
+            "one Datas opens the other's window through the link, with a phone's limits",
+            before == 400
+            and remote.get("device") == name_a
+            and remote.get("kind") == "device"
+            and refused == 403,
+            f"before allowing: {before}; shown as {remote}; its screen: {refused}",
+            time.time() - t,
+        )
+    finally:
+        try:
+            b.post("/api/stop")
+        except httpx.HTTPError:
+            pass
+        b.close()
+        proc.terminate()
+        try:
+            proc.wait(20)
+        except Exception:  # noqa: BLE001
+            proc.kill()
+        log.close()
+        shutil.rmtree(home_b, ignore_errors=True)
 
 
 def finish(a: argparse.Namespace, code: int) -> int:

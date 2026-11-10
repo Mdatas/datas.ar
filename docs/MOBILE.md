@@ -61,15 +61,28 @@ picker, vision, Play Store packaging): PocketPal AI (MIT) and Google AI Edge Gal
 
 ## iPhone and iPad
 
-There is no way to run Python on iOS, and Apple only lets apps be installed through its
-store or with a paid developer account. Two steps are planned:
+### The app (`ios/`)
 
-1. **A companion app** (being written, `ios/`): link to your computers with the one-time
-   code and use their Datas from the phone, exactly like the Android "My computers". It runs
-   no AI on the phone, so it is small.
-2. **An AI on the iPhone itself**, on the `llama-<tag>-xcframework.zip` that llama.cpp ships
-   with every release, reusing Datas' catalog and recommender. Constraints: no work in the
-   background, a hard memory limit per app (about 60 % of RAM), 8 GB iPhones → 3–4B models.
+**Link the phone to your computers and use their Datas**, exactly like *My computers* on
+Android: type the one-time code once, then tap the computer and its Datas opens — its AIs,
+chats, helpers, documents and Learn. The computer does the thinking, so the app is small and
+works on any iPhone or iPad with iOS 15 or newer. Computers with Datas on the same Wi-Fi are
+found by themselves. What the app does and how it is protected: [ios/README.md](../ios/README.md).
 
-Putting either on a real iPhone needs an Apple Developer account (US$99 a year) owned by
-whoever publishes the app — the project cannot do that for you.
+Status, honestly: on every change the build compiles the app for iPhone and runs it **in
+Apple's iPhone simulator against a real Datas** — it pairs with the code, opens the
+computer's Datas in the app's web view, and is refused what a phone must be refused. The
+link code is also checked against the computer's own arithmetic (same key, same proofs).
+**It has not been on a physical iPhone**: Apple only lets an app onto a phone when it is
+signed with an Apple account, and the project has none. With your own Apple ID and a Mac you
+can put it on your phone today (free: it lasts 7 days at a time; US$99 a year: a year, and
+TestFlight or the App Store) — the steps are in [ios/README.md](../ios/README.md) and
+[SIGNING.md](SIGNING.md#5-iphone).
+
+### Later: an AI on the iPhone itself
+
+There is no way to run Python on iOS, and iOS cannot run a downloaded engine program the
+way Android does. An AI on the phone would be built on the `llama-<tag>-xcframework.zip`
+that llama.cpp ships with every release, reusing Datas' catalog and recommender.
+Constraints: no work in the background, a hard memory limit per app (about 60 % of RAM),
+8 GB iPhones → 3–4B models. Not started.

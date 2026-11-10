@@ -282,3 +282,64 @@ def test_the_ai_on_a_linked_device_needs_a_link(two):
     assert r.status_code == 404
     r = a.http.post("/link/" + "0" * 64 + "/v1/chat/completions", json={"messages": []})
     assert r.status_code == 502 and r.json()["error"]["type"] == "datas_link"
+
+
+def test_a_computer_opens_the_datas_of_another_computer_only_when_allowed(two):
+    """A computer without a screen (A) is looked after from the laptop (B): B shows A's Datas
+    through the encrypted link — once someone at A allowed it, and with a phone's limits."""
+    a, b = two
+    code = a.http.post("/api/link/pairing").json()["pairing"]["code"]
+    peer = b.http.post(
+        "/api/link/pair", json={"address": f"127.0.0.1:{a.link}", "code": code}
+    ).json()["peer"]
+    ida, idb = peer["id"], b.http.get("/api/link").json()["device"]["id"]
+    assert peer["window"] is False  # nothing is open between two computers until it is asked
+
+    # not allowed yet: a sentence that says where to switch it on
+    no = b.http.post(f"/api/link/peers/{ida}/open", json={"show": False})
+    assert no.status_code == 400
+    assert "Device A has not allowed this computer" in no.json()["detail"]
+    assert 'datas-cli link window "Device B" on' in no.json()["detail"]
+
+    # someone at A allows B
+    on = a.http.post(f"/api/link/peers/{idb}", json={"window": True}).json()
+    assert on["window"] is True and on["kind"] == "device"
+    r = b.http.post(f"/api/link/peers/{ida}/open", json={"show": False})
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["name"] == "Device A" and out["shown"] is False
+    assert out["url"].startswith("http://127.0.0.1:")
+    # asking again gives the same door, not a new one each time
+    assert b.http.post(f"/api/link/peers/{ida}/open", json={"show": False}).json() == out
+
+    with httpx.Client(base_url=out["url"], trust_env=False, timeout=30) as door:
+        st = door.get("/api/status").json()
+        assert st["remote"] == {"device": "Device A", "phone": "Device B", "kind": "device"}
+        assert "/ui/app.js" in door.get("/").text
+        # A's chats, written from B's window, are kept on A
+        saved = door.post(
+            "/api/chats", json={"messages": [{"role": "user", "content": "from the laptop"}]}
+        )
+        assert saved.status_code == 200
+        assert [c["title"] for c in a.http.get("/api/chats").json()["chats"]] == ["from the laptop"]
+        # the limits of a phone apply: nothing that acts on A itself
+        for method, path, body in (
+            ("POST", "/api/shutdown", {}),
+            ("POST", "/api/link/pairing", {}),
+            ("POST", f"/api/link/peers/{idb}", {"window": True}),
+            ("GET", "/api/things", None),
+            ("POST", "/api/agent/run", {"task": "x", "allow_shell": True}),
+        ):
+            refused = door.request(method, path, json=body)
+            assert refused.status_code == 403, (path, refused.status_code)
+            assert "linked device" in refused.json()["detail"], path
+        assert "remote" not in a.http.get("/api/status").json()  # at A itself: not remote
+
+        # A takes it back: the door leads nowhere and asking again is refused
+        a.http.post(f"/api/link/peers/{idb}", json={"window": False})
+        with pytest.raises(httpx.HTTPError):
+            httpx.get(out["url"] + "api/status", trust_env=False, timeout=10)
+    again = b.http.post(f"/api/link/peers/{ida}/open", json={"show": False})
+    assert again.status_code == 400 and "has not allowed" in again.json()["detail"]
+    # a phone never has a Datas to open; an unknown device is said plainly
+    assert b.http.post("/api/link/peers/nobody/open", json={"show": False}).status_code == 400

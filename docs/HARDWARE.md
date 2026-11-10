@@ -180,9 +180,10 @@ Security → Accessibility*) and on Linux with X11. It does not work on Linux wi
 
 - **Off by default, per task.** The agent has no hardware tool at all until you switch it on,
   and the switch does not carry over to the next task.
-- **A linked phone cannot reach any of it.** Everything on this page is refused when Datas is
-  opened from a phone (see [DEVICES.md](DEVICES.md)): a lost phone must not be a way to look
-  through your computer's camera or switch things in your home. A phone also cannot give a
+- **A linked phone cannot reach any of it**, and neither can another computer that shows
+  this one's Datas. Everything on this page is refused when Datas is opened through the link
+  (see [DEVICES.md](DEVICES.md)): a lost phone must not be a way to look through your
+  computer's camera or switch things in your home. Such a visitor also cannot give a
   scheduled task the hardware switch.
 - **Nothing leaves the computer** unless the AI you chose is an online service: a photo
   attached to a chat goes where that chat goes. With an AI running on this device, it stays

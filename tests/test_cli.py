@@ -71,3 +71,39 @@ def test_the_new_commands_are_there():
     r = run(app, ["things", "list"])
     assert r.exit_code == 0 and "Cameras:" in r.output and "Mouse and keyboard" in r.output
     assert "install" in run(app, ["service", "--help"]).output
+
+
+def test_a_computer_without_a_screen_lets_another_open_its_datas(monkeypatch):
+    """`datas-cli link window "Laptop" on` at the small computer; `link open "Pi"` at the
+    laptop. Both go through the Datas that is running, by the name the person knows."""
+    import datas.cli as cli
+
+    peers = [
+        {"id": "ab12" * 16, "name": "Laptop", "window": False},
+        {"id": "cd34" * 16, "name": "Pi", "window": False},
+    ]
+    calls = []
+
+    def fake_api(method, path, **kw):
+        calls.append((method, path, kw.get("json")))
+        if path == "/api/link":
+            return {"peers": peers}
+        if path.endswith("/open"):
+            return {"url": "http://127.0.0.1:50123/", "name": "Pi", "shown": kw["json"]["show"]}
+        return {"name": "Laptop", "window": kw["json"]["window"]}
+
+    monkeypatch.setattr(cli, "_app_api", fake_api)
+    r = run(app, ["link", "window", "laptop", "on"])
+    assert r.exit_code == 0 and "Laptop may open the Datas of this computer." in r.output
+    assert calls[-1] == ("POST", f"/api/link/peers/{'ab12' * 16}", {"window": True})
+    r = run(app, ["link", "window", "Laptop", "off"])
+    assert "may no longer open" in r.output and calls[-1][2] == {"window": False}
+    assert run(app, ["link", "window", "Laptop", "maybe"]).exit_code != 0
+    r = run(app, ["link", "window", "Nobody", "on"])
+    assert r.exit_code == 1 and '"Laptop", "Pi"' in r.output  # says which names exist
+
+    r = run(app, ["link", "open", "Pi", "--no-window"])
+    assert r.exit_code == 0 and "http://127.0.0.1:50123/" in r.output
+    assert calls[-1] == ("POST", f"/api/link/peers/{'cd34' * 16}/open", {"show": False})
+    r = run(app, ["link", "open", "cd34"])  # the start of its id works too
+    assert "is open in its own window" in r.output and calls[-1][2] == {"show": True}

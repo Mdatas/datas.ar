@@ -18,8 +18,8 @@ Every installer attached to a release comes with:
 Check a download (needs the [GitHub command line](https://cli.github.com)):
 
 ```bash
-gh attestation verify Datas-Setup-0.3.0.exe -R Mdatas/datas.ar
-sha256sum -c Datas-Setup-0.3.0.exe.sha256        # macOS: shasum -a 256 -c …
+gh attestation verify Datas-Setup-0.4.0.exe -R Mdatas/datas.ar
+sha256sum -c Datas-Setup-0.4.0.exe.sha256        # macOS: shasum -a 256 -c …
 ```
 
 The app does its own check when it updates itself: it compares the installer with the

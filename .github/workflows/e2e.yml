@@ -39,12 +39,13 @@ jobs:
         run: |
           export DATAS_HOME="$RUNNER_TEMP/datas-e2e"
           VOICE=""; python -c "import pywhispercpp, kokoro_onnx" 2>/dev/null && VOICE="--voice"
-          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" $VOICE --hardware --report "$RUNNER_TEMP/e2e.json"
+          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" $VOICE --hardware --link --report "$RUNNER_TEMP/e2e.json"
       - name: logs
         if: always()
         shell: bash
         run: |
           tail -n 60 "$RUNNER_TEMP/serve.log" || true
+          tail -n 40 "$RUNNER_TEMP/laptop.log" || true
           tail -n 80 "$RUNNER_TEMP/datas-e2e/logs/llama-server.log" || true
       - uses: actions/upload-artifact@v4
         if: always()

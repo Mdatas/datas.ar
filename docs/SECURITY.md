@@ -140,6 +140,13 @@ encrypted connection; the computer keeps only its fingerprint.
 If a phone is lost or sold: *Devices → Unlink* on the computer. A phone that is unlocked in
 someone else's hands can read your chats there until you do.
 
+**Another computer of yours** can be given the same view (*Devices → May open Datas on this
+computer*, off until you switch it on for that computer; see
+[DEVICES.md](DEVICES.md#opening-the-datas-of-another-computer)). What arrives that way is
+held to the same limits as a phone, by the same check — a linked computer that was taken over
+could read and write your chats there and use the AIs, and nothing beyond that. The door it
+uses on the other computer listens on `127.0.0.1` only and leads into the encrypted link.
+
 ## Signatures
 
 What is signed and what is not — release files, Windows, macOS, Android — is in

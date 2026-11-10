@@ -28,7 +28,8 @@ From the command line: `datas-cli link status | code | pair <address> <code> | u
 
 ## Phones and tablets
 
-The Datas app for Android has a card called **My computers**.
+The Datas app for Android has a card called **My computers**; the app for iPhone and iPad
+does the same and nothing else (see [MOBILE.md](MOBILE.md)).
 
 1. On the computer: *Devices → Show a code*.
 2. On the phone: *My computers → Link a computer*. Computers on the same Wi-Fi are listed;
@@ -56,8 +57,28 @@ moment the phone is refused.
 Limits today: the phone has to reach the computer — the same Wi-Fi, or a private network
 between your devices (WireGuard, Tailscale); files saved from an answer stay on the computer;
 talking to the AI by voice is not available from the phone yet; chats made with the phone's
-own small AI are not shared with the computer. An iPhone app is being written
-(see [MOBILE.md](MOBILE.md)).
+own small AI are not shared with the computer. Neither app has been tried on a physical phone
+by the project yet (see [MOBILE.md](MOBILE.md)).
+
+## Opening the Datas of another computer
+
+For a computer without a screen — a Raspberry Pi in a corner, a home server, a NAS — or just
+to look after the computer in the other room: one linked computer can show the Datas of
+another, in a window of its own.
+
+1. **At the computer to be opened**, allow it: *Devices →* the other computer *→ May open
+   Datas on this computer*. Without a screen: `datas-cli link window "Laptop" on`.
+   It is off until you switch it on, for each computer separately.
+2. **At the computer in front of you**: *Devices →* that computer *→ Open its Datas*
+   (or `datas-cli link open "Pi"`).
+
+The window says at the bottom whose Datas it is and where the chats are kept. You can chat
+with its AIs, get or change its AI, use helpers and documents, read its results. It travels
+through the same encrypted link as everything else, and the opened computer treats it
+**exactly like a phone**: no microphone, camera, screen or other hardware of that computer,
+no opening its files or programs, no linking or unlinking, no commands for the agent. Those
+stay things you do at that computer itself (for one without a screen: with `datas-cli`
+there).
 
 ## How it is protected
 
@@ -99,18 +120,24 @@ secret in the app's private storage.
 | Presence | Name, system, Datas version, engine version, memory on offer, name of the AI running (if any). Asked every 20 seconds (8 while memory is being shared). |
 | Chat sync | The chats themselves. Newest change wins; a deleted chat is deleted everywhere (a small "deleted" marker travels so it does not come back). Never in Forget mode. |
 | Shared memory | llama.cpp's own protocol between the device that runs the AI and the ones lending memory, inside the encrypted tunnel. The helper program on the lending device listens on `127.0.0.1` only — it is reachable through the tunnel and nowhere else. |
-| Using another device's AI | Your messages and the answers, as `/v1` requests. The other device processes them with its local AI and keeps nothing unless that chat is also synced. |
+| Using another device's AI | Your messages and the answers, as `/v1` requests. The other device processes them with its local AI and keeps nothing unless that chat is also synced. The same goes for the parts of a long document shared out between devices. |
+| Opening another computer's Datas | Everything that window shows and sends, as ordinary requests to that computer's Datas, inside the encrypted link. |
 
 ## Limits, stated plainly
 
 - **Phones are a window, not a full member yet.** A linked phone shows and uses a computer's
-  Datas; it does not lend memory or share the chats of its own small AI. Android only for
-  now; linking needs Android 10 or newer.
+  Datas; it does not lend memory or share the chats of its own small AI. Android 10 or
+  newer; iPhone and iPad with iOS 15 or newer.
 - **Bigger, not faster.** Shared memory lets a larger AI fit. Every word still passes
   through all the devices, so the speed is set by the slowest one and by the network. A cable
   or good Wi-Fi matters.
-- **One answer cannot be split and written in parallel.** Running many independent tasks at
-  once across devices ("farm mode") is on the roadmap, not in this version.
+- **One answer cannot be split and written in parallel — a long document can.** *Tools →
+  Long documents → Share the work with my linked devices* gives each part to whichever
+  device is free: this one and every linked computer that has an AI of its own ready. It
+  finishes sooner; the parts are written by different AIs, so the style can vary from part
+  to part; a device that drops out gives its part back and the rest carry on. The parts are
+  cut for the smallest working memory among them. Other kinds of work (several chats or
+  agent tasks at once across devices) are not shared out yet.
 - **Same network works directly. Different places need a reachable address.** There is no
   relay server by design, because a relay would be a third party. Use a private network
   between your devices (WireGuard or Tailscale, for example) or open port 8424 on the router
@@ -139,16 +166,27 @@ Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_
 - Messages: a 4-byte length followed by JSON; after an `rpc` or `v1` request the same
   connection carries raw bytes.
 - Operations: `pair`, `info`, `sync`, `rpc` (tunnel to the local `ggml-rpc-server` on
-  `127.0.0.1`), `v1` (OpenAI-compatible request to the local AI), and for phones `window`
-  (the connection is joined to the local service on `127.0.0.1`).
+  `127.0.0.1`), `v1` (OpenAI-compatible request to the local AI), and `window` (the
+  connection is joined to the local service on `127.0.0.1`) — for phones, and for a computer
+  that was allowed to (`"window": true` on that peer in `peers.json`).
 - A phone pairs with `{"op":"pair","app":true,"id":<SHA-256 of its secret>,…}` and later
   sends `"auth": <secret>` in its first message instead of presenting a certificate; it may
   only ask for `info` and `window`. The service learns which of its connections come from a
   phone (`core.remote_clients`) and applies `remote_refusal()` in `datas/server/app.py`.
 - The phone's side: [`android/…/ar/datas/link/LinkClient.java`](../android/app/src/main/java/ar/datas/link/LinkClient.java)
-  (plain Java, standard library only) and the same in Python,
-  [`tests/phone.py`](../tests/phone.py). `tests/test_phone_link.py` compiles the Java and runs
-  it against a real Datas.
+  (plain Java, standard library only), [`ios/DatasLink`](../ios/DatasLink) (Swift, Apple's
+  own libraries) and the same in Python, [`tests/phone.py`](../tests/phone.py).
+  `tests/test_phone_link.py` compiles the Java (and, on a Mac, the Swift) and runs it against
+  a real Datas.
+- A computer showing another's Datas: `LinkManager.open_window()` makes a door on
+  `127.0.0.1` whose connections are each joined to a `window` request on the link
+  (`tests/test_link.py` runs it between two real Datas).
+- Sharing a long document out: `datas/tools.py` (`helpers`, `_share_out`) sends each part as
+  a `v1` request to whichever device is free.
+- With a real AI on both sides: the weekly and per-release run (`scripts/e2e_real.py --link`)
+  starts a second Datas, links the two with a code, answers on one with the AI of the other,
+  shares a long document out between both AIs and opens one's window from the other — on
+  Windows, macOS, Linux and ARM Linux.
 - Rediscovery after an address change: mDNS service `_datas-link._tcp` carrying the device id.
 - Files in `<data folder>/link/`: `device.key` (private, mode 600), `device.crt`,
   `peers.json` (name, address and certificate of each paired computer; name and secret

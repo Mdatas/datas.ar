@@ -202,20 +202,33 @@ language Datas is set to. → [HARDWARE.md](HARDWARE.md)
 |---|---|---|
 | POST · GET | `/api/selfcheck` | the window, opened with `?selfcheck`, reports what it showed; `Datas open --selfcheck out.json` reads it (used by the installer builds) |
 
-Requests that arrive from a linked phone through the link are answered like any other, except
-the ones listed in `REMOTE_REFUSED` (`datas/server/app.py`), which get `403`; `/api/status`
-then carries `remote: {device, phone}`. A phone also cannot start the agent with `allow_shell`,
-`devices` or `control`, give those to a scheduled task, or change a task that has them.
+Requests that arrive through the link — from a linked phone, or from another computer that
+was allowed to open this one's Datas — are answered like any other, except the ones listed
+in `REMOTE_REFUSED` (`datas/server/app.py`), which get `403`; `/api/status` then carries
+`remote: {device, phone, kind}` (`phone` is the name of whoever is looking, `kind` is `app`
+for a phone and `device` for a computer). Such a visitor also cannot start the agent with
+`allow_shell`, `devices` or `control`, give those to a scheduled task, or change a task that
+has them.
 
-Refusals and hardware problems are written once in English and said in the language Datas is
-set to (`datas/words.py`).
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/link/peers/{id}` `{window}` | may that linked device open this device's Datas? (a phone: on from the start; a computer: off until switched on) |
+| GET | `/api/tools/long/helpers` | linked computers whose own AI could take parts of a long document now; `POST /api/tools/long` takes `devices: true` to share the parts out |
+| POST | `/api/link/peers/{id}/open` `{show?}` | open the Datas of that linked computer here: `{url, name, shown}` — a door on `127.0.0.1` that leads into the encrypted link; `show: false` only says where it is |
+
+Refusals, hardware problems, what linking says when something is not right, and the plain
+sentences about each AI (`plain` in `/api/recommend`, `/api/library`) are written once in
+English and said in the language Datas is set to (`datas/words.py`).
 
 ## Command line
 
 `datas-cli --help` lists everything; the ones added in 0.3: `datas link status | code |
 pair <address> <code> | unlink <name> | sync`, and `datas selftest`, which checks that a
 copy of Datas is whole (window files, lessons, documents, device link, local service,
-hardware parts) and exits with 1 if a part is missing.
+hardware parts) and exits with 1 if a part is missing. Added in 0.4: `datas things …`
+(hardware, see [HARDWARE.md](HARDWARE.md)), `datas service install | remove | status`
+(Linux), `datas link window <name> on|off` (let that linked computer open this one's Datas)
+and `datas link open <name>` (open the Datas of that computer here).
 
 Added in 0.4: `datas things list | around | ffmpeg | photo [file] | screen [file] | print
 <file> | serial <port> [--send text] [--baud n] | check <mqtt|home_assistant|modbus>

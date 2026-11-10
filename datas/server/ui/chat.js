@@ -292,7 +292,10 @@ const Chat = {
     const f = $("#fine");
     if (!f) return;
     const st = aiState();
-    f.textContent = st.remote ? t("fine_remote", { name: st.name }) : t(Chat.cur.internet ? "fine_local_net" : "fine_local");
+    const far = isRemote() && S.status.remote.device;   // this window shows the Datas of another device of the person
+    f.textContent = st.remote ? t("fine_remote", { name: st.name })
+      : far ? t(Chat.cur.internet ? "fine_far_net" : "fine_far", { device: far })
+      : t(Chat.cur.internet ? "fine_local_net" : "fine_local");
   },
   drawChips() {
     const box = $("#attChips");

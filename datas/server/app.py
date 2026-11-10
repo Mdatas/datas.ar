@@ -76,7 +76,8 @@ def _hostname(value: str) -> str:
     return v.rsplit(":", 1)[0] if v.count(":") == 1 else v
 
 
-# What a linked phone may not do when it opens this device's Datas through the link. A phone
+# What a linked device (a phone, or another computer that was allowed to) may not do when it
+# opens this device's Datas through the link. A phone
 # can be lost or borrowed; these are the things that reach beyond Datas itself — the room
 # (microphone, camera, screen), the computer (commands, programs, other devices) — or that
 # cannot be undone.
@@ -97,19 +98,20 @@ REMOTE_REFUSED: tuple[tuple[str, str], ...] = (
 
 
 def remote_refusal(method: str, path: str) -> str | None:
-    """Why a request arriving from a linked phone is refused, or None if it may go on."""
+    """Why a request arriving through the link (a phone, or another computer showing this
+    device's Datas) is refused, or None if it may go on."""
     write = method not in ("GET", "HEAD", "OPTIONS")
     for kind, prefix in REMOTE_REFUSED:
         hit = path == prefix.rstrip("/") or path.startswith(
             prefix if prefix.endswith("/") else prefix + "/"
         )
         if hit and (kind == "ANY" or write):
-            return "This can only be done at the computer itself, not from a linked phone."
+            return "This can only be done at the computer itself, not from a linked device."
     return None
 
 
 def remote_peer(request: Request) -> str | None:
-    """The id of the linked phone this request comes from, if it came through the link."""
+    """The id of the linked device this request comes from, if it came through the link."""
     c = request.client
     return core.remote_clients.get((c.host, c.port)) if c else None
 
@@ -242,10 +244,12 @@ def _start_background() -> None:
 def status(request: Request) -> dict:
     st = core.status()
     pid = remote_peer(request)
-    if pid:  # the window is being shown on a linked phone: it adapts (no "open this file"…)
+    if pid:  # the window is being shown on a linked device: it adapts (no "open this file"…)
+        peer = core.link_manager().peer_public(pid)
         st["remote"] = {
             "device": core.link_manager().name,
-            "phone": core.link_manager().peer_public(pid)["name"],
+            "phone": peer["name"],  # who is looking: a phone, or another computer
+            "kind": peer["kind"],
         }
     else:  # Datas opened its own window here and can move it aside for a picture of the screen
         st["own_window"] = core.window is not None
@@ -847,11 +851,21 @@ class LongBody(BaseModel):
     name: str = ""
     content_base64: str = ""
     lang: str | None = None  # language of the result
+    devices: bool = False  # share the parts with the AIs of my linked devices
+
+
+@app.get("/api/tools/long/helpers")
+def tools_long_helpers() -> dict:
+    """Linked devices whose own AI could take parts of a long document right now."""
+    from datas import tools
+
+    return {"devices": [{"name": h["name"], "ai": h["ai"]} for h in tools.helpers(core)]}
 
 
 @app.post("/api/tools/long")
 def tools_long(body: LongBody) -> dict:
-    """Summarise or translate a document of any length, piece by piece."""
+    """Summarise or translate a document of any length, piece by piece — with ``devices``,
+    this device and the linked ones each take the next part at the same time."""
     from datas import tools
 
     text, title = body.text, ""
@@ -870,9 +884,10 @@ def tools_long(body: LongBody) -> dict:
     prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
     ctx = _ctx_tokens(prov)
     lang = body.lang or core.cfg.lang
+    hands = tools.helpers(core) if body.devices else []
     return _update_job(
         "Long document",
-        lambda j: tools.long_document(core, text, body.mode, lang, ctx, title, j),
+        lambda j: tools.long_document(core, text, body.mode, lang, ctx, title, j, hands),
     )
 
 
@@ -1319,7 +1334,7 @@ def _link():  # noqa: ANN202
     try:
         return core.link_manager()
     except LinkError as e:
-        raise HTTPException(400, str(e)) from e
+        raise HTTPException(400, e.say(core.cfg.lang)) from e
     except Exception as e:  # noqa: BLE001 - e.g. the cryptography package is missing
         raise HTTPException(500, f"Device linking is not available on this copy: {e}") from e
 
@@ -1330,7 +1345,7 @@ def _link_call(fn, *args):  # noqa: ANN001, ANN202
     try:
         return fn(*args)
     except LinkError as e:
-        raise HTTPException(400, str(e)) from e
+        raise HTTPException(400, e.say(core.cfg.lang)) from e
 
 
 class OnBody(BaseModel):
@@ -1393,12 +1408,32 @@ def link_unpair(pid: str) -> dict:
 
 
 class LinkPeerOptions(BaseModel):
-    window: bool | None = None  # a phone: may it open this device's Datas?
+    window: bool | None = None  # may that device open this device's Datas?
 
 
 @app.post("/api/link/peers/{pid}")
 def link_peer_options(pid: str, body: LinkPeerOptions) -> dict:
     return _link_call(_link().set_peer, pid, body.window)
+
+
+class LinkOpen(BaseModel):
+    show: bool = True  # open it in a window of its own; False: only say where it is
+
+
+@app.post("/api/link/peers/{pid}/open")
+def link_open(pid: str, body: LinkOpen | None = None) -> dict:
+    """The Datas of another computer of yours, shown on this one through the encrypted link
+    (for a computer without a screen, for example). That computer has to allow it, and treats
+    what arrives this way like a phone's requests."""
+    out = _link_call(_link().open_window, pid)
+    out["shown"] = False
+    if body is None or body.show:
+        try:
+            core.open_url_window(out["url"], f"{out['name']} — Datas.ar")
+            out["shown"] = True
+        except OSError:
+            pass  # no window could be opened here: the address is still good in a browser
+    return out
 
 
 @app.post("/api/link/options")
@@ -2148,7 +2183,7 @@ def agent_run(body: AgentBody, request: Request):
     if remote_peer(request) and (body.allow_shell or body.devices or body.control):
         raise HTTPException(
             403,
-            "From a linked phone the agent cannot run commands or use the computer's devices. "
+            "From a linked device the agent cannot run commands or use the computer's devices. "
             "Switch those on at the computer itself.",
         )
     try:
@@ -2307,7 +2342,7 @@ def agent_tasks() -> dict:
 
 
 PHONE_TASK = (
-    "From a linked phone, a task that runs by itself cannot be given commands or the "
+    "From a linked device, a task that runs by itself cannot be given commands or the "
     "computer's devices, and one that has them cannot be changed. Do that at the computer."
 )
 

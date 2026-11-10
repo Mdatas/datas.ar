@@ -58,5 +58,5 @@ on a schedule then run with the window closed.
 ```
 pip install ".[qt,voice]" pyinstaller
 pyinstaller --noconfirm installer/datas.spec
-installer/linux/build-deb.sh 0.3.0            # needs dpkg-deb
+installer/linux/build-deb.sh 0.4.0            # needs dpkg-deb
 ```

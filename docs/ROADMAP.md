@@ -51,7 +51,7 @@ Status:
 - [x] Specialist models on Home: Math, Legal texts, Medical (plus Programming)
 - [ ] One-click "translate my video" chain; voice cloning engine; more recipes (audio/music, 3D, OCR)
 
-## 0.3 (this release) — a friendlier window, everyday work, your own devices
+## 0.3 — a friendlier window, everyday work, your own devices
 
 - [x] **New window**: chats on the left with search, a new chat with any AI you have, each chat remembers its AI; day and night looks; plain verdicts instead of hidden options; English and Spanish — docs/UI.md
 - [x] **My AIs** with a plain summary per AI (good for, keep in mind, memory and disk), lighter and stronger versions, *Use a model file I already have*
@@ -68,7 +68,7 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.4 — the things around the computer
+## 0.4 (this release) — the things around the computer, phones, small computers
 
 - [x] **Cameras, the screen, printers**: a photo or a picture of the screen in a chat for AIs that understand pictures; *Print on paper* for any answer — docs/HARDWARE.md
 - [x] **Boards and instruments** on a serial cable (Arduino, ESP32, 3D printers): listen from Tools; the agent reads and writes lines
@@ -78,6 +78,11 @@ Status:
 - [x] **FFmpeg fetched once and checked** (fixed commit, size, SHA-256) when the computer has none — this also makes *Recording to text* read MP3, M4A and video in the installed app
 - [x] **Backend messages in Spanish**: hardware problems and refusals are said in the language Datas is set to (`datas/words.py`)
 - [x] A linked phone cannot give a scheduled task commands or hardware, nor change a task that has them
+- [x] **iPhone and iPad app** (`ios/`): link with the one-time code and use a computer's Datas; built for iPhone and tested in Apple's simulator against a real Datas on every change (`ios` workflow); the link code has the same known answers as the computer's — docs/MOBILE.md
+- [x] **Small computers without a screen**: packages for 64-bit ARM Linux (Raspberry Pi, NAS, ARM servers), `datas-cli service install` (starts with the computer, no window) — docs/SMALL_COMPUTERS.md
+- [x] **Open the Datas of another computer of yours** through the link, once that computer allows it; held to a phone's limits — docs/DEVICES.md
+- [x] **Long documents shared out between linked devices**: each takes the next part as soon as it is free; one that drops out gives its part back — docs/DEVICES.md
+- [x] **Spanish for what Datas says about each AI** (speed, where it runs, what to keep in mind, which paid AI it is like) and for linking problems
 
 ## Next
 
@@ -90,17 +95,20 @@ Status:
 - [~] Android app (WebView + foreground service + bundled engine) — code in `android/`, APK built by CI
 - [x] Android: linking with computers (*My computers*)
 - [ ] Android: the Datas window for the phone's own AI too; voice from the phone in a linked computer's Datas; saving files to the phone; file picker for model files, pictures, Snapdragon flavour
-- [ ] iPhone companion app (link to your computers) — source in `ios/`, needs an Apple Developer account to reach a phone
+- [x] iPhone companion app (link to your computers) — `ios/`, tested in the simulator
+- [ ] Both phone apps tried on physical phones; the iPhone app signed with an Apple Developer account (TestFlight / App Store)
 - [ ] Linking devices in different places: a setup helper for WireGuard / Tailscale
-- [ ] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split)
+- [~] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split) — done for long documents (each device takes parts); not yet for several chats or agent tasks
 - [ ] exo backend for all-Apple-Silicon pools
 - [ ] iOS app on the llama.cpp xcframework — needs an Apple Developer account (US$99/yr); iOS cannot run a downloaded engine binary like Android does
 
 **The window**
-- [ ] Spanish for the texts that are still English only (limits and comparisons of each AI, picture-model descriptions, technical messages); then Portuguese (pt-BR)
+- [x] Spanish for the limits and comparisons of each AI
+- [ ] Spanish for the texts that are still English only (progress lines of long jobs, the command line, technical details); then Portuguese (pt-BR)
 - [ ] Download queue, pause and resume from the window, cleaning up unused AIs
 - [ ] Measured speed stored per AI and shown next to the speed class
-- [ ] Tray icon, start with the system, tasks that run with the window closed (`datas service install`)
+- [x] Linux: start with the computer and run tasks with no window (`datas-cli service install`)
+- [ ] Tray icon; the same background service on Windows and macOS
 - [ ] Learn: a scheduled re-check of every link; more material in Spanish and Portuguese
 
 **AIs and engines**

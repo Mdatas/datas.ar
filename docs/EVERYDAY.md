@@ -52,7 +52,7 @@ file*, with the right ending for the language.
 |---|---|---|
 | Recording to text | a meeting, class, voice note or video becomes text with timestamps, plus a subtitles file (.srt) | voice installed; FFmpeg for formats other than WAV (Datas fetches a checked copy if none is found) |
 | Text to audio | a text becomes a WAV file, and an MP3 when FFmpeg is available | voice installed |
-| Long documents | summary or translation of a document of any length, piece by piece, then joined | an AI running |
+| Long documents | summary or translation of a document of any length, piece by piece, then joined. With linked computers that have an AI ready, *Share the work with my linked devices* lets each take parts at the same time ([DEVICES.md](DEVICES.md#limits-stated-plainly)) | an AI running |
 
 Code: [`datas/assistants/`](../datas/assistants), [`datas/docs.py`](../datas/docs.py),
 [`datas/export.py`](../datas/export.py), [`datas/tools.py`](../datas/tools.py).

@@ -680,6 +680,8 @@ def _print_link(st: dict) -> None:
             extra.append(f"offers {p['memory_gib']} GB")
         if p.get("ai", {}).get("available"):
             extra.append(f"AI: {p['ai'].get('name') or 'yes'}")
+        if p.get("window"):
+            extra.append("may open Datas here")
         con.print(f"  {p['name']}  {p['address']}  {state}  {'; '.join(extra)}")
     if not st["peers"]:
         con.print("  (no linked devices yet)")
@@ -725,6 +727,51 @@ def link_unlink(name_or_id: str):
             return
     con.print("no linked device matches")
     raise typer.Exit(1)
+
+
+def _linked(name_or_id: str) -> dict:
+    """The linked device called NAME (or whose id starts with it)."""
+    st = _app_api("GET", "/api/link")
+    key = name_or_id.lower().replace("-", "")
+    for p in st["peers"]:
+        if p["name"].lower() == name_or_id.lower() or p["id"].startswith(key):
+            return p
+    names = ", ".join(f'"{p["name"]}"' for p in st["peers"]) or "none yet"
+    con.print(f"no linked device matches. Linked: {names}")
+    raise typer.Exit(1)
+
+
+@link_app.command("window")
+def link_window(name_or_id: str, on: str = typer.Argument("on", help="on or off")):
+    """Let a linked device open the Datas of THIS computer (on), or stop it (off).
+
+    For a computer without a screen: link your laptop, then `datas-cli link window "Laptop" on`
+    here, and on the laptop press Devices → Open its Datas. What arrives that way cannot run
+    commands, use this computer's hardware or link other devices."""
+    if on.lower() not in ("on", "off"):
+        raise typer.BadParameter("say on or off")
+    p = _linked(name_or_id)
+    r = _app_api("POST", f"/api/link/peers/{p['id']}", json={"window": on.lower() == "on"})
+    con.print(
+        f"{r['name']} may open the Datas of this computer."
+        if r["window"]
+        else f"{r['name']} may no longer open the Datas of this computer."
+    )
+
+
+@link_app.command("open")
+def link_open(
+    name_or_id: str,
+    show: bool = typer.Option(True, "--window/--no-window", help="open it in a window"),
+):
+    """Open the Datas of a linked computer here (it has to allow it: `link window`)."""
+    p = _linked(name_or_id)
+    r = _app_api("POST", f"/api/link/peers/{p['id']}/open", json={"show": show})
+    con.print(
+        f"The Datas of {r['name']} is open in its own window."
+        if r["shown"]
+        else f"The Datas of {r['name']} is at {r['url']} — open that address in a browser."
+    )
 
 
 @link_app.command("sync")

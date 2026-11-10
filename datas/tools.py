@@ -230,15 +230,20 @@ LANG_NAMES = {
 }
 
 
-def _ask(core, prompt: str, max_tokens: int | None = None) -> str:  # noqa: ANN001
+def _ask(core, prompt: str, max_tokens: int | None = None, provider=None) -> str:  # noqa: ANN001
+    """One question, one answer, from the AI in use — or from ``provider`` (the AI of a
+    linked device that is helping with a long job)."""
     from datas.chat_engine import is_local_url
     from datas.providers import active_provider
 
-    if not core.server.running() and core.can_wake():
-        core.wake()
-    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    if prov.kind in ("local", "pool") and not core.server.running():
-        raise RuntimeError("No AI is running. Start one in My AIs first.")
+    if provider is not None:
+        prov = provider
+    else:
+        if not core.server.running() and core.can_wake():
+            core.wake()
+        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+        if prov.kind in ("local", "pool") and not core.server.running():
+            raise RuntimeError("No AI is running. Start one in My AIs first.")
     core.touch()
     body = {
         "model": prov.model or "default",
@@ -260,32 +265,145 @@ def _ask(core, prompt: str, max_tokens: int | None = None) -> str:  # noqa: ANN0
     return (msg.get("content") or "").strip()
 
 
+def helpers(core) -> list[dict]:  # noqa: ANN001
+    """Linked computers of the person whose own AI can take parts of a long job right now:
+    connected, with an AI of their own ready, and not already the AI this device is using."""
+    from datas.providers import linked_provider
+
+    lm = getattr(core, "link", None)
+    if lm is None and getattr(core.cfg, "link_enabled", False):
+        try:  # the link is made on first use
+            lm = core.link_manager()
+        except Exception:  # noqa: BLE001 - linking is not available on this copy
+            return []
+    if lm is None:
+        return []
+    out = []
+    for pid in lm._computers():  # noqa: SLF001 - phones only call in
+        p = lm.peer_public(pid)
+        ai = p.get("ai") or {}
+        if p["online"] and ai.get("available") and not p["in_use"]:
+            out.append(
+                {
+                    "id": pid,
+                    "name": p["name"],
+                    "ai": ai.get("name") or "",
+                    "context": int(ai.get("context") or 8192),
+                    "provider": linked_provider(core.cfg, pid),
+                }
+            )
+    return out
+
+
+def _share_out(core, prompts: list[str], hands: list[dict], job, steps: int) -> tuple:  # noqa: ANN001
+    """Many hands: this device and each helping device take the next part as soon as they are
+    free. A helper that stops answering gives its part back and the others carry on; if this
+    device's own AI fails, the job fails as it would alone. Returns the answers in order, the
+    names of the helpers that dropped out, and how many parts each hand wrote."""
+    import threading
+    from collections import deque
+
+    todo = deque(range(len(prompts)))
+    results: list = [None] * len(prompts)
+    lock = threading.Lock()
+    dropped: list[str] = []
+    failed: list[BaseException] = []
+    done = [0]
+    took: dict[str, int] = {}
+
+    def tick(who: str) -> None:
+        done[0] += 1
+        took[who] = took.get(who, 0) + 1
+        if job:
+            job.progress(done[0], steps)
+            job.say(f"Part {done[0]} of {len(prompts)} done ({who})")
+
+    def work(name: str, provider) -> None:  # noqa: ANN001
+        while True:
+            with lock:
+                if failed or not todo:
+                    return
+                i = todo.popleft()
+            try:
+                answer = _ask(core, prompts[i], provider=provider)
+            except Exception as e:  # noqa: BLE001 - asleep, unplugged, its AI stopped
+                with lock:
+                    todo.appendleft(i)
+                    if provider is None:
+                        failed.append(e)
+                    else:
+                        dropped.append(name)
+                        if job:
+                            job.say(f"{name} stopped answering; the others carry on.")
+                return
+            with lock:
+                results[i] = answer
+                tick(name or "this device")
+
+    threads = [threading.Thread(target=work, args=("", None), daemon=True)]
+    threads += [
+        threading.Thread(target=work, args=(h["name"], h["provider"]), daemon=True) for h in hands
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    if failed:
+        raise failed[0]
+    while todo:  # parts a helper gave back after this device had finished its own
+        i = todo.popleft()
+        results[i] = _ask(core, prompts[i])
+        tick("this device")
+    return results, dropped, took
+
+
 def long_document(
-    core, text: str, mode: str, lang: str, ctx_tokens: int, title: str = "", job=None
-) -> dict:  # noqa: ANN001
-    """Summarise or translate ``text`` piece by piece. ``mode``: summary | translate."""
+    core,  # noqa: ANN001
+    text: str,
+    mode: str,
+    lang: str,
+    ctx_tokens: int,
+    title: str = "",
+    job=None,  # noqa: ANN001
+    hands: list[dict] | None = None,
+) -> dict:
+    """Summarise or translate ``text`` piece by piece. ``mode``: summary | translate.
+    ``hands``: linked devices (see ``helpers``) that take parts at the same time."""
     text = text.strip()
     if not text:
         raise RuntimeError("The document has no text.")
     if mode not in ("summary", "translate"):
         raise ValueError("mode must be summary or translate")
     lang_name = LANG_NAMES.get(lang, lang)
+    hands = list(hands or [])
+    # every hand must be able to take any part: size them for the smallest working memory
+    ctx_tokens = min([ctx_tokens] + [int(h.get("context") or ctx_tokens) for h in hands])
     # a piece = about 40% of the working memory, leaving room for the answer
     size = int(max(1024, ctx_tokens) * 3.0 * (0.40 if mode == "summary" else 0.30))
     pieces = docs.chunk(text, size=max(1500, size), overlap=0)
     started = time.time()
-    results = []
-    for i, piece in enumerate(pieces, 1):
+    part = PROMPTS["summary_part" if mode == "summary" else "translate"]
+    prompts = [part.format(n=6, lang=lang_name, text=piece) for piece in pieces]
+    steps = len(pieces) + (1 if mode == "summary" else 0)
+    dropped: list[str] = []
+    took: dict[str, int] = {}
+    if hands and len(pieces) > 1:
         if job:
             job.phase = "reading"
-            job.progress(i - 1, len(pieces) + (1 if mode == "summary" else 0))
-            job.say(f"Part {i} of {len(pieces)}…")
-        if mode == "summary":
-            results.append(
-                _ask(core, PROMPTS["summary_part"].format(n=6, lang=lang_name, text=piece))
+            job.say(
+                f"{len(pieces)} parts, shared between this device and "
+                + ", ".join(h["name"] for h in hands)
             )
-        else:
-            results.append(_ask(core, PROMPTS["translate"].format(lang=lang_name, text=piece)))
+        results, dropped, took = _share_out(core, prompts, hands, job, steps)
+    else:
+        hands = []
+        results = []
+        for i, prompt in enumerate(prompts, 1):
+            if job:
+                job.phase = "reading"
+                job.progress(i - 1, steps)
+                job.say(f"Part {i} of {len(pieces)}…")
+            results.append(_ask(core, prompt))
     if mode == "summary":
         notes = "\n\n".join(f"Part {i}:\n{r}" for i, r in enumerate(results, 1))
         final = (
@@ -303,4 +421,8 @@ def long_document(
         "parts": len(pieces),
         "seconds": round(time.time() - started, 1),
         "mode": mode,
+        # who wrote how many parts (only when the work was shared), and who gave up on the way
+        "helped": [h["name"] for h in hands if took.get(h["name"]) and h["name"] not in dropped],
+        "shares": took,
+        "dropped": dropped,
     }

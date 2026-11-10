@@ -277,15 +277,24 @@ SCREENS.tools = async view => {
   }) }, t("tool_speak_go"));
   // long documents
   const lgFile = h("input", { type: "file" }), lgText = h("textarea", { rows: "3", placeholder: t("tool_long_paste") });
-  let lgMode = "summary", lgLang = S.lang;
+  let lgMode = "summary", lgLang = S.lang, lgHands = false;
+  const lgHelp = h("div");   // filled when linked devices can take parts of the work
   const lgBtn = h("button", { class: "btn", onclick: () => busy(lgBtn, async () => {
     const f = lgFile.files[0];
     if (!f && !lgText.value.trim()) { lgText.focus(); return; }
-    const body = { mode: lgMode, lang: lgLang, text: f ? "" : lgText.value, name: f ? f.name : "", content_base64: f ? await fileBase64(f) : "" };
+    const body = { mode: lgMode, lang: lgLang, devices: lgHands, text: f ? "" : lgText.value, name: f ? f.name : "", content_base64: f ? await fileBase64(f) : "" };
     const x = await Jobs.track(await api("/api/tools/long", { body }), { title: t("tool_long") });
-    if (x.state === "done" && x.result) resultDialog(f ? f.name : t("tool_long"), x.result.markdown || "");
+    if (x.state === "done" && x.result) {
+      resultDialog(f ? f.name : t("tool_long"), x.result.markdown || "");
+      if ((x.result.dropped || []).length) toast(t("tool_long_dropped", { names: x.result.dropped.join(", ") }), { ms: 9000 });
+      else if ((x.result.helped || []).length) toast(t("tool_long_helped", { names: x.result.helped.join(", ") }));
+    }
   }) }, t("tool_long_go"));
   const programs = h("div", {}, spinner()), conns = h("div", {}, spinner()), apps = h("div", {}, spinner()), hw = h("div", {}, spinner());
+  api("/api/tools/long/helpers").then(r => {
+    const names = (r.devices || []).map(d => d.ai ? d.name + " (" + d.ai + ")" : d.name);
+    if (names.length) add(clear(lgHelp), switchRow(t("tool_long_hands"), t("tool_long_hands_hint", { names: names.join(", ") }), lgHands, v => { lgHands = v; }));
+  }).catch(() => {});
   wrap.append(
     sec(t("tools_agent"), t("tools_agent_sub"), h("button", { class: "btn primary", onclick: guard(async () => { await api("/api/window/agent", { method: "POST" }); toast(t("agent_opened")); }) }, icon("agent", 18), t("tools_agent_open"))),
     sec(t("tools_everyday"), t("tools_everyday_sub"), h("div", { class: "grid2" },
@@ -293,7 +302,7 @@ SCREENS.tools = async view => {
       h("div", { class: "sheet stack" }, h("b", { text: t("tool_speak") }), h("span", { class: "muted small", text: t("tool_speak_sub") }), spText, spBtn),
       h("div", { class: "sheet stack" }, h("b", { text: t("tool_long") }), h("span", { class: "muted small", text: t("tool_long_sub") }), lgFile, lgText,
         h("div", { class: "row" }, seg([["summary", t("tool_long_summary")], ["translate", t("tool_long_translate")]], lgMode, v => { lgMode = v; }),
-          seg([["en", "English"], ["es", "Español"]], lgLang, v => { lgLang = v; })), lgBtn))),
+          seg([["en", "English"], ["es", "Español"]], lgLang, v => { lgLang = v; })), lgHelp, lgBtn))),
     !isRemote() && sec(t("hw_title"), t("hw_sub"), hw),
     sec(t("tools_programs"), t("tools_programs_sub"), programs),
     sec(t("tools_conns"), t("tools_conns_sub"), conns),
@@ -513,6 +522,10 @@ SCREENS.devices = async view => {
         h("div", { class: "row" }, icon("devices"), h("span", { class: "name grow", text: p.name }),
           h("span", { class: "chip " + (p.online ? "ok" : "plain"), text: t(p.online ? "dev_online" : "dev_offline") }),
           p.online && p.ai && p.ai.name && h("button", { class: "btn small", disabled: p.in_use, onclick: guard(async () => { await api("/api/link/use/" + p.id, { method: "POST" }); await refreshStatus(); toast(t("dev_using", { name: p.ai.name, device: p.name })); refresh(); }) }, t(p.in_use ? "ai_in_use" : "dev_use_ai")),
+          p.online && h("button", { class: "btn small", onclick: guard(async () => {
+            const r = await api("/api/link/peers/" + p.id + "/open", { body: {} });
+            toast(r.shown ? t("dev_opened", { name: p.name }) : t("dev_opened_at", { url: r.url }), r.shown ? {} : { ms: 20000 });
+          }) }, t("dev_open_datas")),
           h("button", { class: "btn small danger", onclick: async () => {
             if (!await confirmDialog(t("dev_unlink"), t("dev_unlink_text", { name: p.name }), t("dev_unlink"), true)) return;
             call("/api/link/peers/" + p.id, { method: "DELETE" });
@@ -520,7 +533,8 @@ SCREENS.devices = async view => {
         h("div", { class: "muted", text: [p.address, p.os, p.online && p.ai && p.ai.name ? t("dev_ai_there", { name: p.ai.name }) : "",
           p.online && p.shares_memory ? t("dev_shares", { mem: gb(p.memory_gib) }) : "", p.busy ? t("dev_busy") : ""].filter(Boolean).join(", ") }),
         !p.online && p.error && h("div", { class: "small muted", text: p.error }),
-        p.online && !p.tag_matches && h("div", { class: "small", style: "color:var(--warn)", text: t("dev_tag_mismatch") }))))
+        p.online && !p.tag_matches && h("div", { class: "small", style: "color:var(--warn)", text: t("dev_tag_mismatch") }),
+        switchRow(t("dev_phone_window"), t("dev_pc_window_hint"), p.window, v => call("/api/link/peers/" + p.id, { body: { window: v } })))))
         : h("p", { class: "muted", text: t("dev_no_peers") })),
       sec(t("dev_options"), null,
         switchRow(t("dev_share"), t("dev_share_hint"), st.share_memory, v => call("/api/link/options", { body: { share_memory: v } })),

@@ -50,6 +50,7 @@ from pathlib import Path
 
 from datas import __version__, chats
 from datas.config import home, write_text_safely
+from datas.words import Problem
 
 PROTO = b"datas-link-v1"
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I: easy to read aloud and type
@@ -62,8 +63,12 @@ BUF = 1 << 20
 V1_PATHS = {"chat/completions", "completions", "models", "embeddings"}
 
 
-class LinkError(RuntimeError):
-    """Something the user can act on: wrong code, device unreachable, not linked…"""
+NOT_ALLOWED = "that device did not allow this one to open its Datas"
+
+
+class LinkError(Problem):
+    """Something the user can act on: wrong code, device unreachable, not linked…
+    ``str(e)`` is the English, ``e.say("es")`` the Spanish (datas/words.py)."""
 
 
 # ---------------------------------------------------------------------------
@@ -314,6 +319,8 @@ class LinkManager:
         self.pairing: dict | None = None
         self.status: dict[str, dict] = {}
         self.tunnels: dict[str, tuple[asyncio.AbstractServer, int]] = {}
+        # pid -> (server, port): local doors that show another computer's Datas
+        self.doors: dict[str, tuple[asyncio.AbstractServer, int]] = {}
         self.last_sync: float = 0.0
         self.sync_error: str = ""
         self._dirty = True
@@ -399,7 +406,9 @@ class LinkManager:
     def set_peer(self, pid: str, window: bool | None = None) -> dict:
         if pid not in self._peers:
             raise LinkError("that device is not linked")
-        if window is not None and self.is_app(pid):
+        if window is not None:
+            # a phone has it from the start (it is all a phone can do); a computer only
+            # after someone at this device switches it on
             self._peers[pid]["window"] = bool(window)
             self._save_peers()
         return self.peer_public(pid)
@@ -410,9 +419,10 @@ class LinkManager:
         self._peers.pop(pid)
         self._save_peers()
         self.status.pop(pid, None)
-        t = self.tunnels.pop(pid, None)
-        if t:
-            self.loop.call_soon_threadsafe(t[0].close)
+        for doors in (self.tunnels, self.doors):
+            t = doors.pop(pid, None)
+            if t:
+                self.loop.call_soon_threadsafe(t[0].close)
         if self.cfg.provider == f"link:{pid}":
             self.cfg.provider = "local"
             self.cfg.save()
@@ -444,8 +454,10 @@ class LinkManager:
             self._call(self._serve(on), 10)
         except OSError as e:
             raise LinkError(
-                f"Could not open port {self.cfg.link_port} on this device ({e}). "
-                "Another program may be using it."
+                "Could not open port {port} on this device ({why}). "
+                "Another program may be using it.",
+                port=self.cfg.link_port,
+                why=e,
             ) from e
         self.cfg.link_enabled = on
         self.cfg.save()
@@ -467,15 +479,17 @@ class LinkManager:
     def pair(self, address: str, code: str) -> dict:
         """Type the other device's address and code here. Returns the new linked device."""
         if len(clean_code(code)) != CODE_LEN:
-            raise LinkError(f"the code has {CODE_LEN} letters and digits")
+            raise LinkError("the code has {n} letters and digits", n=CODE_LEN)
         host, port = split_address(address, self.cfg.link_port)
         try:
             peer = self._call(self._pair(host, port, code), 40)
         except (OSError, asyncio.TimeoutError, TimeoutError, ssl.SSLError) as e:
             raise LinkError(
-                f"Could not reach {host}:{port}. Check that Datas is open on the other device, "
+                "Could not reach {address}. Check that Datas is open on the other device, "
                 "that it shows the pairing code, and that both are on the same network "
-                f"(or that the address is reachable). ({type(e).__name__})"
+                "(or that the address is reachable). ({why})",
+                address=f"{host}:{port}",
+                why=type(e).__name__,
             ) from e
         if self._server is None:  # so the other device can reach this one too
             try:
@@ -837,10 +851,7 @@ class LinkManager:
         (``core.remote_clients``) and refuses, on those, what should only be done at the
         device itself (see ``remote_refusal`` in datas/server/app.py)."""
         if not self._peers[pid].get("window"):
-            await send(
-                writer,
-                {"ok": False, "error": "that device did not allow this one to open its Datas"},
-            )
+            await send(writer, {"ok": False, "error": NOT_ALLOWED})
             return
         try:
             r2, w2 = await asyncio.open_connection("127.0.0.1", self.core.http_port, limit=4 * BUF)
@@ -880,6 +891,70 @@ class LinkManager:
         port = srv.sockets[0].getsockname()[1]
         self.tunnels[pid] = (srv, port)
         return port
+
+    # ---- the Datas of another computer of mine, shown here ----------------------------
+    async def _ask_window(self, pid: str):  # noqa: ANN202
+        """An encrypted connection to ``pid`` that it has joined to its own Datas."""
+        if self.is_app(pid):
+            raise LinkError("a phone has no Datas to open")
+        r, w = await self._connect(pid)
+        try:
+            await send(w, {"op": "window"})
+            head = await asyncio.wait_for(recv(r, 1 << 20), 30)
+        except BaseException:
+            w.close()
+            raise
+        if not head.get("ok"):
+            w.close()
+            if head.get("error") == NOT_ALLOWED:  # say what to do about it, and where
+                raise LinkError(
+                    "{name} has not allowed this computer to open its Datas. On {name}: "
+                    "Devices → {me} → switch on “May open Datas on this computer”. If it has "
+                    'no screen, type there: datas-cli link window "{me}" on',
+                    name=self._peers[pid]["name"],
+                    me=self.name,
+                )
+            raise LinkError(head.get("error") or "refused")
+        return r, w
+
+    async def _open_window(self, pid: str) -> int:
+        """A door on this device (127.0.0.1) that shows the Datas of the computer ``pid``.
+        Asks first, so a refusal is said in words instead of an empty page."""
+        _r, w = await self._ask_window(pid)
+        w.close()
+        if pid in self.doors:
+            return self.doors[pid][1]
+
+        async def on_conn(lr: asyncio.StreamReader, lw: asyncio.StreamWriter) -> None:
+            try:
+                r, w = await self._ask_window(pid)
+            except Exception:  # noqa: BLE001
+                lw.close()
+                return
+            await splice(lr, lw, r, w)
+
+        srv = await asyncio.start_server(on_conn, "127.0.0.1", 0, limit=4 * BUF)
+        port = srv.sockets[0].getsockname()[1]
+        self.doors[pid] = (srv, port)
+        return port
+
+    def open_window(self, pid: str) -> dict:
+        """Where, on this device, the Datas of the linked computer ``pid`` can be opened.
+        That computer treats what arrives this way like a phone's requests: no commands, no
+        hardware, no linking (``remote_refusal`` in datas/server/app.py)."""
+        if pid not in self._peers:
+            raise LinkError("that device is not linked")
+        try:
+            port = self._call(self._open_window(pid), 45)
+        except LinkError:
+            raise
+        except Exception as e:  # noqa: BLE001 - asleep, off, another network
+            self._fail(pid)
+            raise LinkError(
+                "Could not reach that device ({why}). Is it on, and is Datas open on it?",
+                why=type(e).__name__,
+            ) from e
+        return {"url": f"http://127.0.0.1:{port}/", "name": self._peers[pid]["name"]}
 
     def pool_nodes(self, refresh: bool = False) -> list:
         """Linked devices that are online and offering memory, as endpoints llama.cpp can use."""
@@ -1182,7 +1257,7 @@ class LinkManager:
             "short_id": short_id(pid),
             "name": p["name"],
             "kind": "app" if app else "device",
-            "window": bool(p.get("window")) if app else False,
+            "window": bool(p.get("window")),
             "seen": st.get("seen"),
             "address": p["address"],
             "added": p.get("added"),

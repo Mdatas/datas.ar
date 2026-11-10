@@ -5,5 +5,5 @@ carry without freezing the machine, downloads it, and runs it through llama.cpp.
 Later: switch models, plug in an API key, pool several devices, run agents.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __app_name__ = "Datas.ar"

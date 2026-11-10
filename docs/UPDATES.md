@@ -19,7 +19,7 @@ you press **Settings → Updates → Check for updates**.
 
 The installer looks for an earlier copy first, removes the program files cleanly, and leaves
 the data folder alone. On the first start afterwards Datas tells you what it found and kept
-("Datas was updated from 0.2.0 to 0.3.0. Your AIs, chats and settings were kept."). A damaged
+("Datas was updated from 0.3.0 to 0.4.0. Your AIs, chats and settings were kept."). A damaged
 settings file is set aside (`config.json.damaged`) and replaced by the backup or by defaults,
 so a bad file can never stop the app from opening.
 
@@ -33,7 +33,7 @@ Newer builds are offered, never forced.
 ## For maintainers: publishing a version
 
 1. Set the version in `pyproject.toml` and `datas/__init__.py`.
-2. GitHub → **Actions → release → Run workflow**, give the version (for example `0.3.0`).
+2. GitHub → **Actions → release → Run workflow**, give the version (for example `0.4.0`).
    The workflow creates the tag and the release, then starts the Windows, macOS/Linux and
    Android installer builds, which attach their files to that release.
 3. *Check for updates* in an installed copy will then offer the new version: it reads the

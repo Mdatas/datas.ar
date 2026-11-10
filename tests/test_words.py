@@ -210,3 +210,38 @@ def test_what_is_said_about_each_ai_has_its_spanish(tmp_path, monkeypatch):
                 assert es["license"].endswith("(licencia todavía no verificada por Datas)")
             seen.add((c.speed_class, c.placement))
     assert len(seen) >= 3  # more than one kind of verdict was said
+
+
+def test_every_fixed_sentence_of_the_device_link_has_its_spanish():
+    """What linking says when something is not right — here, or sent by the other device."""
+    from datas.link import LinkError
+
+    tree = ast.parse((ROOT / "link" / "__init__.py").read_text(encoding="utf-8"))
+    fixed = {}
+
+    def texts(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            yield node.value
+        elif isinstance(node, ast.BoolOp):  # r.get("error") or "the other device refused"
+            for v in node.values:
+                yield from texts(v)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "LinkError":
+            for text in texts(node.args[0]) if node.args else ():
+                fixed[text] = node.lineno
+        if isinstance(node, ast.Dict):  # {"ok": False, "error": "…"} sent to the other device
+            for k, v in zip(node.keys, node.values, strict=True):
+                if isinstance(k, ast.Constant) and k.value == "error":
+                    for text in texts(v):
+                        fixed[text] = node.lineno
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "NOT_ALLOWED":
+            fixed[node.value.value] = node.lineno
+    assert len(fixed) > 30
+    missing = {line: text for text, line in fixed.items() if text not in ES}
+    assert not missing, f"no Spanish for these sentences of datas/link: {missing}"
+    e = LinkError("the code has {n} letters and digits", n=12)
+    assert str(e) == "the code has 12 letters and digits"
+    assert e.say("es") == "el código tiene 12 letras y números"
+    # a sentence the other device sent (always in English) is said in Spanish here
+    assert LinkError("wrong code").say("es") == "código incorrecto"

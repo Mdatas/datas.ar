@@ -52,6 +52,16 @@ Or on another computer of yours with Datas: *Devices → I have a code*. After t
 AI menu offers the AI of the small computer, the two keep the same chats, and they can lend
 each other memory. See [DEVICES.md](DEVICES.md).
 
+To look after the small computer from that other computer — get it another AI, read what its
+scheduled tasks wrote — let it open the small one's Datas. On the small computer, once:
+
+```
+datas-cli link window "Laptop" on     "Laptop" is the name of the other computer
+```
+
+Then on the laptop: *Devices → the small computer → Open its Datas*. It opens in a window of
+its own and says at the bottom whose Datas it is.
+
 ```
 datas-cli service status      is it installed, running, started with the computer?
 datas-cli service remove      stop starting it; AIs, chats and settings stay
@@ -84,9 +94,9 @@ touched. After upgrading the package: `systemctl --user restart datas`.
 - Your phone and your other computers reach it through the **link**: one port (8424),
   encrypted with TLS 1.3, only for the devices you paired with a one-time code.
   → [DEVICES.md](DEVICES.md), [SECURITY.md](SECURITY.md)
-- A linked phone cannot use that computer's camera, printer or other hardware, cannot make
-  the agent run commands, and cannot unlink or link devices. Those are done on the computer
-  itself — here, from its command line.
+- A linked phone — or another computer showing this one's Datas — cannot use this computer's
+  camera, printer or other hardware, cannot make the agent run commands, and cannot unlink
+  or link devices. Those are done on the computer itself — here, from its command line.
 - To use it from outside your home, put your devices on a private network of your own
   (WireGuard, Tailscale). Do not open the port to the internet.
 

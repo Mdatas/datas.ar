@@ -57,10 +57,11 @@ device can and cannot do, and the choices are yours.
 
 Link the computers you own with a one-time code. They can then keep the same chats, lend
 each other memory so a bigger AI fits, and use each other's AI; if one drops out, the one
-you are on carries on alone. An Android phone links the same way and shows the computer's
-Datas, so a small phone uses the big AI at home. The link is encrypted with the web's standard (TLS 1.3) and
-only devices you paired can connect — no account, no server in the middle. Strangers'
-devices are not supported, because that cannot be made private today.
+you are on carries on alone. A phone (Android, iPhone) links the same way and shows the
+computer's Datas, so a small phone uses the big AI at home; a computer can show the Datas of
+another one of yours too — handy for one without a screen. The link is encrypted with the
+web's standard (TLS 1.3) and only devices you paired can connect — no account, no server in
+the middle. Strangers' devices are not supported, because that cannot be made private today.
 → [docs/DEVICES.md](docs/DEVICES.md) · [docs/P2P.md](docs/P2P.md)
 
 ### Learn
@@ -88,7 +89,7 @@ smart-home hub (MQTT, Home Assistant), read and write industrial devices (Modbus
 what is on your network (printers, NAS, Raspberry Pi). For the agent it is one switch, off
 until you turn it on; anything that looks at you or acts on the world asks first. The mouse
 and keyboard are a second, experimental switch. None of it can be reached from a linked
-phone. → [docs/HARDWARE.md](docs/HARDWARE.md)
+phone or through another computer's window. → [docs/HARDWARE.md](docs/HARDWARE.md)
 
 ### Updates you can undo
 
@@ -105,6 +106,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 | **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
 | **Android** | `Datas-release.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
+| **iPhone, iPad** (iOS 15+) | No file to download: Apple only allows apps signed with an Apple account. The app in [`ios/`](ios/README.md) links to your computers and uses their Datas; with a Mac and your own Apple ID you can put it on your phone. |
 | **Anything with Python 3.10+** | `pip install datas-ar && datas` |
 
 Needs a 64-bit computer (or an arm64 phone). No account. The first start downloads the AI
@@ -119,17 +121,20 @@ Until a release is published, the installers are produced by the project's GitHu
 - **The installers carry no paid certificate.** Windows and macOS show a warning on first
   start. Every release file does have a checksum and a signed record of where it was built;
   what the paid certificates need is in [docs/SIGNING.md](docs/SIGNING.md).
-- **Phones**: Android links to your computers but has not been tried on a physical phone by
-  the project yet; the iPhone app is being written and needs an Apple Developer account to
-  reach a phone.
-- **Linked devices make a bigger AI fit, not a faster one.** Splitting many tasks across
-  devices is planned.
+- **Phones have not been tried on a physical phone by the project.** The Android app is
+  built on every change and its link code is tested against a real Datas; the iPhone app is
+  built and tested in Apple's iPhone simulator against a real Datas. Reaching a real iPhone
+  needs an Apple account ([docs/MOBILE.md](docs/MOBILE.md)). Neither phone runs voice
+  through a linked computer yet, and the iPhone runs no AI of its own.
+- **Linked devices make a bigger AI fit, not a faster one** — except long documents, whose
+  parts can be shared out between your devices. Sharing out several chats or agent tasks at
+  once is not there yet.
 - **Hardware has been tested against stand-ins, not the real things**: the test machines
   have no camera, printer, Arduino, Home Assistant or PLC. See what was and was not tested in
   [docs/HARDWARE.md](docs/HARDWARE.md#how-it-was-tested-and-what-was-not).
-- **Some texts are English only**: the limits and comparisons written for each AI, and many
-  technical messages. The window itself is fully in English and Spanish, and so are the
-  hardware messages and the refusals.
+- **Some texts are English only**: progress lines of long jobs, the command line, and
+  technical details. The window is fully in English and Spanish, and so are what is said
+  about each AI, the hardware messages, linking problems and the refusals.
 
 More in [docs/ROADMAP.md](docs/ROADMAP.md).
 
