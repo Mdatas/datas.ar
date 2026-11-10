@@ -275,6 +275,7 @@ class Candidate:
     limits: str | None = None
     use_cases: list[str] = field(default_factory=list)
     arch: str = "dense"
+    finetune_of: str | None = None
 
     def plain(self) -> dict:
         """Sentences a non-technical person can read. Acronyms are spelled out."""
@@ -313,6 +314,7 @@ class Candidate:
             "kind": "Mixture of Experts (MoE): only a slice of the model works on each word, so it is faster than its size suggests."
             if self.arch == "moe"
             else "Dense model: the whole model works on every word.",
+            "finetune_of": self.finetune_of,
         }
 
     def to_dict(self) -> dict:
@@ -325,6 +327,7 @@ class Candidate:
             "limits": self.limits,
             "use_cases": self.use_cases,
             "arch": self.arch,
+            "finetune_of": self.finetune_of,
             "plain": self.plain(),
             "name": self.name,
             "quant": self.quant,
@@ -531,6 +534,7 @@ def evaluate(
         license=model.license,
         license_source=model.license_source,
         limits=model.limits,
+        finetune_of=model.finetune_of,
         use_cases=model.use_cases,
         arch=model.arch,
     )
@@ -576,6 +580,7 @@ def _rank_key(c: Candidate) -> tuple:
         -c.effective_tier,
         SPEED_RANK[c.speed_class],
         0 if c.fit_level == "comfortable" else 1,
+        1 if c.finetune_of else 0,  # at equal quality, speed and comfort: the original first
         PLACEMENT_RANK[c.placement],
         -c.need.weights,
     )

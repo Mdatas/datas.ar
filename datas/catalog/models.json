@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-11-08",
+ "generated": "2026-11-09",
  "notes": [
   "Every 'bytes' value was read from the Hugging Face API (/api/models/<repo>/tree/main) on the 'verified' date. Nothing here is estimated.",
   "Repos are official llama.cpp-team conversions (ggml-org) wherever one exists; Qwen and Unsloth repos fill the gaps.",
@@ -8,7 +8,8 @@
   "kv (layers / kv_heads / head_dim) is included only where the curator is confident; otherwise the recommender estimates and then reads the exact values from the GGUF header after download.",
   "license_source = 'model-card' means the curator checked the upstream card; 'unverified' means the string is the commonly reported license and must be confirmed before you rely on it.",
   "Run `datas catalog refresh` (scripts/refresh_catalog.py) to re-read sizes and add new repos.",
-  "'limits' and the 'comparable_to' tiers (datas/catalog/compare.py) are plain-language curator judgments for non-technical users, not benchmark results."
+  "'limits' and the 'comparable_to' tiers (datas/catalog/compare.py) are plain-language curator judgments for non-technical users, not benchmark results.",
+  "'finetune_of' marks a model that another team tuned from a base model; at equal quality and speed the recommender prefers the original, and the app says so on the card."
  ],
  "models": [
   {
@@ -1048,6 +1049,220 @@
    ],
    "vendor_url": "https://openai.com/open-models",
    "limits": "Frontier-class reasoning and agents; text only; needs 64+ GB of memory (a workstation or a pool of devices).",
+   "use_cases": [
+    "text",
+    "coding",
+    "agents"
+   ]
+  },
+  {
+   "id": "dolphin3-llama3.1-8b",
+   "name": "Dolphin 3.0 (Llama 3.1 8B)",
+   "family": "dolphin3",
+   "vendor": "Cognitive Computations (Dolphin)",
+   "params_b": 8.0,
+   "active_params_b": 8.0,
+   "arch": "dense",
+   "license": "llama3.1",
+   "license_source": "model card dphn/Dolphin3.0-Llama3.1-8B, read 2026-11-09",
+   "finetune_of": "Meta Llama 3.1 8B",
+   "modalities": [
+    "text"
+   ],
+   "capabilities": [
+    "chat",
+    "tools",
+    "coding"
+   ],
+   "quality_tier": 3,
+   "tags": [
+    "laptop",
+    "medium",
+    "finetune"
+   ],
+   "hf_repo": "dphn/Dolphin3.0-Llama3.1-8B-GGUF",
+   "files": [
+    {
+     "quant": "Q4_K_M",
+     "path": "Dolphin3.0-Llama3.1-8B-Q4_K_M.gguf",
+     "bytes": 4920745856,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q6_K",
+     "path": "Dolphin3.0-Llama3.1-8B-Q6_K.gguf",
+     "bytes": 6596020160,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q8_0",
+     "path": "Dolphin3.0-Llama3.1-8B-Q8_0.gguf",
+     "bytes": 8540788544,
+     "verified": "2026-11-09"
+    }
+   ],
+   "vendor_url": "https://huggingface.co/dphn",
+   "limits": "A general assistant for chat, code, math and step-by-step tasks, tuned by a community team on Meta's Llama 3.1. It has no fixed persona: it follows the instruction you set. Text only; its base is older than the newest models here.",
+   "use_cases": [
+    "text",
+    "coding",
+    "agents"
+   ]
+  },
+  {
+   "id": "hermes-4-14b",
+   "name": "Hermes 4 14B",
+   "family": "hermes4",
+   "vendor": "Nous Research",
+   "params_b": 14.8,
+   "active_params_b": 14.8,
+   "arch": "dense",
+   "license": "apache-2.0",
+   "license_source": "model card NousResearch/Hermes-4-14B, read 2026-11-09",
+   "finetune_of": "Alibaba Qwen3 14B",
+   "modalities": [
+    "text"
+   ],
+   "capabilities": [
+    "chat",
+    "tools",
+    "reasoning",
+    "coding"
+   ],
+   "quality_tier": 4,
+   "tags": [
+    "desktop",
+    "medium",
+    "finetune"
+   ],
+   "hf_repo": "bartowski/NousResearch_Hermes-4-14B-GGUF",
+   "files": [
+    {
+     "quant": "Q4_K_M",
+     "path": "NousResearch_Hermes-4-14B-Q4_K_M.gguf",
+     "bytes": 9001753536,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q6_K",
+     "path": "NousResearch_Hermes-4-14B-Q6_K.gguf",
+     "bytes": 12121937856,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q8_0",
+     "path": "NousResearch_Hermes-4-14B-Q8_0.gguf",
+     "bytes": 15698534336,
+     "verified": "2026-11-09"
+    }
+   ],
+   "vendor_url": "https://huggingface.co/NousResearch",
+   "limits": "Can think step by step before answering or answer straight away; good at math, code, structured output and using tools. Easy to steer with your own instruction. Text only; needs 10+ GB of memory.",
+   "use_cases": [
+    "text",
+    "coding",
+    "agents"
+   ]
+  },
+  {
+   "id": "hermes-4.3-36b",
+   "name": "Hermes 4.3 36B",
+   "family": "hermes4",
+   "vendor": "Nous Research",
+   "params_b": 36.0,
+   "active_params_b": 36.0,
+   "arch": "dense",
+   "license": "apache-2.0",
+   "license_source": "model card NousResearch/Hermes-4.3-36B-GGUF, read 2026-11-09",
+   "finetune_of": "ByteDance Seed-OSS 36B",
+   "modalities": [
+    "text"
+   ],
+   "capabilities": [
+    "chat",
+    "tools",
+    "reasoning",
+    "coding"
+   ],
+   "quality_tier": 5,
+   "tags": [
+    "desktop",
+    "large",
+    "finetune"
+   ],
+   "hf_repo": "NousResearch/Hermes-4.3-36B-GGUF",
+   "files": [
+    {
+     "quant": "Q3_K_M",
+     "path": "hermes-4_3_36b-Q3_K_M.gguf",
+     "bytes": 17620945856,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q4_K_M",
+     "path": "hermes-4_3_36b-Q4_K_M.gguf",
+     "bytes": 21762145216,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q8_0",
+     "path": "hermes-4_3_36b-Q8_0.gguf",
+     "bytes": 38421089216,
+     "verified": "2026-11-09"
+    }
+   ],
+   "vendor_url": "https://huggingface.co/NousResearch",
+   "limits": "A large model with optional step-by-step reasoning, made to be easy to steer. Text only; needs about 24 GB of memory or more.",
+   "use_cases": [
+    "text",
+    "coding",
+    "agents"
+   ]
+  },
+  {
+   "id": "hermes-4-70b",
+   "name": "Hermes 4 70B",
+   "family": "hermes4",
+   "vendor": "Nous Research",
+   "params_b": 71.0,
+   "active_params_b": 71.0,
+   "arch": "dense",
+   "license": "llama3",
+   "license_source": "model card NousResearch/Hermes-4-70B, read 2026-11-09",
+   "finetune_of": "Meta Llama 3.1 70B",
+   "modalities": [
+    "text"
+   ],
+   "capabilities": [
+    "chat",
+    "tools",
+    "reasoning",
+    "coding"
+   ],
+   "quality_tier": 5,
+   "tags": [
+    "workstation",
+    "xl",
+    "pool",
+    "finetune"
+   ],
+   "hf_repo": "lmstudio-community/Hermes-4-70B-GGUF",
+   "files": [
+    {
+     "quant": "Q3_K_L",
+     "path": "Hermes-4-70B-Q3_K_L.gguf",
+     "bytes": 37140596384,
+     "verified": "2026-11-09"
+    },
+    {
+     "quant": "Q4_K_M",
+     "path": "Hermes-4-70B-Q4_K_M.gguf",
+     "bytes": 42520397472,
+     "verified": "2026-11-09"
+    }
+   ],
+   "vendor_url": "https://huggingface.co/NousResearch",
+   "limits": "A very large reasoning model, made to be steerable. Text only; needs about 45 GB of memory: a workstation, a Mac with 64 GB or more, or several linked devices.",
    "use_cases": [
     "text",
     "coding",

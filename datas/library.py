@@ -19,7 +19,11 @@ def _meta_path() -> Path:
 
 def _meta() -> dict:
     p = _meta_path()
-    return json.loads(p.read_text()) if p.exists() else {}
+    try:
+        d = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+        return d if isinstance(d, dict) else {}
+    except (ValueError, OSError):
+        return {}
 
 
 def _save_meta(m: dict) -> None:
@@ -167,6 +171,7 @@ def details(core, lang: str = "en") -> list[dict]:  # noqa: ANN001 - Datas orche
                 "model_page": p["model_page"],
                 "comparable": p["comparable"],
                 "kind": p["kind"],
+                "finetune_of": m.finetune_of,
                 "good_for": ", ".join(USE_PLAIN.get(u, (u, u))[es] for u in m.use_cases),
                 "resources": {
                     "disk_gib": it["size_gib"],

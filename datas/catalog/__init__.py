@@ -109,6 +109,9 @@ class CatalogModel(BaseModel):
         default_factory=lambda: ["text"]
     )  # text | images | coding | agents
     hf_repo: str
+    # set when another team tuned this model from a base model (shown on the card; at equal
+    # quality and speed the recommender prefers the original)
+    finetune_of: str | None = None
     kv: KVHint | None = None
     files: list[ModelFile]
     extras: dict[str, ExtraFile] = Field(default_factory=dict)
