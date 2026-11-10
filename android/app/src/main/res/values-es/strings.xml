@@ -23,4 +23,24 @@
     <string name="notif_text">%1$s · tocá para abrir</string>
     <string name="error_engine">El motor se detuvo: %1$s</string>
     <string name="battery_hint">Con batería: la inferencia usa mucho CPU y el teléfono se va a calentar. Enchufalo para sesiones largas.</string>
+    <string name="section_computers">Mis computadoras</string>
+    <string name="computers_hint">Vinculá este teléfono con una computadora tuya que tenga Datas y usá su IA desde acá. La conexión va cifrada y solo la pueden usar tus propios dispositivos.</string>
+    <string name="computers_old_android">Para vincular hace falta Android 10 o más nuevo.</string>
+    <string name="link_computer">Vincular una computadora</string>
+    <string name="link_title">Vincular una computadora</string>
+    <string name="link_how">En la computadora: abrí Datas, andá a Dispositivos y tocá «Mostrar un código». Después elegí la computadora acá abajo, o escribí la dirección que muestra, y escribí el código.</string>
+    <string name="link_nearby">Encontradas en este wifi:</string>
+    <string name="link_address">Dirección, por ejemplo 192.168.1.20:8424</string>
+    <string name="link_code">Código, por ejemplo ABCD-EFGH-JKLM</string>
+    <string name="link_go">Vincular</string>
+    <string name="link_cancel">Cancelar</string>
+    <string name="link_working">Vinculando… tarda unos segundos.</string>
+    <string name="link_done">Vinculado con %1$s</string>
+    <string name="link_need_address">Escribí la dirección que muestra la computadora.</string>
+    <string name="link_unreachable">No se pudo llegar a esa computadora. ¿Datas está abierto ahí y mostrando el código, y este teléfono está en el mismo wifi?</string>
+    <string name="link_failed">Sin conexión: %1$s</string>
+    <string name="computer_open">Abrir</string>
+    <string name="computer_forget">Olvidar</string>
+    <string name="computer_forget_title">¿Olvidar %1$s?</string>
+    <string name="computer_forget_text">Este teléfono ya no va a poder usarla. Para terminar, tocá también Desvincular para este teléfono en Datas de la computadora (Dispositivos).</string>
 </resources>

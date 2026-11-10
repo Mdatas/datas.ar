@@ -38,6 +38,29 @@
             android:textColor="#8B95A7"
             android:text="@string/stopped" />
 
+        <!-- my computers: use the AI of a linked computer through the encrypted link -->
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+            <TextView style="@style/CardTitle" android:text="@string/section_computers" />
+            <TextView
+                android:id="@+id/computersHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="#8B95A7"
+                android:text="@string/computers_hint" />
+            <LinearLayout
+                android:id="@+id/computers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+            <Button
+                android:id="@+id/linkBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/link_computer" />
+        </LinearLayout>
+
         <!-- 1. device -->
         <LinearLayout style="@style/Card" android:orientation="vertical">
             <TextView style="@style/CardTitle" android:text="@string/section_device" />

@@ -24,4 +24,24 @@
     <string name="notif_text">%1$s · tap to open</string>
     <string name="error_engine">Engine stopped: %1$s</string>
     <string name="battery_hint">On battery: inference is CPU-heavy, the phone will warm up. Plug in for long sessions.</string>
+    <string name="section_computers">My computers</string>
+    <string name="computers_hint">Link this phone to a computer of yours that has Datas, and use its AI from here. The connection is encrypted and only your own devices can use it.</string>
+    <string name="computers_old_android">Linking needs Android 10 or newer.</string>
+    <string name="link_computer">Link a computer</string>
+    <string name="link_title">Link a computer</string>
+    <string name="link_how">On the computer: open Datas, go to Devices and press “Show a code”. Then pick the computer below, or type the address it shows, and type the code.</string>
+    <string name="link_nearby">Found on this Wi-Fi:</string>
+    <string name="link_address">Address, for example 192.168.1.20:8424</string>
+    <string name="link_code">Code, for example ABCD-EFGH-JKLM</string>
+    <string name="link_go">Link</string>
+    <string name="link_cancel">Cancel</string>
+    <string name="link_working">Linking… this takes a few seconds.</string>
+    <string name="link_done">Linked with %1$s</string>
+    <string name="link_need_address">Type the address the computer shows.</string>
+    <string name="link_unreachable">Could not reach that computer. Is Datas open on it and showing the code, and is this phone on the same Wi-Fi?</string>
+    <string name="link_failed">Not connected: %1$s</string>
+    <string name="computer_open">Open</string>
+    <string name="computer_forget">Forget</string>
+    <string name="computer_forget_title">Forget %1$s?</string>
+    <string name="computer_forget_text">This phone will no longer be able to use it. To finish, also press Unlink for this phone in Datas on the computer (Devices).</string>
 </resources>

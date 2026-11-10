@@ -51,6 +51,11 @@ const ICONS = {
   book: "M5 4h9a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4V4zM5 16a4 4 0 0 1 4-4h9",
   toolbox: "M4 9h16v10H4zM9 9V6h6v3M4 13h16M11 12v2h2v-2",
   devices: "M3 6h12v9H3zM7 19h4M9 15v4M17 9h4v11h-4z",
+  phone: "M8 3h8v18H8zM11 18h2",
+  camera: "M4 8h4l2-2h4l2 2h4v11H4zM12 10.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+  printer: "M7 9V4h10v5M5 9h14v8H5zM8 14h8v6H8z",
+  screen: "M3 5h18v11H3zM9 20h6M12 16v4",
+  plug: "M9 3v5M15 3v5M7 8h10v4a5 5 0 0 1-10 0zM12 17v4",
   image: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9.5h.01",
   sliders: "M5 7h9M18 7h1M5 12h2M11 12h8M5 17h9M18 17h1M16 5v4M9 10v4M16 15v4",
   info: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5h.01",
@@ -255,7 +260,11 @@ function openMenu(anchor, items) {
   return close;
 }
 /* Web addresses open in the person's own browser, never inside this window. */
+/* S.status.remote: this window is being shown on a linked phone, through the encrypted link.
+   What "open" means changes: a web address opens on the phone; a saved file stays on the computer. */
+const isRemote = () => !!(S.status && S.status.remote);
 async function openUrl(url) {
+  if (isRemote()) { location.assign(url); return; }   // the phone app hands web addresses to the phone's browser
   try { await api("/api/open-url", { body: { url } }); } catch (e) { window.open(url, "_blank", "noopener"); }
 }
 const extLink = (label, url) => h("a", { href: url, rel: "noopener", onclick: e => { e.preventDefault(); openUrl(url); } }, label);
@@ -270,6 +279,7 @@ async function copyText(text) {
 }
 const openFile = (path, reveal = false) => api("/api/open", { body: { path, reveal } }).catch(oops);
 function savedToast(r) {
+  if (isRemote()) { toast(t("remote_saved", { device: S.status.remote.device, name: r.name || String(r.path).split(/[\\/]/).pop() })); return; }
   toast(t("saved_as", { name: r.name || String(r.path).split(/[\\/]/).pop() }), {
     actions: [{ label: t("open"), fn: () => openFile(r.path) }, { label: t("show_folder"), fn: () => openFile(r.path, true) }],
   });
@@ -381,6 +391,11 @@ function renderShell() {
 function renderFoot() {
   const foot = $("#sideFoot");
   if (!foot || !S.priv) return;
+  if (isRemote()) {   // shown on a linked phone: say where things are
+    add(clear(foot), icon("devices", 16), h("span", { text: t("remote_on", { device: S.status.remote.device }) }),
+      h("div", { class: "remote-note" }, icon("lock", 16), h("span", { text: t(S.priv.memory_mode === "forget" ? "foot_forget" : "remote_kept", { device: S.status.remote.device }) })));
+    return;
+  }
   add(clear(foot), icon("lock", 16),
     h("button", { onclick: () => go("settings"), text: t(S.priv.memory_mode === "forget" ? "foot_forget" : "foot_remember") }));
 }

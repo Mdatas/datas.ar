@@ -2,7 +2,12 @@ package ar.datas.app
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.nsd.NsdManager
+import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -14,14 +19,18 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import ar.datas.link.LinkClient
+import java.io.IOException
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -54,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
     private lateinit var chatHint: TextView
     private lateinit var stopBtn: Button
+    private lateinit var computersBox: LinearLayout
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +82,16 @@ class MainActivity : AppCompatActivity() {
         ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
+
+        computersBox = findViewById(R.id.computers)
+        val linkBtn: Button = findViewById(R.id.linkBtn)
+        if (Build.VERSION.SDK_INT < 29) { // the encrypted connection (TLS 1.3) needs Android 10
+            findViewById<TextView>(R.id.computersHint).text = getString(R.string.computers_old_android)
+            linkBtn.isEnabled = false
+        } else {
+            linkBtn.setOnClickListener { linkDialog() }
+        }
+        renderComputers()
 
         device = DeviceInfo.detect(this)
         models = Catalog.load(this)
@@ -238,6 +258,231 @@ class MainActivity : AppCompatActivity() {
                 if (rec?.default != null && pending == null) installBtn.isEnabled = true
             }
         }
+    }
+
+    // ---- my computers: linked through the encrypted link (ar.datas.link.LinkClient) ----
+
+    private fun renderComputers() {
+        computersBox.removeAllViews()
+        for (c in Computers.all(this)) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            val name = TextView(this).apply {
+                text = c.name
+                setTextColor(0xFFE6E9EE.toInt())
+                textSize = 15f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val open = Button(this).apply {
+                text = getString(R.string.computer_open)
+                setOnClickListener {
+                    startActivity(Intent(this@MainActivity, WindowActivity::class.java).putExtra(WindowActivity.EXTRA_ID, c.id))
+                }
+            }
+            val forget = Button(this).apply {
+                text = getString(R.string.computer_forget)
+                textSize = 12f
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(getString(R.string.computer_forget_title, c.name))
+                        .setMessage(R.string.computer_forget_text)
+                        .setPositiveButton(R.string.computer_forget) { _, _ ->
+                            Computers.forget(this@MainActivity, c.id)
+                            renderComputers()
+                        }
+                        .setNegativeButton(R.string.link_cancel, null)
+                        .show()
+                }
+            }
+            row.addView(name)
+            row.addView(open)
+            row.addView(forget)
+            computersBox.addView(row)
+        }
+    }
+
+    /** Address typed by the person: "192.168.1.20" or "192.168.1.20:8424" (or a name). */
+    private fun splitAddress(text: String): Pair<String, Int>? {
+        val a = text.trim().removePrefix("http://").removePrefix("https://").trim('/')
+        if (a.isEmpty()) return null
+        val colon = a.lastIndexOf(':')
+        if (colon > 0 && a.indexOf(':') == colon) {
+            val port = a.substring(colon + 1).toIntOrNull() ?: return null
+            return Pair(a.substring(0, colon), port)
+        }
+        return Pair(a, LinkClient.DEFAULT_PORT)
+    }
+
+    private fun linkDialog() {
+        val pad = (16 * resources.displayMetrics.density).toInt()
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+        }
+        val how = TextView(this).apply { text = getString(R.string.link_how); textSize = 14f }
+        val nearbyLabel = TextView(this).apply {
+            text = getString(R.string.link_nearby)
+            textSize = 13f
+            visibility = View.GONE
+        }
+        val nearby = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val address = EditText(this).apply {
+            hint = getString(R.string.link_address)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine()
+        }
+        val code = EditText(this).apply {
+            hint = getString(R.string.link_code)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS or
+                android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setSingleLine()
+        }
+        val message = TextView(this).apply { textSize = 13f }
+        box.addView(how)
+        box.addView(nearbyLabel)
+        box.addView(nearby)
+        box.addView(address)
+        box.addView(code)
+        box.addView(message)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.link_title)
+            .setView(box)
+            .setPositiveButton(R.string.link_go, null) // set below, so a wrong code keeps the dialog open
+            .setNegativeButton(R.string.link_cancel, null)
+            .create()
+
+        val stopLooking = lookForComputers { shownName, host, port ->
+            nearbyLabel.visibility = View.VISIBLE
+            val pick = Button(this).apply {
+                text = shownName
+                isAllCaps = false
+                setOnClickListener {
+                    address.setText(if (host.contains(':')) "[$host]:$port" else "$host:$port")
+                    address.tag = Pair(host, port)
+                    code.requestFocus()
+                }
+            }
+            nearby.addView(pick)
+        }
+        dialog.setOnDismissListener { stopLooking() }
+        dialog.show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { button ->
+            @Suppress("UNCHECKED_CAST")
+            val picked = address.tag as? Pair<String, Int>
+            val typed = address.text.toString()
+            val target = if (picked != null && typed.contains(picked.first)) picked else splitAddress(typed)
+            if (target == null) {
+                message.text = getString(R.string.link_need_address)
+                return@setOnClickListener
+            }
+            button.isEnabled = false
+            message.text = getString(R.string.link_working)
+            val phoneName = (Build.MANUFACTURER.replaceFirstChar { it.uppercase() } + " " + Build.MODEL).trim()
+            val typedCode = code.text.toString()
+            Thread {
+                var linked: LinkClient.Computer? = null
+                var problem = ""
+                try {
+                    linked = LinkClient.pair(target.first, target.second, typedCode, phoneName, "android")
+                } catch (e: LinkClient.LinkException) {
+                    problem = e.message ?: ""
+                } catch (e: IOException) {
+                    problem = getString(R.string.link_unreachable)
+                }
+                ui.post {
+                    if (isFinishing) return@post
+                    val done = linked
+                    if (done != null) {
+                        Computers.save(this, done)
+                        renderComputers()
+                        Toast.makeText(this, getString(R.string.link_done, done.name), Toast.LENGTH_LONG).show()
+                        dialog.dismiss()
+                    } else {
+                        message.text = problem
+                        button.isEnabled = true
+                    }
+                }
+            }.start()
+        }
+    }
+
+    /**
+     * Computers with Datas on this Wi-Fi that accept links (they announce themselves; this only
+     * tells the name and address — linking still needs the code). Returns how to stop looking.
+     */
+    private fun lookForComputers(found: (String, String, Int) -> Unit): () -> Unit {
+        val nsd = getSystemService(Context.NSD_SERVICE) as? NsdManager ?: return {}
+        val waiting = ArrayDeque<NsdServiceInfo>()
+        val seen = HashSet<String>()
+        var resolving = false
+        var stopped = false
+
+        fun next() {
+            val info: NsdServiceInfo
+            synchronized(waiting) {
+                if (resolving || stopped || waiting.isEmpty()) return
+                info = waiting.removeFirst()
+                resolving = true
+            }
+            try {
+                @Suppress("DEPRECATION")
+                nsd.resolveService(info, object : NsdManager.ResolveListener {
+                    override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
+                        synchronized(waiting) { resolving = false }
+                        next()
+                    }
+
+                    override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
+                        @Suppress("DEPRECATION")
+                        val host = serviceInfo.host?.hostAddress?.substringBefore('%')
+                        val named = serviceInfo.attributes["name"]?.let { String(it, Charsets.UTF_8) }
+                        val shown = if (named.isNullOrBlank()) serviceInfo.serviceName else named
+                        if (host != null) {
+                            ui.post { if (!stopped && seen.add("$host:${serviceInfo.port}")) found(shown, host, serviceInfo.port) }
+                        }
+                        synchronized(waiting) { resolving = false }
+                        next()
+                    }
+                })
+            } catch (e: RuntimeException) {
+                synchronized(waiting) { resolving = false }
+            }
+        }
+
+        val listener = object : NsdManager.DiscoveryListener {
+            override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {}
+            override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
+            override fun onDiscoveryStarted(serviceType: String) {}
+            override fun onDiscoveryStopped(serviceType: String) {}
+            override fun onServiceLost(serviceInfo: NsdServiceInfo) {}
+            override fun onServiceFound(serviceInfo: NsdServiceInfo) {
+                synchronized(waiting) { waiting.addLast(serviceInfo) }
+                next()
+            }
+        }
+        try {
+            nsd.discoverServices("_datas-link._tcp", NsdManager.PROTOCOL_DNS_SD, listener)
+        } catch (e: RuntimeException) {
+            return {}
+        }
+        return {
+            stopped = true
+            try {
+                nsd.stopServiceDiscovery(listener)
+            } catch (e: RuntimeException) {
+                // it had not started, or was already stopped
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        renderComputers()
     }
 
     override fun onDestroy() {

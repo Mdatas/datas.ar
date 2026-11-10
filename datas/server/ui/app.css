@@ -93,7 +93,7 @@ a { color: var(--sky-deep); text-underline-offset: 3px; }
 .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; font-weight: 500; }
 .nav-item:hover { background: var(--sky-soft); }
 .nav-item[aria-current="page"] { background: var(--sky-soft); color: var(--sky-deep); }
-.side-foot { padding: 8px 16px 12px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.side-foot { padding: 8px 16px 12px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .side-foot button { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
 .icon-btn.drawer-open, .icon-btn.drawer-close { display: none; }
 #scrim { display: none; }
@@ -286,3 +286,6 @@ details.more > div { padding: 8px 0 4px; }
 input[type="file"] { font-size: 14px; max-width: 100%; color: var(--muted); }
 input[type="file"]::file-selector-button { font: inherit; font-weight: 600; margin-right: 10px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 input[type="file"]::file-selector-button:hover { border-color: var(--sky); }
+
+/* shown in the side bar when this window is being used from a linked phone */
+.remote-note { display: flex; align-items: center; gap: 6px; flex-basis: 100%; margin-top: 6px; color: var(--muted); font-size: 0.85rem; }

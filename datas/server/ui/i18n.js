@@ -209,6 +209,7 @@ const I18N = {
 "app_remove_text": "{name} and everything it downloaded will be removed.",
 
 "dev_title": "Your devices",
+"dev_code_phone": "On a phone: open the Datas app, tap “My computers” and type this code.", "dev_phone": "Phone or tablet", "dev_phone_window": "May open Datas on this computer", "dev_phone_window_hint": "From the phone you chat with the AIs here and use helpers, documents and Learn. It cannot use this computer’s microphone, open programs, link other devices or let the agent run commands.", "dev_seen": "last here {when}", "remote_on": "You are using Datas on {device}", "remote_kept": "Chats are kept on {device}, not on this phone", "remote_saved": "Saved on {device}: {name}",
 "dev_lead": "Link your own computers so they share chats, lend each other memory for a bigger AI, or let one use the AI running on another. Only devices you pair yourself can connect.",
 "dev_enable": "Let my other devices connect to this one",
 "dev_enable_hint": "Off by default. While it is on, this device listens on your network for your paired devices only.",
@@ -503,6 +504,7 @@ const I18N = {
 "app_remove_text": "Se van a quitar {name} y todo lo que descargó.",
 
 "dev_title": "Tus dispositivos",
+"dev_code_phone": "En un teléfono: abrí la app Datas, tocá «Mis computadoras» y escribí este código.", "dev_phone": "Teléfono o tableta", "dev_phone_window": "Puede abrir Datas de esta computadora", "dev_phone_window_hint": "Desde el teléfono chateás con las IA de acá y usás ayudantes, documentos y Aprender. No puede usar el micrófono de esta computadora, abrir programas, vincular otros dispositivos ni hacer que el agente ejecute comandos.", "dev_seen": "última vez {when}", "remote_on": "Estás usando Datas de {device}", "remote_kept": "Los chats se guardan en {device}, no en este teléfono", "remote_saved": "Guardado en {device}: {name}",
 "dev_lead": "Vinculá tus propias computadoras para que compartan chats, se presten memoria para una IA más grande, o una use la IA que corre en otra. Solo se conectan los dispositivos que emparejás vos.",
 "dev_enable": "Permitir que mis otros dispositivos se conecten a este",
 "dev_enable_hint": "Apagado de fábrica. Mientras está activado, este dispositivo escucha en tu red solo a tus dispositivos emparejados.",

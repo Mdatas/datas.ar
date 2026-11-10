@@ -387,6 +387,7 @@ SCREENS.devices = async view => {
         h("div", { class: "sheet stack" }, h("b", { text: t("dev_show_code") }),
           st.pairing ? [h("div", { class: "code-big", text: st.pairing.code }),
             h("div", { class: "muted small", text: t("dev_code_valid", { min: Math.max(1, Math.round(st.pairing.expires_in / 60)), address: (st.pairing.addresses || st.addresses || [])[0] || "" }) }),
+            h("div", { class: "muted small", text: t("dev_code_phone") }),
             h("button", { class: "btn small", style: "justify-self:start", onclick: () => call("/api/link/pairing", { method: "DELETE" }) }, t("cancel"))]
             : [h("span", { class: "muted small", text: t("dev_show_code_sub") }),
               h("button", { class: "btn primary", style: "justify-self:start", onclick: () => call("/api/link/pairing", { method: "POST" }) }, t("dev_make_code"))]),
@@ -396,7 +397,16 @@ SCREENS.devices = async view => {
             const r = await api("/api/link/pair", { body: { address: addr.value.trim(), code: code.value.trim().toUpperCase() } });
             addr.value = ""; code.value = ""; st = r.state; toast(t("dev_linked", { name: r.peer.name })); draw();
           }) }, t("dev_link_go"))))),
-      sec(t("dev_peers"), null, st.peers.length ? h("div", { class: "list" }, st.peers.map(p => h("div", { class: "item" },
+      sec(t("dev_peers"), null, st.peers.length ? h("div", { class: "list" }, st.peers.map(p => p.kind === "app" ? h("div", { class: "item" },
+        h("div", { class: "row" }, icon("phone"), h("span", { class: "name grow", text: p.name }),
+          h("span", { class: "chip " + (p.online ? "ok" : "plain"), text: p.online ? t("dev_online") : p.seen ? t("dev_seen", { when: when(p.seen) }) : t("dev_offline") }),
+          h("button", { class: "btn small danger", onclick: async () => {
+            if (!await confirmDialog(t("dev_unlink"), t("dev_unlink_text", { name: p.name }), t("dev_unlink"), true)) return;
+            call("/api/link/peers/" + p.id, { method: "DELETE" });
+          } }, t("dev_unlink"))),
+        h("div", { class: "muted", text: [t("dev_phone"), p.os].filter(Boolean).join(", ") }),
+        switchRow(t("dev_phone_window"), t("dev_phone_window_hint"), p.window, v => call("/api/link/peers/" + p.id, { body: { window: v } })))
+        : h("div", { class: "item" },
         h("div", { class: "row" }, icon("devices"), h("span", { class: "name grow", text: p.name }),
           h("span", { class: "chip " + (p.online ? "ok" : "plain"), text: t(p.online ? "dev_online" : "dev_offline") }),
           p.online && p.ai && p.ai.name && h("button", { class: "btn small", disabled: p.in_use, onclick: guard(async () => { await api("/api/link/use/" + p.id, { method: "POST" }); await refreshStatus(); toast(t("dev_using", { name: p.ai.name, device: p.name })); refresh(); }) }, t(p.in_use ? "ai_in_use" : "dev_use_ai")),

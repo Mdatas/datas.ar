@@ -198,7 +198,7 @@ const Chat = {
           h("div", { class: "composer-bar" },
             h("button", { class: "icon-btn", "aria-label": t("attach"), title: t("attach"), onclick: () => $("#filePick").click() }, icon("clip")),
             h("input", { type: "file", id: "filePick", class: "hidden", multiple: true, onchange: e => { Chat.attach([...e.target.files]); e.target.value = ""; } }),
-            h("button", { class: "icon-btn", id: "micBtn", "aria-label": t("mic"), title: t("mic"), onclick: Chat.mic }, icon("mic")),
+            !isRemote() && h("button", { class: "icon-btn", id: "micBtn", "aria-label": t("mic"), title: t("mic"), onclick: Chat.mic }, icon("mic")),
             h("span", { class: "grow" }),
             h("button", { class: "btn primary", id: "sendBtn", onclick: () => (Chat.sending ? Chat.stop() : Chat.send()) }))),
         h("div", { class: "fineprint", id: "fine" })));
