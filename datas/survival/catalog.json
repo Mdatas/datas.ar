@@ -1,0 +1,577 @@
+{
+ "_comment": "Documents Datas can keep on this device for when there is no internet. Every address, licence, size and checksum is checked by .github/workflows/library-sources.yml; an entry that fails there is removed, never guessed.",
+ "checked": null,
+ "topics": [
+  {
+   "id": "start",
+   "name": {
+    "en": "First hours and planning",
+    "es": "Primeras horas y plan"
+   }
+  },
+  {
+   "id": "water",
+   "name": {
+    "en": "Water and hygiene",
+    "es": "Agua e higiene"
+   }
+  },
+  {
+   "id": "health",
+   "name": {
+    "en": "Health and first aid",
+    "es": "Salud y primeros auxilios"
+   }
+  },
+  {
+   "id": "energy",
+   "name": {
+    "en": "Electricity",
+    "es": "Electricidad"
+   }
+  },
+  {
+   "id": "community",
+   "name": {
+    "en": "Community",
+    "es": "Comunidad"
+   }
+  },
+  {
+   "id": "outdoors",
+   "name": {
+    "en": "Outdoors: shelter, fire, finding your way",
+    "es": "Al aire libre: refugio, fuego, orientación"
+   }
+  },
+  {
+   "id": "longterm",
+   "name": {
+    "en": "Living on your own means",
+    "es": "Vivir con medios propios"
+   }
+  },
+  {
+   "id": "reading",
+   "name": {
+    "en": "Books to read",
+    "es": "Libros para leer"
+   }
+  }
+ ],
+ "items": [
+  {
+   "id": "fema-are-you-ready",
+   "title": "Are You Ready? An In-depth Guide to Citizen Preparedness",
+   "by": "FEMA (United States)",
+   "topic": "start",
+   "lang": "en",
+   "kind": "guide",
+   "page": "https://www.ready.gov/prepare-for-emergencies",
+   "url": "https://www.fema.gov/media-library-data/20130726-1549-20490-4633/areyouready_full.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "The classic family and neighbourhood preparedness book: plans, supplies, every kind of disaster, what to do before, during and after.",
+    "es": "El libro clásico de preparación para familias y barrios: planes, provisiones, cada tipo de desastre, qué hacer antes, durante y después."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "fema-esta-listo",
+   "title": "¿Está listo? Una guía completa para la preparación ciudadana",
+   "by": "FEMA (Estados Unidos)",
+   "topic": "start",
+   "lang": "es",
+   "kind": "guide",
+   "page": "https://www.govinfo.gov/app/details/GOVPUB-HS5_100-PURL-LPS71069",
+   "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-LPS71069/pdf/GOVPUB-HS5_100-PURL-LPS71069.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "The same preparedness book in Spanish.",
+    "es": "El mismo libro de preparación, en español."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cert-basic-manual",
+   "title": "CERT Basic Training — Participant Manual",
+   "by": "FEMA (United States)",
+   "topic": "community",
+   "lang": "en",
+   "kind": "guide",
+   "page": "https://www.ready.gov/cert",
+   "url": "https://www.ready.gov/sites/default/files/2019.CERT_.Basic_.PM_FINAL_508c.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "How neighbours organise as a Community Emergency Response Team: fire safety, light search and rescue, triage, team organisation, helping each other until help arrives.",
+    "es": "Cómo los vecinos se organizan como equipo comunitario de respuesta a emergencias (CERT): incendios, búsqueda y rescate livianos, clasificación de heridos, organización del equipo y ayuda mutua hasta que llega ayuda."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "older-adults-guide",
+   "title": "Disaster Preparedness Guide for Older Adults",
+   "by": "FEMA / Ready.gov (United States)",
+   "topic": "community",
+   "lang": "en",
+   "kind": "guide",
+   "page": "https://www.ready.gov/older-adults",
+   "url": "https://www.ready.gov/sites/default/files/2023-09/ready-gov_disaster-preparedness-guide-for-older-adults.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "Worksheets to prepare with older people and the ones who care for them — useful for anyone looking after a neighbour.",
+    "es": "Planillas para prepararse con personas mayores y quienes las cuidan; útil para cualquiera que cuide a un vecino."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "army-survival-atp-3-50-21",
+   "title": "ATP 3-50.21 Survival (2018)",
+   "by": "US Department of the Army",
+   "topic": "outdoors",
+   "lang": "en",
+   "kind": "guide",
+   "page": "https://armypubs.army.mil",
+   "url": "https://irp.fas.org/doddir/army/atp3-50-21.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA — approved for public release; distribution unlimited (copy kept by the Federation of American Scientists)",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "Outdoor survival in depth: water, fire, shelter, food, first aid, navigation, signalling.",
+    "es": "Supervivencia al aire libre en profundidad: agua, fuego, refugio, comida, primeros auxilios, orientación, señales (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cdc-water-safe-en",
+   "title": "Make Water Safe During an Emergency",
+   "by": "CDC (United States)",
+   "topic": "water",
+   "lang": "en",
+   "kind": "sheet",
+   "page": "https://www.cdc.gov/water-emergency/",
+   "url": "https://www.cdc.gov/healthywater/emergency/pdf/make-water-safe-during-emergency-p.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "One page: boiling, bleach, filters.",
+    "es": "Una página: hervir, lavandina, filtros (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cdc-water-safe-es",
+   "title": "Cómo hacer que el agua sea segura en una emergencia",
+   "by": "CDC (Estados Unidos)",
+   "topic": "water",
+   "lang": "es",
+   "kind": "sheet",
+   "page": "https://www.cdc.gov/water-emergency/",
+   "url": "https://www.cdc.gov/healthywater/emergency/pdf/make-water-safe-during-emergency-spanish-p.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "The same page in Spanish.",
+    "es": "Una página: hervir, lavandina, filtros."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "who-wash-emergencies",
+   "title": "Technical notes on drinking-water, sanitation and hygiene in emergencies",
+   "by": "WHO and WEDC (Loughborough University)",
+   "topic": "water",
+   "lang": "en",
+   "kind": "guide",
+   "page": "https://wedc-knowledge.lboro.ac.uk/collections/tne/notes_emergencies.html",
+   "url": "https://wedc-knowledge.lboro.ac.uk/resources/who_notes/WHO_TNE_ALL.pdf",
+   "format": "pdf",
+   "license": "© World Health Organization — free to download from the publisher for your own use",
+   "license_url": "https://wedc-knowledge.lboro.ac.uk/collections/tne/notes_emergencies.html",
+   "why": {
+    "en": "Fifteen illustrated notes for a whole community: cleaning wells and tanks, treating water, how much water is needed, toilets, waste, hygiene.",
+    "es": "Quince notas ilustradas para toda una comunidad: limpiar pozos y tanques, tratar el agua, cuánta agua hace falta, letrinas, residuos, higiene (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cdc-generator-co",
+   "title": "When the power goes out, keep your generator outside",
+   "by": "CDC (United States)",
+   "topic": "energy",
+   "lang": "en",
+   "kind": "sheet",
+   "page": "https://www.cdc.gov/carbon-monoxide/",
+   "url": "https://stacks.cdc.gov/view/cdc/47902/cdc_47902_DS1.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "Generators and carbon monoxide, the gas that kills without warning.",
+    "es": "Grupos electrógenos y monóxido de carbono, el gas que mata sin avisar (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cpsc-generators",
+   "title": "What to Know About Generators and Carbon Monoxide",
+   "by": "US Consumer Product Safety Commission",
+   "topic": "energy",
+   "lang": "en",
+   "kind": "sheet",
+   "page": "https://www.cpsc.gov/",
+   "url": "https://www.cpsc.gov/s3fs-public/468_WhattoKnowGenerators_2022_v5.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "Do's and don'ts for running a generator safely.",
+    "es": "Qué hacer y qué no para usar un grupo electrógeno sin riesgo (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-first-aid-en",
+   "title": "Where There Is No Doctor — 10 First aid",
+   "by": "Hesperian Health Guides",
+   "topic": "health",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_wtnd_2025/en_wtnd_2025_10.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "First aid from the world's most used community health book: bleeding, burns, broken bones, shock, choking.",
+    "es": "Primeros auxilios del libro de salud comunitaria más usado del mundo (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-prevention-en",
+   "title": "Where There Is No Doctor — 12 Prevention",
+   "by": "Hesperian Health Guides",
+   "topic": "health",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_wtnd_2025/en_wtnd_2025_12.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "How to avoid many sicknesses: clean water, hygiene, food, vaccines.",
+    "es": "Cómo evitar muchas enfermedades (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-primeros-auxilios-es",
+   "title": "Donde no hay doctor — 10 Primeros auxilios",
+   "by": "Hesperian Health Guides",
+   "topic": "health",
+   "lang": "es",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/es/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/es_wtnd_2017/es_wtnd_2017_10.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "First aid, in Spanish.",
+    "es": "Primeros auxilios: hemorragias, quemaduras, fracturas, shock, atragantamiento."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-prevencion-es",
+   "title": "Donde no hay doctor — 12 Medicina preventiva",
+   "by": "Hesperian Health Guides",
+   "topic": "health",
+   "lang": "es",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/es/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/es_wtnd_2017/es_wtnd_2017_12.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Prevention, in Spanish.",
+    "es": "Cómo evitar muchas enfermedades: agua limpia, higiene, comida, vacunas."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-water-en",
+   "title": "A Community Guide to Environmental Health — 6 Protecting community water",
+   "by": "Hesperian Health Guides",
+   "topic": "water",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_06.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Protecting and treating a community's water.",
+    "es": "Proteger y tratar el agua de una comunidad (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-toilets-en",
+   "title": "A Community Guide to Environmental Health — 7 Building toilets",
+   "by": "Hesperian Health Guides",
+   "topic": "water",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_07.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Building toilets that keep a community healthy.",
+    "es": "Construir letrinas que mantengan sana a una comunidad (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-food-security-en",
+   "title": "A Community Guide to Environmental Health — 12 Community food security",
+   "by": "Hesperian Health Guides",
+   "topic": "longterm",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_12.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Growing and sharing food as a community.",
+    "es": "Producir y compartir alimentos en comunidad (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-farming-en",
+   "title": "A Community Guide to Environmental Health — 15 Sustainable farming",
+   "by": "Hesperian Health Guides",
+   "topic": "longterm",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_15.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Farming that keeps the soil alive year after year.",
+    "es": "Cultivar sin agotar la tierra (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-clean-energy-en",
+   "title": "A Community Guide to Environmental Health — 23 Clean energy",
+   "by": "Hesperian Health Guides",
+   "topic": "energy",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_23.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Small-scale solar, wind, water and biogas power for a community.",
+    "es": "Energía solar, eólica, hidráulica y biogás a pequeña escala (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "hesperian-safety-en",
+   "title": "A Community Guide to Environmental Health — Appendix A Safety and emergencies",
+   "by": "Hesperian Health Guides",
+   "topic": "start",
+   "lang": "en",
+   "kind": "chapter",
+   "page": "https://languages.hesperian.org/pages/en/pdf.html",
+   "url": "https://hesperian.org/wp-content/uploads/pdf/en_cgeh_2012/en_cgeh_2012_appa.pdf",
+   "format": "pdf",
+   "license": "Hesperian Open Copyright: free to copy for non-profit use",
+   "license_url": "https://hesperian.org/about/open-copyright/",
+   "why": {
+    "en": "Safety and emergencies for a community.",
+    "es": "Seguridad y emergencias en una comunidad (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-mutual-aid",
+   "title": "Mutual Aid: A Factor of Evolution",
+   "by": "Peter Kropotkin (1902)",
+   "topic": "community",
+   "lang": "en",
+   "kind": "book",
+   "page": "https://www.gutenberg.org/ebooks/4341",
+   "url": "https://www.gutenberg.org/ebooks/4341.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "Why cooperation, not only competition, keeps groups alive — the classic argument for mutual aid.",
+    "es": "Por qué la cooperación, y no solo la competencia, mantiene vivos a los grupos (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-camp-lore",
+   "title": "The Book of Camp-Lore and Woodcraft",
+   "by": "Daniel Carter Beard (1920)",
+   "topic": "outdoors",
+   "lang": "en",
+   "kind": "book",
+   "page": "https://www.gutenberg.org/ebooks/44215",
+   "url": "https://www.gutenberg.org/ebooks/44215.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "Old-school woodcraft: camps, fires, shelters, knots, finding your way.",
+    "es": "Vida al aire libre a la antigua: campamentos, fuego, refugios, nudos, orientación (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-walden",
+   "title": "Walden",
+   "by": "Henry David Thoreau (1854)",
+   "topic": "reading",
+   "lang": "en",
+   "kind": "reading",
+   "page": "https://www.gutenberg.org/ebooks/205",
+   "url": "https://www.gutenberg.org/ebooks/205.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "Two years of living simply by a pond — on what one really needs.",
+    "es": "Dos años viviendo con lo justo junto a un lago (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-robinson-crusoe",
+   "title": "Robinson Crusoe",
+   "by": "Daniel Defoe (1719)",
+   "topic": "reading",
+   "lang": "en",
+   "kind": "reading",
+   "page": "https://www.gutenberg.org/ebooks/521",
+   "url": "https://www.gutenberg.org/ebooks/521.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "The original castaway story.",
+    "es": "La historia original del náufrago (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-mysterious-island",
+   "title": "The Mysterious Island",
+   "by": "Jules Verne (1875)",
+   "topic": "reading",
+   "lang": "en",
+   "kind": "reading",
+   "page": "https://www.gutenberg.org/ebooks/1268",
+   "url": "https://www.gutenberg.org/ebooks/1268.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "Castaways who rebuild a working society from nothing — engineering as an adventure.",
+    "es": "Náufragos que reconstruyen una sociedad desde cero (en inglés)."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-quijote",
+   "title": "Don Quijote de la Mancha",
+   "by": "Miguel de Cervantes (1605–1615)",
+   "topic": "reading",
+   "lang": "es",
+   "kind": "reading",
+   "page": "https://www.gutenberg.org/ebooks/2000",
+   "url": "https://www.gutenberg.org/ebooks/2000.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "The great novel in Spanish.",
+    "es": "La gran novela en español."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "pg-martin-fierro",
+   "title": "El gaucho Martín Fierro",
+   "by": "José Hernández (1872)",
+   "topic": "reading",
+   "lang": "es",
+   "kind": "reading",
+   "page": "https://www.gutenberg.org/ebooks/14765",
+   "url": "https://www.gutenberg.org/ebooks/14765.txt.utf-8",
+   "format": "txt",
+   "license": "Public domain in the USA (Project Gutenberg License); check your country's law",
+   "license_url": "https://www.gutenberg.org/policy/license.html",
+   "why": {
+    "en": "The Argentine poem of the gaucho.",
+    "es": "El poema del gaucho argentino."
+   },
+   "size": null,
+   "sha256": null
+  }
+ ]
+}

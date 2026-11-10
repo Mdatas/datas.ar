@@ -1,0 +1,24 @@
+# Downloads every document of the offline survival library from its publisher and checks it
+# against the size and SHA-256 pinned in datas/survival/catalog.json. Runs when that list
+# changes, every Monday (an address that moved shows up here, not on someone's computer), and
+# by hand.
+name: library-sources
+on:
+  push:
+    paths: ["datas/survival/catalog.json", "scripts/check_survival.py", ".github/workflows/library-sources.yml"]
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx pypdf
+      - run: python scripts/check_survival.py
