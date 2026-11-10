@@ -280,6 +280,21 @@ def transcribe(pcm16k: Any, language: str | None, model_id: str, threads: int = 
     return " ".join(s.text.strip() for s in segs).strip()
 
 
+def transcribe_segments(
+    pcm16k: Any, language: str | None, model_id: str, threads: int = 4
+) -> list[tuple[float, float, str]]:
+    """Like ``transcribe`` but keeps the timing: [(start seconds, end seconds, text)]."""
+    import numpy as np
+
+    audio = np.asarray(pcm16k, dtype=np.float32)
+    if audio.size < SAMPLE_RATE // 4:
+        return []
+    m = _whisper(model_id, threads)
+    kw = {"language": language} if language and language != "auto" else {}
+    # whisper.cpp counts time in hundredths of a second
+    return [(s.t0 / 100.0, s.t1 / 100.0, s.text.strip()) for s in m.transcribe(audio, **kw)]
+
+
 def pcm_from_wav(data: bytes) -> Any:
     """Decode a 16-bit PCM WAV (any rate, mono/stereo) into float32 mono at 16 kHz."""
     import numpy as np

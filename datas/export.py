@@ -697,7 +697,16 @@ def export(markdown: str, fmt: str, title: str = "", lang: str = "en") -> Path:
     if fmt not in FORMATS:
         raise ValueError(f"unknown format {fmt!r}; choose one of {', '.join(FORMATS)}")
     title = title or guess_title(markdown) or time.strftime("Datas %Y-%m-%d %H.%M")
-    path = _target(title, fmt)
+    return render(markdown, fmt, _target(title, fmt), title, lang)
+
+
+def render(markdown: str, fmt: str, path: Path, title: str = "", lang: str = "en") -> Path:
+    """Write ``markdown`` as ``fmt`` to exactly ``path`` (used by the agent, which chooses
+    where files go inside the folders it was given)."""
+    if fmt not in FORMATS:
+        raise ValueError(f"unknown format {fmt!r}; choose one of {', '.join(FORMATS)}")
+    title = title or guess_title(markdown) or path.stem
+    path.parent.mkdir(parents=True, exist_ok=True)
     if fmt == "docx":
         return to_docx(markdown, path, title)
     if fmt == "xlsx":

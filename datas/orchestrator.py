@@ -701,6 +701,8 @@ class Datas:
             roots=[Path(f) for f in t.folders],
             allow_shell=t.allow_shell,
             allow_network=t.internet,
+            lang=self.cfg.lang,
+            allow_local=self.cfg.allow_local_fetch,
         )
         lines, final, state = [], "", "done"
         self.agent_busy += 1

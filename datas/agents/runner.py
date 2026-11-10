@@ -17,6 +17,10 @@ SYSTEM = (
     "You can call tools to list, find, read, write, move, copy and (reversibly) delete files, open "
     "files or folders for the user{shell}{net}. Folders you may use: {roots}. "
     "Paths may be absolute inside those folders or relative to your workspace ({workspace}). "
+    "Documents: read_file understands PDF, Word, Excel and PowerPoint; save_document writes "
+    "Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and PDF files from Markdown; convert_file "
+    "changes a file's format; list_programs shows the programs installed here that you can run "
+    "or open files in{mcp}. "
     "Work step by step: decide, call a tool, read the result, continue. Prefer moving files into "
     "clearly named folders over deleting; never delete what you were not asked to. "
     "When the task is complete, answer with a short summary of what you did and where the results are, "
@@ -38,6 +42,9 @@ class AgentConfig:
     ask: str = "risky"  # all | risky | none
     confirm: Callable[[str], bool] | None = None
     should_stop: Callable[[], bool] | None = None
+    lang: str = "en"
+    allow_local: bool = False  # web tools may open addresses inside the user's own network
+    use_programs: bool = True  # connect the programs that offer their own tools (MCP)
 
 
 def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
@@ -47,16 +54,53 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         roots=[Path(r) for r in cfg.roots],
         allow_shell=cfg.allow_shell,
         allow_network=cfg.allow_network,
+        allow_local=cfg.allow_local,
         ask=cfg.ask,
         confirm=cfg.confirm,
         should_stop=cfg.should_stop,
+        lang=cfg.lang,
     )
     cfg.workspace.mkdir(parents=True, exist_ok=True)
+    session = None
+    if cfg.use_programs:
+        try:
+            from datas import mcp
+
+            session = mcp.Session(Path(cfg.roots[0]) if cfg.roots else cfg.workspace)
+            if session.specs:
+                session.start_all()
+                for name, err in session.errors.items():
+                    yield {
+                        "type": "assistant",
+                        "step": 0,
+                        "content": f"({name} is not available: {err})",
+                    }
+                ctx.mcp = session if session.index else None
+        except Exception as e:  # noqa: BLE001 - optional extra, never a reason to fail the task
+            yield {
+                "type": "assistant",
+                "step": 0,
+                "content": f"(programs with their own tools were skipped: {e})",
+            }
+    try:
+        yield from _loop(task, cfg, ctx)
+    finally:
+        if session is not None:
+            session.stop()
+
+
+def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
     sys_msg = SYSTEM.format(
         shell=", run shell commands" if cfg.allow_shell else "",
         net=", search the web and open web pages" if cfg.allow_network else "",
         roots="; ".join(str(r) for r in ctx.all_roots()),
         workspace=cfg.workspace,
+        mcp=(
+            "; tools whose name starts with a program's name (for example pdfcraft__…) work "
+            "inside that program"
+            if ctx.mcp is not None
+            else ""
+        ),
     )
     messages: list[dict] = [
         {"role": "system", "content": sys_msg},

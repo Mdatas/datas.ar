@@ -702,6 +702,198 @@ def providers_active(body: ActiveBody) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Everyday tools (datas.tools): recording → text, text → audio, long documents
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/tools/transcribe")
+async def tools_transcribe(request: Request, name: str = "recording.wav", lang: str | None = None):
+    """Send the recording as the request body (any audio or video file)."""
+    import tempfile
+
+    from datas import tools
+
+    suffix = Path(name).suffix.lower() or ".wav"
+    if suffix not in tools.AUDIO_VIDEO:
+        raise HTTPException(400, "Give an audio or video file (mp3, wav, m4a, mp4, mkv…).")
+    tmp = tempfile.NamedTemporaryFile(prefix="datas-rec-", suffix=suffix, delete=False)
+    size = 0
+    try:
+        async for chunk in request.stream():
+            size += len(chunk)
+            tmp.write(chunk)
+    finally:
+        tmp.close()
+    if size == 0:
+        Path(tmp.name).unlink(missing_ok=True)
+        raise HTTPException(400, "The file arrived empty.")
+
+    def run(j) -> dict:  # noqa: ANN001
+        try:
+            return tools.transcribe_file(core, Path(tmp.name), name, lang, j)
+        finally:
+            Path(tmp.name).unlink(missing_ok=True)
+
+    return _update_job("Recording to text", run) | {"kind": "tool"}
+
+
+class SpeakFileBody(BaseModel):
+    text: str
+    lang: str | None = None
+    voice: str | None = None
+    title: str = ""
+
+
+@app.post("/api/tools/speak")
+def tools_speak(body: SpeakFileBody) -> dict:
+    from datas import tools
+
+    lang = body.lang or core.cfg.lang
+    return _update_job(
+        "Text to audio",
+        lambda j: tools.speak_to_file(core, body.text, lang, body.voice, body.title, j),
+    )
+
+
+class LongBody(BaseModel):
+    mode: str = "summary"  # summary | translate
+    text: str = ""
+    name: str = ""
+    content_base64: str = ""
+    lang: str | None = None  # language of the result
+
+
+@app.post("/api/tools/long")
+def tools_long(body: LongBody) -> dict:
+    """Summarise or translate a document of any length, piece by piece."""
+    from datas import tools
+
+    text, title = body.text, ""
+    if body.content_base64:
+        try:
+            text = docs.extract_text(
+                body.name, _decode(FileBody(name=body.name, content_base64=body.content_base64))
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        title = Path(body.name).stem
+    if not text.strip():
+        raise HTTPException(400, "There is no text to work on.")
+    if body.mode not in ("summary", "translate"):
+        raise HTTPException(400, "mode must be summary or translate")
+    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    ctx = _ctx_tokens(prov)
+    lang = body.lang or core.cfg.lang
+    return _update_job(
+        "Long document",
+        lambda j: tools.long_document(core, text, body.mode, lang, ctx, title, j),
+    )
+
+
+@app.post("/api/programs/artcraft/get")
+def programs_get_artcraft() -> dict:
+    """Download the ArtCraft Launcher for this computer (checked against the checksums published
+    with the release) and open it. The launcher installs and updates the Craft apps."""
+    from datas import programs, updates
+
+    def run(j) -> dict:  # noqa: ANN001
+        asset = programs.artcraft_launcher_asset()
+        path = updates.download_installer(asset, j)
+        return {
+            "path": str(path),
+            "opened": updates.open_installer(path),
+            "version": asset.get("version"),
+        }
+
+    return _update_job("ArtCraft Launcher", run)
+
+
+# ---------------------------------------------------------------------------
+# Programs on this computer the agent can use, and connections to their own tools (MCP)
+# ---------------------------------------------------------------------------
+
+
+class McpBody(BaseModel):
+    name: str
+    command: str
+    args: list[str] = []
+
+
+class OpenProgramBody(BaseModel):
+    path: str | None = None
+
+
+@app.get("/api/programs")
+def programs_list(lang: str | None = None) -> dict:
+    from datas import programs
+
+    return programs.listing(lang or core.cfg.lang)
+
+
+@app.post("/api/programs/{pid}/open")
+def programs_open(pid: str, body: OpenProgramBody) -> dict:
+    from datas import programs
+
+    file = None
+    if body.path:
+        try:
+            file = str(exporter.allowed(body.path))
+        except OSError as e:
+            raise HTTPException(400, str(e)) from e
+    try:
+        programs.open_program(pid, file)
+    except (RuntimeError, OSError) as e:
+        raise HTTPException(400, str(e)) from e
+    return {"opened": True}
+
+
+@app.post("/api/mcp")
+def mcp_add(body: McpBody) -> dict:
+    """Add a connection to a program that offers its own tools (Model Context Protocol)."""
+    from datas import mcp
+
+    try:
+        return mcp.save_user_server(body.name, body.command, body.args)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/mcp/{name}")
+def mcp_remove(name: str) -> dict:
+    from datas import mcp
+
+    return {"removed": mcp.remove_user_server(name)}
+
+
+@app.post("/api/mcp/{name}/test")
+def mcp_test(name: str) -> dict:
+    """Start the program, ask which tools it offers, stop it. Shows the user that it works."""
+    from datas import mcp
+    from datas.config import agent_workspace
+
+    spec = mcp.all_servers().get(name)
+    if not spec:
+        raise HTTPException(404, "no such connection")
+    srv = mcp.McpServer(
+        name, spec["command"], mcp.fill(spec["args"], agent_workspace()), spec.get("env")
+    )
+    try:
+        srv.start(timeout=20)
+        return {
+            "ok": True,
+            "server": (srv.info.get("serverInfo") or {}),
+            "tools": [
+                {"name": t["name"], "description": str(t.get("description", ""))[:200]}
+                for t in srv.tools
+            ],
+        }
+    except mcp.McpError as e:
+        return {"ok": False, "error": str(e)}
+    finally:
+        srv.stop()
+
+
+# ---------------------------------------------------------------------------
 # Updates and going back (datas.updates). Network only when the user asks.
 # ---------------------------------------------------------------------------
 
@@ -1576,6 +1768,8 @@ def agent_run(body: AgentBody):
         ask=ask,
         confirm=None if ask == "none" else core.ask_user,
         should_stop=core.agent_stop.is_set,
+        lang=core.cfg.lang,
+        allow_local=core.cfg.allow_local_fetch,
     )
 
     def gen():

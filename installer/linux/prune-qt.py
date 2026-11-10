@@ -7,6 +7,7 @@ NEEDED graph from the Python extension modules + plugins and delete everything u
 plus translations (keeping the WebEngine locales), the qml tree and stray .debug files.
     installer/linux/prune-qt.py dist/Datas
 """
+
 import re
 import shutil
 import subprocess
@@ -45,7 +46,11 @@ for f in lib.iterdir():
     base = f.name
     # libQt6Foo.so.6.7.1 / libQt6Foo.so.6 / libicudata.so.73 ...
     key = re.sub(r"(\.so\.\d+)\..*$", r"\1", base)
-    if (base.startswith("libQt6") or base.startswith("libicu")) and key not in keep and base not in keep:
+    if (
+        (base.startswith("libQt6") or base.startswith("libicu"))
+        and key not in keep
+        and base not in keep
+    ):
         removed += f.stat().st_size
         f.unlink()
 for d in ("qml", "libexec/qmlls", "resources/qtwebengine_devtools_resources.pak"):
@@ -63,7 +68,9 @@ if tr.is_dir():
             removed += f.stat().st_size
             f.unlink()
     loc = tr / "qtwebengine_locales"
-    if loc.is_dir():  # Chromium UI strings (context menus): keep the languages Datas speaks + neighbours
+    if (
+        loc.is_dir()
+    ):  # Chromium UI strings (context menus): keep the languages Datas speaks + neighbours
         for f in loc.iterdir():
             if f.stem not in {"en-US", "en-GB", "es", "es-419", "pt-BR", "pt-PT", "it", "fr", "de"}:
                 removed += f.stat().st_size
@@ -72,4 +79,6 @@ for f in bundle.rglob("*.debug"):
     removed += f.stat().st_size
     f.unlink()
 after = before - removed
-print(f"pruned {removed/1e6:.0f} MB: {before/1e6:.0f} MB -> {after/1e6:.0f} MB; kept Qt libs: {sorted(keep)}")
+print(
+    f"pruned {removed / 1e6:.0f} MB: {before / 1e6:.0f} MB -> {after / 1e6:.0f} MB; kept Qt libs: {sorted(keep)}"
+)

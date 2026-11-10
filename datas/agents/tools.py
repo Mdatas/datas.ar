@@ -29,7 +29,17 @@ MAX_FETCH = 200_000
 MAX_LIST = 400
 
 
-RISKY = {"run_command", "delete_file", "move_file", "copy_file", "write_file", "open_path"}
+RISKY = {
+    "run_command",
+    "run_program",
+    "delete_file",
+    "move_file",
+    "copy_file",
+    "write_file",
+    "save_document",
+    "convert_file",
+    "open_path",
+}
 
 
 @dataclass
@@ -46,11 +56,16 @@ class ToolContext:
     confirm: Callable[[str], bool] | None = None
     should_stop: Callable[[], bool] | None = None
     events: list[dict] = field(default_factory=list)
+    lang: str = "en"
+    mcp: Any = None  # datas.mcp.Session: tools offered by programs that speak MCP (ArtCraft…)
 
     def is_risky(self, name: str, args: dict) -> bool:
-        """Risky = commands, opening things, and writes/moves/deletes that touch a granted folder
-        (inside the agent's own workspace everything is reversible via _trash)."""
-        if name in ("run_command", "open_path"):
+        """Risky = commands, programs, opening things, tools inside other programs, and
+        writes/moves/deletes that touch a granted folder (inside the agent's own workspace
+        everything is reversible via _trash)."""
+        if name in ("run_command", "run_program", "open_path"):
+            return True
+        if self.mcp is not None and self.mcp.has(name):
             return True
         if name not in RISKY:
             return False
@@ -141,31 +156,99 @@ def find_files(ctx: ToolContext, pattern: str, path: str = ".", max_results: int
 
 
 def read_file(ctx: ToolContext, path: str) -> str:
+    """Text of a file; PDF, Word, Excel, PowerPoint and web pages are converted to text."""
+    from datas import docs
+
     p = ctx.inside(path)
-    suffix = p.suffix.lower()
-    if suffix == ".pdf":
+    if p.is_dir():
+        return list_dir(ctx, path)
+    if not p.exists():
+        return f"(not found: {path})"
+    if p.suffix.lower() in docs.RICH_SUFFIXES:
         try:
-            from pypdf import PdfReader
-
-            text = "\n".join((pg.extract_text() or "") for pg in PdfReader(str(p)).pages[:60])
-        except Exception as e:  # noqa: BLE001
-            return f"(could not read PDF: {e})"
-    elif suffix == ".docx":
-        try:
-            import zipfile
-
-            with zipfile.ZipFile(p) as z:
-                xml = z.read("word/document.xml").decode("utf-8", "replace")
-            text = re.sub(r"</w:p>", "\n", xml)
-            text = html.unescape(re.sub(r"<[^>]+>", "", text))
-        except Exception as e:  # noqa: BLE001
-            return f"(could not read .docx: {e})"
+            text = docs.extract_text(p.name, p.read_bytes())
+        except ValueError as e:
+            return f"(could not read {p.name}: {e})"
     else:
         try:
-            text = p.read_text(errors="replace")
-        except IsADirectoryError:
-            return list_dir(ctx, path)
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            return f"(could not read {p.name}: {e})"
     return text[:MAX_READ] + ("\n…(truncated)" if len(text) > MAX_READ else "")
+
+
+def save_document(ctx: ToolContext, path: str, content: str) -> str:
+    """Write Markdown ``content`` as a real document; the file extension chooses the format:
+    .docx (Word), .xlsx (Excel: each Markdown table becomes a sheet, cells starting with = are
+    formulas), .pptx (PowerPoint: each ## heading is a slide), .pdf, .html, .md, .txt."""
+    from datas import export
+
+    p = ctx.inside(path)
+    fmt = p.suffix.lower().lstrip(".")
+    if fmt not in export.FORMATS:
+        return f"refused: use one of these endings: {', '.join('.' + f for f in export.FORMATS)}"
+    if p.exists():
+        return f"refused: {_show(ctx, p)} already exists (choose another name)"
+    try:
+        export.render(content, fmt, p, lang=ctx.lang)
+    except Exception as e:  # noqa: BLE001
+        return f"could not write {p.name}: {e}"
+    return f"saved {_show(ctx, p)} ({p.stat().st_size} bytes)"
+
+
+def convert_file(ctx: ToolContext, source: str, to: str) -> str:
+    """Convert a file to another format with whatever installed program can do it."""
+    from datas import programs
+
+    src = ctx.inside(source)
+    try:
+        out = programs.convert(src, to, fetch_ffmpeg=ctx.allow_network)
+    except RuntimeError as e:
+        return f"could not convert: {e}"
+    return f"converted {_show(ctx, src)} → {_show(ctx, out)}"
+
+
+def list_programs(ctx: ToolContext) -> str:
+    """Programs on this computer the agent can use, and what each is for."""
+    from datas import programs
+
+    rows = [
+        f"- {p['id']}: {p['name']} — {p['does']['en']}"
+        + (" (has its own tools for you)" if p.get("agent_tools") else "")
+        for p in programs.detect()
+        if p["found"]
+    ]
+    conv = "convert_file works for: Markdown/text → docx, xlsx, pptx, pdf, html (always); other conversions depend on the programs above."
+    return ("\n".join(rows) or "(no extra programs found on this computer)") + "\n" + conv
+
+
+def run_program(ctx: ToolContext, program: str, arguments: list[str] | str = "") -> str:
+    """Run one of the programs from list_programs with arguments (no shell). Runs in the
+    workspace; relative file names refer to it."""
+    from datas import programs
+
+    exe = programs.ffmpeg(ctx.allow_network) if program == "ffmpeg" else programs.find(program)
+    if not exe:
+        return f"(program {program!r} was not found; see list_programs)"
+    if isinstance(arguments, str):
+        try:
+            arguments = shlex.split(arguments, posix=platform.system() != "Windows")
+        except ValueError as e:
+            return f"bad arguments: {e}"
+    try:
+        out = subprocess.run(
+            [exe, *[str(a) for a in arguments]],
+            cwd=ctx.workspace,
+            capture_output=True,
+            text=True,
+            timeout=max(ctx.shell_timeout, 900),
+        )
+    except subprocess.TimeoutExpired:
+        return "stopped: the program ran for more than 15 minutes"
+    except OSError as e:
+        return f"error: {e}"
+    text = (out.stdout + ("\n[stderr]\n" + out.stderr if out.stderr else "")).strip()
+    return f"exit {out.returncode}\n{text[-MAX_READ:]}"
 
 
 def write_file(ctx: ToolContext, path: str, content: str) -> str:
@@ -231,8 +314,9 @@ def delete_file(ctx: ToolContext, path: str) -> str:
 # computer
 
 
-def open_path(ctx: ToolContext, target: str) -> str:
-    """Open a file, folder or web page with whatever the user normally uses for it."""
+def open_path(ctx: ToolContext, target: str, program: str = "") -> str:
+    """Open a file, folder or web page with whatever the user normally uses for it — or, with
+    ``program`` (an id from list_programs), in that program."""
     if target.startswith(("http://", "https://")):
         if not ctx.allow_network:
             return "DENIED: internet is off for this session."
@@ -241,6 +325,14 @@ def open_path(ctx: ToolContext, target: str) -> str:
         what = str(ctx.inside(target))
         if not Path(what).exists():
             return f"(not found: {target})"
+    if program:
+        from datas import programs
+
+        try:
+            programs.open_program(program, what)
+        except (RuntimeError, OSError) as e:
+            return f"could not open with {program}: {e}"
+        return f"opened {what} in {program}"
     try:
         if platform.system() == "Windows":
             os.startfile(what)  # type: ignore[attr-defined]  # noqa: S606
@@ -368,9 +460,50 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
         read_file,
         _schema(
             "read_file",
-            "Read a text file; PDF and .docx are converted to text.",
+            "Read a file as text; PDF, Word, Excel, PowerPoint and web pages are converted.",
             {"path": S},
             ["path"],
+        ),
+    ),
+    "save_document": (
+        save_document,
+        _schema(
+            "save_document",
+            "Create a document from Markdown; the ending of the path picks the format: .docx, "
+            ".xlsx (tables become sheets, cells starting with = are formulas), .pptx (each ## "
+            "heading is a slide), .pdf, .html, .md, .txt.",
+            {"path": S, "content": S},
+            ["path", "content"],
+        ),
+    ),
+    "convert_file": (
+        convert_file,
+        _schema(
+            "convert_file",
+            "Convert a file to another format (e.g. docx→pdf, svg→png, scad→stl, mp4→mp3) using "
+            "the programs installed on this computer. 'to' is the new ending, e.g. pdf.",
+            {"source": S, "to": S},
+            ["source", "to"],
+        ),
+    ),
+    "list_programs": (
+        list_programs,
+        _schema(
+            "list_programs",
+            "List the programs on this computer you can use (LibreOffice, Inkscape, Blender, "
+            "FFmpeg, ArtCraft apps…) and what each is for.",
+            {},
+            [],
+        ),
+    ),
+    "run_program": (
+        run_program,
+        _schema(
+            "run_program",
+            "Run one of the programs from list_programs with arguments, e.g. program=ffmpeg, "
+            "arguments=['-i','in.mp4','-ss','10','-t','5','clip.mp4'].",
+            {"program": S, "arguments": {"type": "array", "items": S}},
+            ["program"],
         ),
     ),
     "write_file": (
@@ -414,8 +547,9 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
         open_path,
         _schema(
             "open_path",
-            "Open a file, folder or web page for the user with their usual app.",
-            {"target": S},
+            "Open a file, folder or web page for the user with their usual app, or in a "
+            "program from list_programs (program=its id).",
+            {"target": S, "program": S},
             ["target"],
         ),
     ),
@@ -454,12 +588,15 @@ def schemas(ctx: ToolContext) -> list[dict]:
         if name in ("fetch_url", "web_search") and not ctx.allow_network:
             continue
         out.append(schema)
+    if ctx.mcp is not None:
+        out += ctx.mcp.schemas()
     return out
 
 
 def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
     fn = TOOLS.get(name)
-    if not fn:
+    is_mcp = ctx.mcp is not None and ctx.mcp.has(name)
+    if not fn and not is_mcp:
         return f"unknown tool {name}"
     try:
         args: dict[str, Any] = (
@@ -478,7 +615,7 @@ def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
             ctx.events.append({"tool": name, "args": args, "result": result})
             return result
     try:
-        result = fn[0](ctx, **args)
+        result = ctx.mcp.call(name, args) if is_mcp else fn[0](ctx, **args)
     except TypeError as e:
         result = f"bad arguments: {e}"
     except PermissionError as e:
