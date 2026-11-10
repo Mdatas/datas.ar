@@ -65,7 +65,8 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
     headers = {"Content-Type": "application/json"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
-    with httpx.Client(timeout=httpx.Timeout(600, connect=30)) as client:
+    local = cfg.base_url.startswith(("http://127.0.0.1", "http://localhost"))
+    with httpx.Client(timeout=httpx.Timeout(600, connect=30), trust_env=not local) as client:
         for step in range(cfg.max_steps):
             if cfg.should_stop and cfg.should_stop():
                 yield {

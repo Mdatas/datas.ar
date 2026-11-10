@@ -116,6 +116,14 @@ class Datas:
         self._worker: subprocess.Popen | None = None
         self._agent_windows: list[subprocess.Popen] = []
         self._lock = threading.Lock()
+        # ---- sleeping when idle, waking on the next message ----
+        self.last_activity = time.time()
+        self.asleep = False
+        self.agent_busy = 0  # agents running right now (they keep the AI awake)
+        self._wake_lock = threading.Lock()
+        self._watch: threading.Thread | None = None
+        self.notice: dict | None = None  # one thing the window should tell the user (shown once)
+        self.link = None  # datas.link.LinkManager, created on first use
 
     # ---- device -----------------------------------------------------------
     def spec(self, refresh: bool = False) -> DeviceSpec:
@@ -239,10 +247,29 @@ class Datas:
             if job:
                 job.done = f.bytes
             return downloader.local_path(m, f)
+        self.check_disk(f.bytes, downloader.local_path(m, f), m.name)
         say(f"Downloading {m.name} {f.quant} ({f.bytes / GiB:.1f} GiB) from {m.hf_url}")
         return downloader.download_model(
             m, f, progress=(job.progress if job else None), with_vision=with_vision, log=say
         )
+
+    @staticmethod
+    def check_disk(need_bytes: int, dest: Path, what: str = "this download") -> None:
+        """Stop before a download that cannot fit, with a sentence the user can act on."""
+        import shutil
+
+        folder = dest.parent
+        folder.mkdir(parents=True, exist_ok=True)
+        part = dest.with_suffix(dest.suffix + ".part")
+        already = part.stat().st_size if part.exists() else 0
+        free = shutil.disk_usage(folder).free
+        margin = 1 * GiB  # never fill the disk to the brim
+        if free < need_bytes - already + margin:
+            raise RuntimeError(
+                f"Not enough free space for {what}: it needs {(need_bytes - already) / GiB:.1f} GB "
+                f"more and the disk has {free / GiB:.1f} GB free. Free some space (or remove an AI "
+                "you no longer use in My AIs) and try again."
+            )
 
     def refine(self, c: Candidate, path: Path, budget: Budget) -> tuple[Candidate, list[str]]:
         """Replace the KV estimate with the GGUF header's exact values; shrink ctx if needed."""
@@ -330,7 +357,18 @@ class Datas:
         state = self.server.start(args, str(path), model_id, quant, rpc=rpc)
         self.cfg.model_id, self.cfg.quant = model_id, quant
         self.cfg.provider = "pool" if rpc else "local"
+        if model_id != STARTER_ID or not self.starter_active:
+            self.cfg.last_run = {
+                "model_id": model_id,
+                "quant": quant,
+                "context": c.need.context,
+                "kv_bits": kv_bits,
+                "with_vision": bool(mmproj),
+                "pool": bool(rpc),
+            }
         self.cfg.save()
+        self.asleep = False
+        self.touch()
         try:
             from datas import library
 
@@ -391,7 +429,10 @@ class Datas:
             args, str(p), f"custom:{p.name}", facts.file_type and str(facts.file_type) or ""
         )
         self.cfg.model_id, self.cfg.quant, self.cfg.provider = f"custom:{p}", "", "local"
+        self.cfg.last_run = {"custom": str(p), "context": ctx, "kv_bits": kv_bits}
         self.cfg.save()
+        self.asleep = False
+        self.touch()
         return {
             "server": state.to_dict(),
             "facts": facts.to_dict(),
@@ -399,7 +440,109 @@ class Datas:
         }
 
     def stop(self) -> None:
+        """The user stopped the AI: it stays stopped until they start one again."""
+        self.asleep = False
+        self.cfg.last_run = {}
         self.server.stop()
+
+    # ---- sleeping when idle ------------------------------------------------------
+    def touch(self) -> None:
+        self.last_activity = time.time()
+
+    def can_wake(self) -> bool:
+        """True when no AI is running but we know which one to bring back and it is on disk."""
+        lr = self.cfg.last_run or {}
+        if self.server.running() or self.cfg.provider not in ("local", "pool") or not lr:
+            return False
+        if lr.get("custom"):
+            return Path(lr["custom"]).exists()
+        try:
+            m = self.catalog.get(lr["model_id"])
+            return downloader.is_downloaded(m, m.file(lr["quant"]))
+        except (KeyError, TypeError):
+            return False
+
+    def wake(self) -> None:
+        """Start the AI again exactly as it was last started (after sleep or an app restart)."""
+        with self._wake_lock:
+            if self.server.running():
+                return
+            lr = dict(self.cfg.last_run or {})
+            if lr.get("custom"):
+                self.run_custom(lr["custom"], lr.get("context"), lr.get("kv_bits", 16))
+            else:
+                nodes = self.pool_nodes(refresh=True) if lr.get("pool") else None
+                self.run(
+                    lr["model_id"],
+                    lr["quant"],
+                    lr.get("context"),
+                    lr.get("kv_bits", 16),
+                    nodes or None,
+                    with_vision=bool(lr.get("with_vision")),
+                )
+            self.asleep = False
+            self.touch()
+
+    def sleep(self) -> None:
+        """Give the memory back; ``last_run`` stays so the next message wakes the same AI."""
+        if self.server.running():
+            self.server.stop()
+            self.asleep = True
+
+    def busy(self) -> bool:
+        return self.agent_busy > 0 or any(
+            j.state in ("queued", "running") and j.kind in ("run", "bench", "model")
+            for j in self.jobs.values()
+        )
+
+    def start_watch(self) -> None:
+        """One small background loop: idle sleep, and noticing an engine that died."""
+        if self._watch and self._watch.is_alive():
+            return
+
+        def loop() -> None:
+            while True:
+                time.sleep(20)
+                try:
+                    self._tick()
+                except Exception:  # noqa: BLE001 - the watcher must outlive any single failure
+                    pass
+
+        self._watch = threading.Thread(target=loop, daemon=True, name="datas-watch")
+        self._watch.start()
+
+    def _tick(self) -> None:
+        mins = self.cfg.idle_sleep_min
+        if self.busy():
+            self.touch()
+            return
+        if (
+            mins > 0
+            and self.server.running()
+            and time.time() - self.last_activity > mins * 60
+            and not self.starter_active
+        ):
+            self.sleep()
+        elif self.server.proc is not None and not self.server.running():
+            # the engine process ended on its own (crash, killed by the system for memory)
+            tail = self.server.log_tail(8)
+            self.server._clear()  # noqa: SLF001
+            self.asleep = True
+            self.notice = {
+                "kind": "engine_stopped",
+                "text": "The AI stopped unexpectedly (often: the computer ran short of memory). "
+                "It will start again with your next message.",
+                "detail": tail,
+            }
+
+    def chat_saved(self, chat_id: str) -> None:
+        """A chat changed on this device: let linked devices know (if any)."""
+        link = self.link
+        if link is not None:
+            try:
+                link.chats_changed()
+            except Exception:  # noqa: BLE001
+                pass
 
     def bench(self, model_path: str | None = None, ngl: int = 99) -> dict:
         path = (
@@ -541,7 +684,12 @@ class Datas:
         from datas.agents import AgentConfig, run_agent
         from datas.agents.schedule import results_dir
 
-        if not self.server.state.running and self.cfg.provider == "local":
+        if not self.server.running() and self.can_wake():
+            try:
+                self.wake()
+            except Exception as e:  # noqa: BLE001
+                return "error", f"The AI could not be started for this task: {e}", ""
+        if not self.server.running() and self.cfg.provider in ("local", "pool"):
             return "error", "No AI was running when the task came due.", ""
         acfg = AgentConfig(
             base_url=f"http://127.0.0.1:{self.cfg.ui_port}/v1",
@@ -550,13 +698,18 @@ class Datas:
             allow_network=t.internet,
         )
         lines, final, state = [], "", "done"
-        for ev in run_agent(t.task, acfg):
-            if ev["type"] == "tool_call":
-                lines.append(f"- {ev['name']} {str(ev.get('arguments', ''))[:160]}")
-            elif ev["type"] == "final":
-                final = ev.get("content", "")
-            elif ev["type"] == "error":
-                state, final = "error", ev.get("error", "")
+        self.agent_busy += 1
+        try:
+            for ev in run_agent(t.task, acfg):
+                self.touch()
+                if ev["type"] == "tool_call":
+                    lines.append(f"- {ev['name']} {str(ev.get('arguments', ''))[:160]}")
+                elif ev["type"] == "final":
+                    final = ev.get("content", "")
+                elif ev["type"] == "error":
+                    state, final = "error", ev.get("error", "")
+        finally:
+            self.agent_busy -= 1
         stamp = _t.strftime("%Y-%m-%d_%H-%M")
         out = results_dir() / f"{t.id}-{stamp}.md"
         out.write_text(
@@ -818,14 +971,31 @@ class Datas:
         return {"pid": p.pid}
 
     def shutdown(self) -> None:
-        self.stop()
+        self.server.stop()  # not stop(): the next start wakes the same AI on the first message
         self.sd.stop()
+        if self.link is not None:
+            try:
+                self.link.stop()
+            except Exception:  # noqa: BLE001
+                pass
         self.apps.stop_all()
         if self.worker_running():
             self.set_pool_offer(False)
         for p in self._agent_windows:
             if p.poll() is None:
                 p.terminate()
+
+    def model_name(self, model_id: str | None) -> str:
+        if not model_id:
+            return ""
+        try:
+            return self.catalog.get(model_id).name
+        except Exception:  # noqa: BLE001
+            return (
+                Path(model_id.split(":", 1)[-1]).stem
+                if model_id.startswith("custom:")
+                else model_id
+            )
 
     # ---- status -------------------------------------------------------------
     def status(self) -> dict:
@@ -838,7 +1008,17 @@ class Datas:
                 "tag": self.cfg.llamacpp_tag,
                 "version": llamacpp.version_string(self.cfg) if self.runtime_installed() else None,
             },
-            "server": self.server.state.to_dict(),
+            "server": self.server.state.to_dict()
+            | {
+                "model_name": self.model_name(self.server.state.model_id),
+                "vision": "--mmproj" in (self.server.state.args or []),
+            },
+            "asleep": self.asleep and not self.server.running(),
+            "can_wake": self.can_wake(),
+            "last_model_name": self.model_name((self.cfg.last_run or {}).get("model_id"))
+            or Path((self.cfg.last_run or {}).get("custom", "")).stem,
+            "idle_sleep_min": self.cfg.idle_sleep_min,
+            "theme": self.cfg.theme,
             "provider": self.cfg.provider,
             "model_id": self.cfg.model_id,
             "quant": self.cfg.quant,

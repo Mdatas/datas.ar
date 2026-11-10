@@ -126,3 +126,131 @@ def remove(model_id: str) -> dict:
     meta.pop(model_id, None)
     _save_meta(meta)
     return {"removed": model_id, "freed_gib": round(freed / GiB, 1)}
+
+
+USE_PLAIN = {
+    "text": ("chat, writing, summaries, translation", "chat, escritura, resúmenes, traducción"),
+    "images": ("understanding pictures and documents", "entender imágenes y documentos"),
+    "coding": ("programming", "programar"),
+    "agents": ("doing tasks step by step with tools", "hacer tareas paso a paso con herramientas"),
+    "math": ("solving math problems", "resolver problemas de matemática"),
+    "legal": ("reading and drafting legal text", "leer y redactar textos legales"),
+    "medical": ("medical text and medical images", "texto e imágenes médicas"),
+}
+
+
+def details(core, lang: str = "en") -> list[dict]:  # noqa: ANN001 - Datas orchestrator
+    """Installed AIs with what a person wants to know: what it is good for, what it is not,
+    who made it, what it costs this device, and lighter / stronger versions that exist."""
+    from datas.recommend.engine import evaluate
+
+    es = 1 if lang == "es" else 0
+    cat = core.catalog
+    rec = core.recommendation()
+    budget, ctx = rec.budget, rec.context
+    fit_ids = {c.model_id: c for c in rec.fits}
+    out = []
+    for it in installed():
+        if it["custom"]:
+            it.update({"good_for": "", "resources": None, "versions": [], "alternatives": {}})
+            out.append(it)
+            continue
+        m = cat.get(it["model_id"])
+        f = m.file(it["quant"])
+        c = evaluate(m, f, budget, ctx)
+        p = c.plain()
+        it.update(
+            {
+                "family": m.family,
+                "role": m.role,
+                "license": p["license"],
+                "model_page": p["model_page"],
+                "comparable": p["comparable"],
+                "kind": p["kind"],
+                "good_for": ", ".join(USE_PLAIN.get(u, (u, u))[es] for u in m.use_cases),
+                "resources": {
+                    "disk_gib": it["size_gib"],
+                    "memory_gib": round(c.need.total / GiB, 1),
+                    "fits": c.fits,
+                    "fit_level": c.fit_level,
+                    "speed_class": c.speed_class,
+                    "placement": c.placement,
+                    "where": p["where"],
+                    "speed": p["speed"],
+                    "context": ctx,
+                    "budget_gib": round(budget.total_budget / GiB, 1),
+                },
+            }
+        )
+        # same model, other compression levels (quants)
+        versions = []
+        for of in m.files:
+            if of.quant == it["quant"]:
+                continue
+            oc = evaluate(m, of, budget, ctx)
+            versions.append(
+                {
+                    "kind": "quant",
+                    "model_id": m.id,
+                    "name": f"{m.name} ({of.quant})",
+                    "quant": of.quant,
+                    "relation": "lighter" if of.bytes < f.bytes else "stronger",
+                    "download_gib": round(of.bytes / GiB, 1),
+                    "memory_gib": round(oc.need.total / GiB, 1),
+                    "fits": oc.fits and oc.disk_ok,
+                    "fit_level": oc.fit_level,
+                    "speed_class": oc.speed_class,
+                    "installed": downloader.is_downloaded(m, of),
+                }
+            )
+        # same family, other sizes
+        for sib in cat.models:
+            if sib.id == m.id or sib.family != m.family:
+                continue
+            best = fit_ids.get(sib.id)
+            sf = sib.file(best.quant) if best else sib.smallest()
+            sc = best or evaluate(sib, sf, budget, ctx)
+            bigger = (sib.params_b or 0) > (m.params_b or 0) or sib.quality_tier > m.quality_tier
+            versions.append(
+                {
+                    "kind": "size",
+                    "model_id": sib.id,
+                    "name": sib.name,
+                    "quant": sf.quant,
+                    "relation": "stronger" if bigger else "lighter",
+                    "download_gib": round(sf.bytes / GiB, 1),
+                    "memory_gib": round(sc.need.total / GiB, 1),
+                    "fits": sc.fits and sc.disk_ok,
+                    "fit_level": sc.fit_level,
+                    "speed_class": sc.speed_class,
+                    "installed": any(downloader.is_downloaded(sib, x) for x in sib.files),
+                }
+            )
+        versions.sort(key=lambda v: (v["relation"] != "lighter", v["memory_gib"]))
+        it["versions"] = versions
+        # the best general AIs that fit, one step down and one step up, whatever the family
+        generals = [x for x in rec.fits if x.role == "general" and x.model_id != m.id]
+        up = [x for x in generals if x.quality_tier > m.quality_tier]
+        down = [x for x in generals if x.quality_tier < m.quality_tier]
+        it["alternatives"] = {
+            "stronger": {
+                "model_id": up[0].model_id,
+                "name": up[0].name,
+                "quant": up[0].quant,
+                "download_gib": round(up[0].need.weights / GiB, 1),
+                "speed_class": up[0].speed_class,
+            }
+            if up
+            else None,
+            "lighter": {
+                "model_id": down[0].model_id,
+                "name": down[0].name,
+                "quant": down[0].quant,
+                "download_gib": round(down[0].need.weights / GiB, 1),
+                "speed_class": down[0].speed_class,
+            }
+            if down
+            else None,
+        }
+        out.append(it)
+    return out

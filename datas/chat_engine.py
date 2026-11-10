@@ -1,11 +1,17 @@
-"""Server-side chat: system prompt (memory, context files, skill) + optional internet tools.
+"""Server-side chat: system prompt (helper, memory, documents) + optional internet tools.
 
 The UI calls ``POST /api/chat`` and receives Server-Sent Events (SSE): ``token`` deltas,
 ``tool`` / ``tool_result`` notices when the AI looks something up, then ``done``.
 
 Internet access is a per-session switch. When off, the model gets no tools at all and the
 process never opens a network connection on the user's behalf. When on, two read-only tools
-exist: ``web_search`` (DuckDuckGo HTML results) and ``fetch_url`` (GET a page as text).
+exist: ``web_search`` (DuckDuckGo HTML results) and ``fetch_url`` (GET a page as text); both go
+through ``datas.netguard`` so the AI can only reach the public internet.
+
+What the AI is told is assembled here and nowhere else: a short base instruction, the helper
+the user picked (``datas.assistants``), the notes file (Remember mode), and the passages of the
+user's documents that match the question (``datas.docs``). Long chats are trimmed from the
+oldest message so a small model never overflows its working memory.
 """
 
 from __future__ import annotations
@@ -14,11 +20,12 @@ import html
 import json
 import re
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import httpx
 
-from datas.chats import LEARN_PROMPT, context_text, read_memory, skill_prompt
+from datas import assistants, docs, netguard
+from datas.chats import LEARN_PROMPT, context_docs, read_memory
 from datas.config import Config
 from datas.providers import Provider
 
@@ -67,14 +74,17 @@ def _strip_html(s: str) -> str:
     return _WS.sub(" ", html.unescape(s)).strip()
 
 
-async def web_search(client: httpx.AsyncClient, query: str) -> str:
-    r = await client.get(
-        "https://html.duckduckgo.com/html/",
-        params={"q": query},
-        headers={"User-Agent": "Mozilla/5.0 (Datas.ar local assistant)"},
-    )
-    if r.status_code != 200:
-        return f"search failed: HTTP {r.status_code}"
+async def web_search(client: httpx.AsyncClient, query: str, allow_local: bool = False) -> str:
+    try:
+        r = await netguard.aget(
+            client, "https://html.duckduckgo.com/html/", allow_local, params={"q": query}
+        )
+    except netguard.Blocked as e:
+        return f"search blocked: {e}"
+    except httpx.HTTPError as e:
+        return f"search failed: {e}"
+    if r.status != 200:
+        return f"search failed: HTTP {r.status}"
     page = r.text
     results = []
     for m in re.finditer(
@@ -101,20 +111,25 @@ async def web_search(client: httpx.AsyncClient, query: str) -> str:
     return "\n".join(results) if results else "no results"
 
 
-async def fetch_url(client: httpx.AsyncClient, url: str) -> str:
-    if not url.startswith(("http://", "https://")):
-        return "only http(s) links"
+async def fetch_url(client: httpx.AsyncClient, url: str, allow_local: bool = False) -> str:
     try:
-        r = await client.get(url, headers={"User-Agent": "Mozilla/5.0 (Datas.ar local assistant)"})
+        r = await netguard.aget(client, url, allow_local)
+    except netguard.Blocked as e:
+        return f"not opened: {e}"
     except httpx.HTTPError as e:
         return f"could not open the page: {e}"
-    ctype = r.headers.get("content-type", "")
+    ctype = r.content_type
     if "html" in ctype:
         text = _strip_html(r.text)
     elif "text" in ctype or "json" in ctype or "xml" in ctype:
         text = r.text
+    elif "pdf" in ctype or r.url.lower().endswith(".pdf"):
+        try:
+            text = docs.extract_text("page.pdf", r.body)
+        except ValueError as e:
+            return f"(a PDF that could not be read: {e})"
     else:
-        return f"({ctype}, {len(r.content)} bytes — not text)"
+        return f"({ctype}, {len(r.body)} bytes — not text)"
     return text[:FETCH_CAP] + ("…" if len(text) > FETCH_CAP else "")
 
 
@@ -125,25 +140,78 @@ async def fetch_url(client: httpx.AsyncClient, url: str) -> str:
 BASE = (
     "You are a helpful assistant running locally on the user's own device through Datas.ar. "
     "Be clear and concise. Spell out acronyms the first time you use them. If you are not sure, say so. "
-    "Answer in the user's language."
+    "Answer in the user's language. Use Markdown when structure helps: headings, lists, tables for "
+    "anything tabular, and fenced code blocks for code."
 )
+
+CHARS_PER_TOKEN = 3.0  # conservative for Spanish/English text; code and numbers use more tokens
+REMOTE_CONTEXT = 32_000  # assumed working memory of a paid service when we cannot ask it
+
+
+def budgets(ctx_tokens: int) -> tuple[int, int]:
+    """(characters for documents, characters for everything sent) for a working memory of
+    ``ctx_tokens``. A quarter is left for the answer; documents may take up to 45% of the rest."""
+    total = int(max(1024, ctx_tokens) * 0.75 * CHARS_PER_TOKEN)
+    return min(120_000, int(total * 0.45)), total
+
+
+def text_of(content) -> str:  # noqa: ANN001 - str, or OpenAI-style parts when a picture is attached
+    if isinstance(content, list):
+        return " ".join(str(p.get("text", "")) for p in content if isinstance(p, dict)).strip()
+    return str(content or "")
+
+
+def _size(content) -> int:  # noqa: ANN001
+    if isinstance(content, list):  # a picture costs roughly a thousand tokens on small models
+        return sum(
+            len(str(p.get("text", ""))) if p.get("type") == "text" else 3000
+            for p in content
+            if isinstance(p, dict)
+        )
+    return len(str(content or ""))
+
+
+def fit_history(messages: list[dict], budget_chars: int) -> list[dict]:
+    """The newest messages that fit in ``budget_chars`` (always at least the last one), starting
+    with a user message as chat templates expect."""
+    out: list[dict] = []
+    used = 0
+    for m in reversed(messages):
+        size = _size(m.get("content")) + 16
+        if out and used + size > budget_chars:
+            break
+        out.append(m)
+        used += size
+    out.reverse()
+    while len(out) > 1 and out[0].get("role") != "user":
+        out.pop(0)
+    return out
 
 
 def system_prompt(
-    cfg: Config, skill: str | None, internet: bool, lang: str, extra: str | None = None
+    cfg: Config,
+    skill: str | None,
+    internet: bool,
+    lang: str,
+    extra: str | None = None,
+    question: str = "",
+    attachments: list[dict] | None = None,
+    doc_budget: int = 12_000,
 ) -> str:
+    """``skill`` is the id of the helper in use ("guide" is the built-in Datas guide)."""
     parts = [BASE]
     if lang == "es":
         parts.append(
             "The user's interface language is Spanish (Argentina); default to Spanish unless they write in another language."
         )
-    sk = skill_prompt(skill)
-    if sk == "GUIDE":
+    if skill == "guide":
         parts.append(
             extra or "You are the Datas guide; the device facts are unavailable right now."
         )
-    elif sk:
-        parts.append("Current skill: " + sk)
+    else:
+        helper = assistants.prompt(skill)
+        if helper:
+            parts.append("Your role in this chat:\n" + helper)
     if internet:
         parts.append(
             "You may use web_search and fetch_url to look things up when the question needs current or specific facts; cite the links you used."
@@ -159,9 +227,22 @@ def system_prompt(
                 "Notes about the user from earlier conversations (use them naturally, never recite them):\n"
                 + mem[:4000]
             )
-    ctx = context_text()
-    if ctx:
-        parts.append("Documents the user added for you to use:\n" + ctx)
+    # documents: attached to this chat first, then the helper's own, then "My documents"
+    all_docs = [
+        {"name": a.get("name", "file"), "text": a.get("text", "")} for a in (attachments or [])
+    ]
+    if skill != "guide":
+        all_docs += assistants.docs_text(skill)
+    try:
+        all_docs += context_docs()
+    except Exception:  # noqa: BLE001 - an unreadable file must not break the chat
+        pass
+    block = docs.context_block(question, all_docs, doc_budget)
+    if block:
+        parts.append(
+            "Documents the user gave you (use them; quote the file name when you rely on one):\n"
+            + block
+        )
     return "\n\n".join(parts)
 
 
@@ -174,29 +255,60 @@ def system_prompt(
 class ChatRequest:
     messages: list[dict]
     internet: bool = False
-    skill: str | None = None
+    skill: str | None = None  # helper id (datas.assistants) or "guide"
     lang: str = "en"
     extra: str | None = None  # the guide's live briefing
     temperature: float = 0.7
+    attachments: list[dict] = field(default_factory=list)  # [{name, text}] added to this chat
+    ctx_tokens: int = 8192  # working memory of the AI that will answer
+    allow_local: bool = False  # let the web tools open addresses inside the user's own network
+
+
+def is_local_url(url: str) -> bool:
+    from urllib.parse import urlsplit
+
+    return (urlsplit(url).hostname or "") in ("127.0.0.1", "localhost", "::1")
 
 
 def _sse(obj: dict) -> str:
     return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
 
 
-async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIterator[str]:
-    messages = [
-        {
-            "role": "system",
-            "content": system_prompt(cfg, req.skill, req.internet, req.lang, req.extra),
-        }
-    ] + [
+def build_messages(cfg: Config, req: ChatRequest) -> list[dict]:
+    """System prompt + the part of the conversation that fits."""
+    convo = [
         {"role": m["role"], "content": m.get("content", "")}
         for m in req.messages
-        if m.get("role") in ("user", "assistant")
+        if m.get("role") in ("user", "assistant") and m.get("content")
     ]
+    question = next((text_of(m["content"]) for m in reversed(convo) if m["role"] == "user"), "")
+    doc_budget, total = budgets(req.ctx_tokens)
+    system = system_prompt(
+        cfg,
+        req.skill,
+        req.internet,
+        req.lang,
+        req.extra,
+        question=question,
+        attachments=req.attachments,
+        doc_budget=doc_budget,
+    )
+    return [{"role": "system", "content": system}] + fit_history(
+        convo, max(2000, total - len(system))
+    )
+
+
+async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIterator[str]:
+    messages = build_messages(cfg, req)
     model = prov.model or "default"
-    async with httpx.AsyncClient(timeout=httpx.Timeout(600, connect=30)) as client:
+    # Two connections on purpose: the AI (often on this very device — never through a system
+    # proxy) and the web (through the system proxy if there is one).
+    async with (
+        httpx.AsyncClient(
+            timeout=httpx.Timeout(600, connect=30), trust_env=not is_local_url(prov.base_url)
+        ) as client,
+        httpx.AsyncClient(timeout=httpx.Timeout(40, connect=15)) as web,
+    ):
         # 1) tool steps (non-streaming) while the model asks for tools
         if req.internet:
             for _ in range(MAX_TOOL_STEPS):
@@ -240,9 +352,9 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
                         args = {}
                     yield _sse({"type": "tool", "name": name, "args": args})
                     if name == "web_search":
-                        result = await web_search(client, str(args.get("query", "")))
+                        result = await web_search(web, str(args.get("query", "")), req.allow_local)
                     elif name == "fetch_url":
-                        result = await fetch_url(client, str(args.get("url", "")))
+                        result = await fetch_url(web, str(args.get("url", "")), req.allow_local)
                     else:
                         result = f"unknown tool {name}"
                     yield _sse({"type": "tool_result", "name": name, "summary": result[:300]})
@@ -298,12 +410,14 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
 async def learn(prov: Provider, messages: list[dict]) -> list[str]:
     """Ask the model for durable facts about the user (used only in 'remember' mode)."""
     convo = [
-        {"role": m["role"], "content": m.get("content", "")}
+        {"role": m["role"], "content": text_of(m.get("content", ""))}
         for m in messages
         if m.get("role") in ("user", "assistant")
     ]
     convo.append({"role": "user", "content": LEARN_PROMPT})
-    async with httpx.AsyncClient(timeout=httpx.Timeout(300, connect=30)) as client:
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(300, connect=30), trust_env=not is_local_url(prov.base_url)
+    ) as client:
         r = await client.post(
             f"{prov.base_url}/chat/completions",
             headers=prov.headers(),

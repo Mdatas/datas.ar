@@ -18,10 +18,10 @@ datas = [
     (os.path.join(ROOT, "datas", "catalog", "media.json"), os.path.join("datas", "catalog")),
     (os.path.join(ROOT, "datas", "sources.json"), "datas"),
     (os.path.join(ROOT, "datas", "apps", "apps.json"), os.path.join("datas", "apps")),
-    (os.path.join(ROOT, "datas", "server", "ui", "index.html"), os.path.join("datas", "server", "ui")),
-    (os.path.join(ROOT, "datas", "server", "ui", "agent.html"), os.path.join("datas", "server", "ui")),
-    (os.path.join(ROOT, "datas", "server", "ui", "datas.ico"), os.path.join("datas", "server", "ui")),
-    (os.path.join(ROOT, "datas", "server", "ui", "datas.png"), os.path.join("datas", "server", "ui")),
+    (os.path.join(ROOT, "datas", "assistants", "catalog.json"), os.path.join("datas", "assistants")),
+    # whole folders: the window (pages, style, scripts, fonts, icons) and the fonts used in PDFs
+    (os.path.join(ROOT, "datas", "server", "ui"), os.path.join("datas", "server", "ui")),
+    (os.path.join(ROOT, "datas", "fonts"), os.path.join("datas", "fonts")),
 ]
 if ICON:
     datas.append((ICON, "."))
@@ -38,7 +38,9 @@ if LINUX:  # Qt backend for pywebview: self-contained, works on Debian and Arch 
                       "PyQt6.QtNetwork", "PyQt6.QtPrintSupport", "PyQt6.QtOpenGLWidgets"]
 # voice stack (optional at runtime; bundled when installed): whisper.cpp bindings, Kokoro + ONNX Runtime,
 # espeak-ng data for phonemes, PortAudio for the microphone
+# document formats: python-docx and python-pptx ship template files that must travel with them
 for pkg in ("gguf", "zeroconf", "huggingface_hub", "rich", "typer", "fastapi", "starlette", "webview",
+            "docx", "pptx", "openpyxl", "fpdf", "pypdf", "markdown_it", "cryptography",
             "pywhispercpp", "kokoro_onnx", "onnxruntime", "espeakng_loader", "phonemizer", "sounddevice", "_sounddevice_data"):
     try:
         d, b, h = collect_all(pkg)

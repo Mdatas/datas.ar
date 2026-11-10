@@ -347,12 +347,12 @@ def chat(base_url: str | None = None, model: str = "datas", system: str | None =
     url = (base_url or f"http://127.0.0.1:{cfg.ui_port}/v1").rstrip("/")
     # If the UI server isn't up, talk to llama-server directly.
     try:
-        httpx.get(url.replace("/v1", "/api/status"), timeout=2)
+        httpx.get(url.replace("/v1", "/api/status"), timeout=2, trust_env=False)
     except httpx.HTTPError:
         url = f"http://127.0.0.1:{cfg.llama_port}/v1"
     con.print(f"chatting with {url} — Ctrl-C to quit")
     messages = [{"role": "system", "content": system}] if system else []
-    with httpx.Client(timeout=600) as client:
+    with httpx.Client(timeout=600, trust_env="127.0.0.1" not in url) as client:
         while True:
             try:
                 q = con.input("[bold cyan]you ›[/] ")

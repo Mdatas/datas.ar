@@ -36,6 +36,15 @@ dependencies = [
   "zeroconf>=0.132",
   "platformdirs>=4.0",
   "pywebview>=5.0",
+  # reading and writing everyday documents (all pure Python or with wheels for every desktop OS)
+  "pypdf>=5.0",
+  "python-docx>=1.1",
+  "openpyxl>=3.1",
+  "python-pptx>=1.0",
+  "fpdf2>=2.8",
+  "markdown-it-py>=3.0",
+  # encrypted link between the user's own devices (TLS certificates)
+  "cryptography>=42",
 ]
 
 [project.optional-dependencies]
@@ -60,10 +69,9 @@ packages = ["datas"]
 "datas/catalog/media.json" = "datas/catalog/media.json"
 "datas/sources.json" = "datas/sources.json"
 "datas/apps/apps.json" = "datas/apps/apps.json"
-"datas/server/ui/index.html" = "datas/server/ui/index.html"
-"datas/server/ui/agent.html" = "datas/server/ui/agent.html"
-"datas/server/ui/datas.ico" = "datas/server/ui/datas.ico"
-"datas/server/ui/datas.png" = "datas/server/ui/datas.png"
+"datas/assistants/catalog.json" = "datas/assistants/catalog.json"
+"datas/server/ui" = "datas/server/ui"
+"datas/fonts" = "datas/fonts"
 
 [tool.ruff]
 line-length = 100

@@ -7,8 +7,8 @@ Two modes, chosen by the user on first run and switchable any time:
   shown to the user, editable, deletable.
 * **forget** — nothing here is written. The functions below become no-ops.
 
-Context files (``<home>/context``) are documents the user adds so the AI can use them;
-skills are ready-made instructions ("summarize", "translate", …).
+Context files (``<home>/context``) are documents the user adds so the AI can use them in every
+chat (PDF, Word, Excel, PowerPoint, text…). Ready-made instructions live in ``datas.assistants``.
 """
 
 from __future__ import annotations
@@ -45,58 +45,150 @@ def memory_path() -> Path:
 # ---- chats --------------------------------------------------------------------
 
 
-def save_chat(cfg: Config, chat_id: str | None, messages: list[dict], model: str) -> str | None:
+def _title_from(messages: list[dict]) -> str:
+    first = next(
+        (_text_of(m["content"]) for m in messages if m.get("role") == "user" and m.get("content")),
+        "",
+    )
+    first = " ".join(first.split())
+    return (first[:60] + ("…" if len(first) > 60 else "")) or "New chat"
+
+
+def _tombstones_path() -> Path:
+    return chats_dir() / ".deleted.json"
+
+
+def tombstones() -> dict[str, float]:
+    p = _tombstones_path()
+    try:
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    except ValueError:
+        return {}
+
+
+def save_chat(
+    cfg: Config,
+    chat_id: str | None,
+    messages: list[dict],
+    model: str,
+    model_name: str = "",
+    skill: str | None = None,
+    attachments: list[dict] | None = None,
+    provider: str | None = None,
+) -> str | None:
+    """Create or update a chat. A title the user typed (rename) is kept; otherwise the title is
+    the start of the first question. ``skill`` is the helper (assistant) the chat uses;
+    ``attachments`` are the documents added to this chat ({name, text}). Returns the id, or
+    None in Forget mode."""
     if cfg.forget:
         return None
-    cid = chat_id or uuid.uuid4().hex[:12]
-    title = next(
-        (m["content"][:60] for m in messages if m.get("role") == "user" and m.get("content")),
-        "chat",
-    )
-    (chats_dir() / f"{cid}.json").write_text(
-        json.dumps(
-            {
-                "id": cid,
-                "title": title,
-                "model": model,
-                "updated": time.time(),
-                "messages": messages,
-            },
-            ensure_ascii=False,
-            indent=1,
-        )
-    )
+    cid = Path(chat_id).name if chat_id else uuid.uuid4().hex[:12]
+    p = chats_dir() / f"{cid}.json"
+    old: dict = {}
+    if p.exists():
+        try:
+            old = json.loads(p.read_text(encoding="utf-8"))
+        except ValueError:
+            old = {}
+    now = time.time()
+    data = {
+        "id": cid,
+        "title": old["title"] if old.get("title_custom") else _title_from(messages),
+        "title_custom": bool(old.get("title_custom")),
+        "model": model,
+        "model_name": model_name or old.get("model_name", ""),
+        "provider": provider if provider is not None else old.get("provider", ""),
+        "skill": skill if skill is not None else old.get("skill"),
+        "attachments": attachments if attachments is not None else old.get("attachments", []),
+        "created": old.get("created", now),
+        "updated": now,
+        "messages": messages,
+    }
+    _write_chat(p, data)
     return cid
 
 
-def list_chats() -> list[dict]:
+def _write_chat(p: Path, data: dict) -> None:
+    """Write through a temporary file so a crash or a full disk never leaves half a chat."""
+    tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(p)
+
+
+def _text_of(content) -> str:  # noqa: ANN001 - str, or OpenAI-style parts when a picture is attached
+    if isinstance(content, list):
+        return " ".join(
+            str(part.get("text", "")) for part in content if isinstance(part, dict)
+        ).strip()
+    return str(content or "")
+
+
+def _read(p: Path) -> dict | None:
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+
+
+def list_chats(query: str | None = None) -> list[dict]:
+    """Newest first. With ``query``: chats whose title or any message contains every word
+    (case-insensitive), each with a short snippet around the first hit."""
+    words = [w for w in (query or "").lower().split() if w]
     out = []
     for p in chats_dir().glob("*.json"):
-        try:
-            d = json.loads(p.read_text())
-            out.append(
-                {
-                    "id": d["id"],
-                    "title": d.get("title", ""),
-                    "model": d.get("model", ""),
-                    "updated": d.get("updated", 0),
-                    "messages": len(d.get("messages", [])),
-                }
-            )
-        except Exception:
+        d = _read(p)
+        if not d or "id" not in d:
             continue
+        item = {
+            "id": d["id"],
+            "title": d.get("title", ""),
+            "model": d.get("model", ""),
+            "model_name": d.get("model_name", ""),
+            "skill": d.get("skill"),
+            "created": d.get("created", d.get("updated", 0)),
+            "updated": d.get("updated", 0),
+            "messages": len(d.get("messages", [])),
+        }
+        if words:
+            texts = [d.get("title", "")] + [
+                _text_of(m.get("content", "")) for m in d.get("messages", [])
+            ]
+            hay = "\n".join(texts).lower()
+            if not all(w in hay for w in words):
+                continue
+            hit = next((t for t in texts[1:] if words[0] in t.lower()), "")
+            if hit:
+                i = hit.lower().index(words[0])
+                item["snippet"] = ("…" if i > 40 else "") + " ".join(
+                    hit[max(0, i - 40) : i + 80].split()
+                )
+        out.append(item)
     return sorted(out, key=lambda x: x["updated"], reverse=True)
 
 
 def load_chat(chat_id: str) -> dict | None:
-    p = chats_dir() / f"{chat_id}.json"
-    return json.loads(p.read_text()) if p.exists() else None
+    p = chats_dir() / f"{Path(chat_id).name}.json"
+    return _read(p) if p.exists() else None
+
+
+def rename_chat(chat_id: str, title: str) -> bool:
+    p = chats_dir() / f"{Path(chat_id).name}.json"
+    d = _read(p) if p.exists() else None
+    title = " ".join(title.split())[:120]
+    if not d or not title:
+        return False
+    d["title"], d["title_custom"], d["updated"] = title, True, time.time()
+    _write_chat(p, d)
+    return True
 
 
 def delete_chat(chat_id: str) -> bool:
-    p = chats_dir() / f"{chat_id}.json"
+    p = chats_dir() / f"{Path(chat_id).name}.json"
     if p.exists():
         p.unlink()
+        t = tombstones()  # remembered so a linked device does not bring the chat back
+        t[Path(chat_id).name] = time.time()
+        _tombstones_path().write_text(json.dumps(t), encoding="utf-8")
         return True
     return False
 
@@ -104,12 +196,15 @@ def delete_chat(chat_id: str) -> bool:
 def wipe_everything() -> dict:
     """The 'forget me' button: chats, notes and context files."""
     n = 0
+    t = tombstones()
     for p in chats_dir().glob("*.json"):
+        t[p.stem] = time.time()
         p.unlink()
         n += 1
+    _tombstones_path().write_text(json.dumps(t), encoding="utf-8")
     if memory_path().exists():
         memory_path().unlink()
-    for p in context_dir().iterdir():
+    for p in list(context_dir().iterdir()) + list(_cache_dir().iterdir()):
         if p.is_file():
             p.unlink()
     return {"chats_deleted": n}
@@ -152,137 +247,79 @@ LEARN_PROMPT = (
 
 
 # ---- context files --------------------------------------------------------------
+# Documents the user wants the AI to use in every chat. The original file is kept as is; its
+# text is extracted once (PDF, Word, Excel, PowerPoint, web page, text) and cached beside it.
 
-TEXT_SUFFIXES = {
-    ".txt",
-    ".md",
-    ".csv",
-    ".json",
-    ".py",
-    ".js",
-    ".html",
-    ".xml",
-    ".yaml",
-    ".yml",
-    ".log",
-    ".ini",
-    ".toml",
-}
+
+def _cache_dir() -> Path:
+    p = context_dir() / ".text"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 def list_context() -> list[dict]:
+    from datas import docs
+
     out = []
     for p in sorted(context_dir().iterdir()):
         if p.is_file():
-            out.append(
-                {
-                    "name": p.name,
-                    "bytes": p.stat().st_size,
-                    "text": p.suffix.lower() in TEXT_SUFFIXES,
-                }
-            )
+            out.append({"name": p.name, "bytes": p.stat().st_size, "text": docs.supported(p.name)})
     return out
 
 
 def add_context(name: str, data: bytes) -> dict:
-    safe = "".join(c for c in name if c.isalnum() or c in " -_.()").strip() or "file.txt"
+    """Raises ValueError (plain reason) when the file cannot be read as text."""
+    from datas import docs
+
+    safe = "".join(c for c in Path(name).name if c.isalnum() or c in " -_.()").strip() or "file.txt"
+    text = docs.extract_text(safe, data)
     p = context_dir() / safe
     p.write_bytes(data)
-    return {"name": safe, "bytes": len(data)}
+    (_cache_dir() / (safe + ".txt")).write_text(text, encoding="utf-8")
+    return {"name": safe, "bytes": len(data), "chars": len(text)}
 
 
 def delete_context(name: str) -> bool:
-    p = context_dir() / name
+    p = context_dir() / Path(name).name
     if p.exists() and p.is_file():
         p.unlink()
+        (_cache_dir() / (p.name + ".txt")).unlink(missing_ok=True)
         return True
     return False
 
 
+def context_docs() -> list[dict]:
+    """[{name, text}] for every readable context file (extracting any not cached yet)."""
+    from datas import docs
+
+    out = []
+    for p in sorted(context_dir().iterdir()):
+        if not p.is_file() or not docs.supported(p.name):
+            continue
+        cache = _cache_dir() / (p.name + ".txt")
+        try:
+            if cache.exists() and cache.stat().st_mtime >= p.stat().st_mtime:
+                text = cache.read_text(encoding="utf-8")
+            else:
+                text = docs.extract_text(p.name, p.read_bytes())
+                cache.write_text(text, encoding="utf-8")
+        except (ValueError, OSError):
+            continue
+        if text.strip():
+            out.append({"name": p.name, "text": text})
+    return out
+
+
 def context_text(limit: int = MAX_CONTEXT_CHARS) -> str:
-    """Concatenate text context files (truncated fairly) for the system prompt."""
-    files = [
-        p
-        for p in sorted(context_dir().iterdir())
-        if p.is_file() and p.suffix.lower() in TEXT_SUFFIXES
-    ]
+    """All context documents as one block, cut fairly to ``limit`` characters."""
+    files = context_docs()
     if not files:
         return ""
     per = max(2000, limit // len(files))
     parts = []
-    for p in files:
-        try:
-            t = p.read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            continue
+    for f in files:
+        t = f["text"]
         if len(t) > per:
             t = t[:per] + "\n…(truncated)"
-        parts.append(f"### File: {p.name}\n{t}")
+        parts.append(f"### File: {f['name']}\n{t}")
     return "\n\n".join(parts)
-
-
-# ---- skills -----------------------------------------------------------------------
-
-SKILLS: list[dict] = [
-    {
-        "id": "guide",
-        "en": "Ask Datas (guide)",
-        "es": "Preguntale a Datas (guía)",
-        "prompt": "GUIDE",  # replaced at request time by datas.guide.build(): this device, its verdicts, the models, how to prompt
-    },
-    {
-        "id": "plain",
-        "en": "Explain simply",
-        "es": "Explicar fácil",
-        "prompt": "Explain things in plain language for someone with no technical background. Short sentences. Spell out every acronym the first time.",
-    },
-    {
-        "id": "summarize",
-        "en": "Summarize",
-        "es": "Resumir",
-        "prompt": "Summarize the text the user gives you: first a one-sentence takeaway, then 3–6 bullets of the key points. Keep the original language.",
-    },
-    {
-        "id": "email",
-        "en": "Write an email",
-        "es": "Escribir un email",
-        "prompt": "Draft emails: clear subject line, polite and concise body, one call to action. Ask for missing details only if essential.",
-    },
-    {
-        "id": "translate",
-        "en": "Translate",
-        "es": "Traducir",
-        "prompt": "Translate what the user gives you. If they do not say the target language, ask once. Keep tone and formatting.",
-    },
-    {
-        "id": "proofread",
-        "en": "Fix my writing",
-        "es": "Corregir mi texto",
-        "prompt": "Correct spelling, grammar and clarity without changing the meaning or voice. Show the corrected text, then list the main changes briefly.",
-    },
-    {
-        "id": "teach",
-        "en": "Teach me",
-        "es": "Enseñame",
-        "prompt": "Act as a patient tutor: check what the user already knows, explain step by step with one example, then ask one short question to confirm understanding.",
-    },
-    {
-        "id": "code",
-        "en": "Help me code",
-        "es": "Ayudame a programar",
-        "prompt": "Help with programming: give working code with brief comments, explain what it does in two sentences, mention how to run it.",
-    },
-    {
-        "id": "plan",
-        "en": "Make a plan",
-        "es": "Armar un plan",
-        "prompt": "Turn the user's goal into a realistic step-by-step plan with rough timing and the first concrete action to take today.",
-    },
-]
-
-
-def skill_prompt(skill_id: str | None) -> str:
-    for s in SKILLS:
-        if s["id"] == skill_id:
-            return s["prompt"]
-    return ""

@@ -108,6 +108,22 @@ class Config:
     # or cuda / rocm / vulkan / cpu) and the port of its local server
     image_backend: str = "auto"
     sd_port: int = 8422
+    # Look of the window: "auto" follows the computer's light/dark setting, or "day" / "night"
+    theme: str = "auto"
+    # Put the AI to sleep after this many quiet minutes to give the memory back (0 = never);
+    # it wakes by itself on the next message.
+    idle_sleep_min: int = 30
+    # How the AI was last started (model, working memory, options), so it can be woken the same way
+    last_run: dict = field(default_factory=dict)
+    # Let the AI's web tools open addresses inside the user's own network (off: public internet only)
+    allow_local_fetch: bool = False
+    # Linked devices (datas.link): port of the encrypted link, share this device's memory with
+    # them, keep chats in step between them
+    link_port: int = 8424
+    link_enabled: bool = False
+    link_share_memory: bool = True
+    link_sync_chats: bool = True
+    device_name: str = ""
 
     @property
     def forget(self) -> bool:
@@ -123,16 +139,53 @@ class Config:
         p = home() / CONFIG_PATH_NAME
         if not p.exists():
             return cls()
-        data = json.loads(p.read_text())
-        remotes = [RemoteProviderConfig(**r) for r in data.pop("remotes", [])]
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("not an object")
+        except (ValueError, OSError):
+            # A damaged settings file (power cut, full disk) must not stop the app: keep it
+            # aside for inspection, fall back to the last good copy, else start fresh.
+            try:
+                p.replace(p.with_name(CONFIG_PATH_NAME + ".damaged"))
+            except OSError:
+                pass
+            bak = p.with_name(CONFIG_PATH_NAME + ".bak")
+            try:
+                data = json.loads(bak.read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    raise ValueError("not an object")
+            except (ValueError, OSError):
+                return cls()
+        remotes = []
+        for r in data.pop("remotes", []) or []:
+            try:
+                remotes.append(RemoteProviderConfig(**r))
+            except TypeError:
+                continue
         known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
-        cfg = cls(**known)
+        try:
+            cfg = cls(**known)
+        except TypeError:
+            cfg = cls()
         cfg.remotes = remotes
         return cfg
 
     def save(self) -> Path:
+        """Written through a temporary file, keeping the previous good copy as ``.bak``."""
         p = home() / CONFIG_PATH_NAME
-        p.write_text(json.dumps(asdict(self), indent=2))
+        tmp = p.with_name(CONFIG_PATH_NAME + ".tmp")
+        tmp.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
+        if p.exists():
+            try:
+                p.replace(p.with_name(CONFIG_PATH_NAME + ".bak"))
+            except OSError:
+                pass
+        tmp.replace(p)
+        try:
+            os.chmod(p, 0o600)  # holds API keys: readable by this user only (no effect on Windows)
+        except OSError:
+            pass
         return p
 
     def remote(self, name: str) -> RemoteProviderConfig | None:

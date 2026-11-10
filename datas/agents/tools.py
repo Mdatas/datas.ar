@@ -22,6 +22,8 @@ from urllib.parse import quote_plus, unquote, urlparse
 
 import httpx
 
+from datas import netguard
+
 MAX_READ = 200_000  # chars
 MAX_FETCH = 200_000
 MAX_LIST = 400
@@ -36,6 +38,7 @@ class ToolContext:
     roots: list[Path] = field(default_factory=list)  # extra folders the user granted
     allow_shell: bool = False
     allow_network: bool = True
+    allow_local: bool = False  # web tools may open addresses inside the user's own network
     shell_timeout: int = 60
     # ask = "all" (approve every action) | "risky" (only what touches your folders, runs commands,
     # opens things) | "none" (just do it, I'm watching). confirm(text) -> True/False blocks until answered.
@@ -280,16 +283,15 @@ def web_search(ctx: ToolContext, query: str, max_results: int = 8) -> str:
     if not ctx.allow_network:
         return "DENIED: internet is off for this session."
     try:
-        r = httpx.get(
-            "https://html.duckduckgo.com/html/",
-            params={"q": query},
-            headers={"User-Agent": "Mozilla/5.0 datas.ar"},
-            timeout=20,
-            follow_redirects=True,
+        r = netguard.get(
+            "https://html.duckduckgo.com/html/", ctx.allow_local, params={"q": query}, timeout=20
         )
-        r.raise_for_status()
+    except netguard.Blocked as e:
+        return f"search blocked: {e}"
     except httpx.HTTPError as e:
         return f"search failed: {e}"
+    if r.status >= 400:
+        return f"search failed: HTTP {r.status}"
     items = []
     for m in re.finditer(
         r'<a rel="nofollow" class="result__a" href="([^"]+)"[^>]*>(.*?)</a>.*?'
@@ -308,24 +310,32 @@ def web_search(ctx: ToolContext, query: str, max_results: int = 8) -> str:
 
 
 def fetch_url(ctx: ToolContext, url: str) -> str:
+    """Public web pages only (see datas.netguard); PDFs come back as their text."""
     if not ctx.allow_network:
         return "DENIED: internet is off for this session."
-    if not url.startswith(("http://", "https://")):
-        return "only http(s) URLs"
     try:
-        r = httpx.get(url, timeout=30, follow_redirects=True, headers={"User-Agent": "datas-agent"})
+        r = netguard.get(url, ctx.allow_local)
+    except netguard.Blocked as e:
+        return f"DENIED: {e}"
     except httpx.HTTPError as e:
         return f"error: {e}"
-    ctype = r.headers.get("content-type", "")
+    ctype = r.content_type
     if "html" in ctype:
         text = re.sub(r"<(script|style|noscript)[^>]*>.*?</\1>", " ", r.text, flags=re.S | re.I)
         text = html.unescape(re.sub(r"<[^>]+>", " ", text))
         body = re.sub(r"[ \t]+", " ", re.sub(r"\n\s*\n+", "\n", text)).strip()
     elif "text" in ctype or "json" in ctype or "xml" in ctype:
         body = r.text
+    elif "pdf" in ctype or r.url.lower().endswith(".pdf"):
+        try:
+            from datas import docs
+
+            body = docs.extract_text("page.pdf", r.body)
+        except ValueError as e:
+            body = f"(a PDF that could not be read: {e})"
     else:
-        body = f"({len(r.content)} bytes of {ctype})"
-    return f"HTTP {r.status_code} {ctype} {urlparse(url).netloc}\n{body[:MAX_FETCH]}"
+        body = f"({len(r.body)} bytes of {ctype})"
+    return f"HTTP {r.status} {ctype} {urlparse(r.url).netloc}\n{body[:MAX_FETCH]}"
 
 
 def search_url(query: str) -> str:

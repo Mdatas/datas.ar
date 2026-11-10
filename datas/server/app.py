@@ -20,10 +20,12 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
-from datas import __version__, chat_engine, chats, library, shortcuts
+from datas import __version__, assistants, chat_engine, chats, docs, library, shortcuts
+from datas import export as exporter
 from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
 from datas.orchestrator import Datas
@@ -35,20 +37,46 @@ app = FastAPI(title="Datas.ar", version=__version__, docs_url="/api/docs", redoc
 core = Datas()
 
 
+def ui_dir() -> Path:
+    return Path(str(resources.files("datas.server").joinpath("ui")))
+
+
 def ui_html() -> str:
-    return Path(str(resources.files("datas.server").joinpath("ui/index.html"))).read_text(
-        encoding="utf-8"
-    )
+    return (ui_dir() / "index.html").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
 # UI
 # ---------------------------------------------------------------------------
 
+UI_TYPES = {
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+    ".woff2": "font/woff2",
+    ".txt": "text/plain; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+}
+NO_STORE = {"Cache-Control": "no-store"}  # the app is local: always serve the installed files
+
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    return ui_html()
+def index() -> HTMLResponse:
+    return HTMLResponse(ui_html(), headers=NO_STORE)
+
+
+@app.get("/ui/{path:path}")
+def ui_file(path: str):
+    """Style sheet, scripts, fonts and icons of the window (all shipped with the app)."""
+    root = ui_dir().resolve()
+    p = (root / path).resolve()
+    if root not in p.parents or not p.is_file() or p.suffix.lower() not in UI_TYPES:
+        raise HTTPException(404, "no such file")
+    cache = {"Cache-Control": "max-age=86400"} if p.suffix == ".woff2" else NO_STORE
+    return FileResponse(str(p), media_type=UI_TYPES[p.suffix.lower()], headers=cache)
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +89,10 @@ def _start_background() -> None:
     try:
         core.start_scheduler()
     except Exception:  # noqa: BLE001 - never block the server on this
+        pass
+    try:
+        core.start_watch()
+    except Exception:  # noqa: BLE001
         pass
 
 
@@ -339,7 +371,6 @@ async def voice_hear(request: Request, lang: str | None = None) -> dict:
 
 @app.post("/api/voice/speak")
 def voice_speak(body: SpeakBody):
-    from fastapi.responses import Response
 
     from datas.engines import voice as voice_engine
 
@@ -394,6 +425,9 @@ class Settings(BaseModel):
     voice_tts_voice: str | None = None
     voice_speak_answers: bool | None = None
     image_backend: str | None = None
+    theme: str | None = None
+    idle_sleep_min: int | None = None
+    allow_local_fetch: bool | None = None
 
 
 @app.get("/api/settings")
@@ -414,6 +448,9 @@ def settings_get() -> dict:
         "voice_tts_voice": c.voice_tts_voice,
         "voice_speak_answers": c.voice_speak_answers,
         "image_backend": c.image_backend,
+        "theme": c.theme,
+        "idle_sleep_min": c.idle_sleep_min,
+        "allow_local_fetch": c.allow_local_fetch,
     }
 
 
@@ -445,8 +482,22 @@ def settings_set(body: Settings) -> dict:
         "metal",
     ):
         c.image_backend = body.image_backend
+    if body.theme in ("auto", "day", "night"):
+        c.theme = body.theme
+    if body.idle_sleep_min is not None:
+        c.idle_sleep_min = max(0, min(24 * 60, body.idle_sleep_min))
+    if body.allow_local_fetch is not None:
+        c.allow_local_fetch = body.allow_local_fetch
     c.save()
     return settings_get()
+
+
+@app.get("/api/notice")
+def notice() -> dict:
+    """One thing the window should tell the user (an engine that stopped, a device that went
+    offline…). Returned once."""
+    n, core.notice = core.notice, None
+    return {"notice": n}
 
 
 # ---------------------------------------------------------------------------
@@ -681,8 +732,13 @@ def privacy_wipe() -> dict:
 
 
 @app.get("/api/library")
-def library_list() -> dict:
-    return {"installed": library.installed(), "running": core.server.state.to_dict()}
+def library_list(lang: str | None = None) -> dict:
+    """Installed AIs with a plain summary, this device's cost and other versions."""
+    try:
+        items = library.details(core, lang or core.cfg.lang)
+    except Exception:  # noqa: BLE001 - never lose the list over the extras
+        items = library.installed()
+    return {"installed": items, "running": core.server.state.to_dict()}
 
 
 class ModelIdBody(BaseModel):
@@ -712,53 +768,107 @@ def library_remove(model_id: str) -> dict:
     return library.remove(model_id)
 
 
+class Attachment(BaseModel):
+    name: str
+    text: str = ""
+
+
 class ChatBody(BaseModel):
     messages: list[dict[str, Any]]
     internet: bool = False
-    skill: str | None = None
+    skill: str | None = None  # helper id ("assistant" is accepted too)
+    assistant: str | None = None
+    attachments: list[Attachment] = []
     lang: str | None = None
     chat_id: str | None = None
 
 
+def _ctx_tokens(prov) -> int:  # noqa: ANN001 - Provider
+    """Working memory of the AI that will answer: the running engine's, else an assumption."""
+    if prov.kind in ("local", "pool"):
+        args = core.server.state.args or []
+        for i, a in enumerate(args[:-1]):
+            if a in ("-c", "--ctx-size"):
+                try:
+                    return int(args[i + 1])
+                except ValueError:
+                    break
+        return core.cfg.context
+    return chat_engine.REMOTE_CONTEXT
+
+
+def _canned(text: str) -> StreamingResponse:
+    async def gen():
+        yield f"data: {json.dumps({'type': 'token', 'text': text}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(
+        gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
+    )
+
+
 @app.post("/api/chat")
 async def chat(body: ChatBody):
+    helper = body.assistant or body.skill
+    lang = body.lang or core.cfg.lang
+    core.touch()
     prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    if prov.kind in ("local", "pool") and not core.server.running() and body.skill == "guide":
+    local = prov.kind in ("local", "pool")
+    if local and not core.server.running() and core.can_wake():
+        # the AI was put to sleep after a quiet spell (or the app restarted): wake the same one
+        try:
+            await run_in_threadpool(core.wake)
+        except Exception as e:  # noqa: BLE001
+            return JSONResponse(
+                {"error": "wake_failed", "message": f"The AI could not be started again: {e}"},
+                status_code=503,
+            )
+        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    if local and not core.server.running() and helper == "guide":
         from datas import guide
 
         last = next(
-            (m.get("content", "") for m in reversed(body.messages) if m.get("role") == "user"), ""
+            (
+                chat_engine.text_of(m.get("content", ""))
+                for m in reversed(body.messages)
+                if m.get("role") == "user"
+            ),
+            "",
         )
-        text = guide.offline_answer(core, last, body.lang or core.cfg.lang)
-
-        async def canned():
-            yield f"data: {json.dumps({'type': 'token', 'text': text}, ensure_ascii=False)}\n\n"
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
-
-        return StreamingResponse(
-            canned(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
-        )
-    if prov.kind in ("local", "pool") and not core.server.running():
+        return _canned(guide.offline_answer(core, last, lang))
+    if local and not core.server.running():
         return JSONResponse(
             {"error": "no_model", "message": "No AI is running yet."}, status_code=503
         )
     extra = None
-    if body.skill == "guide":
+    if helper == "guide":
         from datas import guide
 
         try:
-            extra = guide.build(core, body.lang or core.cfg.lang)
+            extra = guide.build(core, lang)
         except Exception as e:  # noqa: BLE001 - the guide must never break the chat
             extra = f"You are the Datas guide. (Device facts unavailable: {e})"
     req = chat_engine.ChatRequest(
         messages=body.messages,
         internet=body.internet,
-        skill=body.skill,
-        lang=body.lang or core.cfg.lang,
+        skill=helper,
+        lang=lang,
         extra=extra,
+        attachments=[a.model_dump() for a in body.attachments],
+        ctx_tokens=_ctx_tokens(prov),
+        allow_local=core.cfg.allow_local_fetch,
     )
+
+    async def stream():
+        try:
+            async for chunk in chat_engine.stream_chat(core.cfg, prov, req):
+                core.touch()
+                yield chunk
+        finally:
+            core.touch()
+
     return StreamingResponse(
-        chat_engine.stream_chat(core.cfg, prov, req),
+        stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -768,17 +878,55 @@ class SaveChatBody(BaseModel):
     chat_id: str | None = None
     messages: list[dict[str, Any]]
     model: str = ""
+    model_name: str = ""
+    skill: str | None = None
+    attachments: list[Attachment] | None = None
+    provider: str | None = None
+
+
+class RenameBody(BaseModel):
+    title: str
+
+
+def _model_name(model_id: str | None) -> str:
+    if not model_id:
+        return ""
+    try:
+        return core.catalog.get(model_id).name
+    except Exception:  # noqa: BLE001 - custom file or a remote provider's model
+        return Path(model_id.split(":", 1)[-1]).stem if model_id.startswith("custom:") else model_id
 
 
 @app.get("/api/chats")
-def chats_list() -> dict:
-    return {"chats": [] if core.cfg.forget else chats.list_chats(), "forget": core.cfg.forget}
+def chats_list(q: str | None = None) -> dict:
+    """All saved chats, newest first; ``q`` searches titles and messages."""
+    return {"chats": [] if core.cfg.forget else chats.list_chats(q), "forget": core.cfg.forget}
 
 
 @app.post("/api/chats")
 def chats_save(body: SaveChatBody) -> dict:
-    cid = chats.save_chat(core.cfg, body.chat_id, body.messages, body.model or core.cfg.model_id)
+    model = body.model or core.cfg.model_id or ""
+    cid = chats.save_chat(
+        core.cfg,
+        body.chat_id,
+        body.messages,
+        model,
+        body.model_name or _model_name(model),
+        body.skill,
+        None if body.attachments is None else [a.model_dump() for a in body.attachments],
+        body.provider if body.provider is not None else core.cfg.provider,
+    )
+    if cid:
+        core.chat_saved(cid)
     return {"chat_id": cid, "saved": cid is not None}
+
+
+@app.patch("/api/chats/{chat_id}")
+def chats_rename(chat_id: str, body: RenameBody) -> dict:
+    if not chats.rename_chat(chat_id, body.title):
+        raise HTTPException(404, "no such chat")
+    core.chat_saved(chat_id)
+    return {"renamed": True}
 
 
 @app.get("/api/chats/{chat_id}")
@@ -791,7 +939,10 @@ def chats_get(chat_id: str) -> dict:
 
 @app.delete("/api/chats/{chat_id}")
 def chats_del(chat_id: str) -> dict:
-    return {"deleted": chats.delete_chat(chat_id)}
+    ok = chats.delete_chat(chat_id)
+    if ok:
+        core.chat_saved(chat_id)
+    return {"deleted": ok}
 
 
 @app.post("/api/chat/learn")
@@ -837,7 +988,10 @@ def context_list() -> dict:
 def context_add(body: ContextBody) -> dict:
     import base64
 
-    return chats.add_context(body.name, base64.b64decode(body.content_base64))
+    try:
+        return chats.add_context(body.name, base64.b64decode(body.content_base64))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
 
 
 @app.delete("/api/context/{name}")
@@ -859,7 +1013,164 @@ def guide_info(lang: str | None = None) -> dict:
 
 @app.get("/api/skills")
 def skills() -> dict:
-    return {"skills": [{"id": s["id"], "en": s["en"], "es": s["es"]} for s in chats.SKILLS]}
+    """Older name of /api/assistants, kept for scripts written against it."""
+    return {
+        "skills": [
+            {
+                "id": a["id"],
+                "en": assistants.public(a, "en")["name"],
+                "es": assistants.public(a, "es")["name"],
+            }
+            for a in assistants.all_assistants()
+        ]
+    }
+
+
+# ---- helpers (assistants): ready-made and the user's own --------------------------
+
+
+class HelperBody(BaseModel):
+    name: str
+    prompt: str
+    blurb: str = ""
+    starters: list[str] = []
+    export: list[str] = []
+    id: str | None = None
+
+
+@app.get("/api/assistants")
+def assistants_list(lang: str | None = None) -> dict:
+    return assistants.listing(lang or core.cfg.lang)
+
+
+@app.get("/api/assistants/{aid}")
+def assistants_get(aid: str, lang: str | None = None) -> dict:
+    a = assistants.get(aid)
+    if not a:
+        raise HTTPException(404, "no such helper")
+    return assistants.public(a, lang or core.cfg.lang, with_prompt=True)
+
+
+@app.post("/api/assistants")
+def assistants_save(body: HelperBody) -> dict:
+    try:
+        return assistants.save_custom(
+            body.name, body.prompt, body.blurb, body.starters, body.export, body.id
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    except KeyError as e:
+        raise HTTPException(404, "no such helper") from e
+
+
+@app.delete("/api/assistants/{aid}")
+def assistants_delete(aid: str) -> dict:
+    return {"deleted": assistants.delete_custom(aid)}
+
+
+class FileBody(BaseModel):
+    name: str
+    content_base64: str
+
+
+def _decode(body: FileBody) -> bytes:
+    import base64
+    import binascii
+
+    try:
+        return base64.b64decode(body.content_base64, validate=False)
+    except (binascii.Error, ValueError) as e:
+        raise HTTPException(400, "the file did not arrive whole; try again") from e
+
+
+@app.post("/api/assistants/{aid}/docs")
+def assistants_doc_add(aid: str, body: FileBody) -> dict:
+    try:
+        return assistants.add_doc(aid, body.name, _decode(body))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    except KeyError as e:
+        raise HTTPException(404, "no such helper") from e
+
+
+@app.delete("/api/assistants/{aid}/docs/{name}")
+def assistants_doc_del(aid: str, name: str) -> dict:
+    try:
+        return {"deleted": assistants.delete_doc(aid, name)}
+    except KeyError as e:
+        raise HTTPException(404, "no such helper") from e
+
+
+# ---- documents in a chat, and saving answers as files ------------------------------
+
+ATTACH_CAP = 400_000  # characters kept per attached document (the AI gets matching passages)
+
+
+@app.post("/api/docs/extract")
+def docs_extract(body: FileBody) -> dict:
+    """Turn a PDF, Word, Excel, PowerPoint or text file into text for the chat. Nothing is
+    stored here: the window keeps the text with the chat."""
+    try:
+        text = docs.extract_text(body.name, _decode(body))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return {
+        "name": Path(body.name).name,
+        "text": text[:ATTACH_CAP],
+        "chars": len(text),
+        "truncated": len(text) > ATTACH_CAP,
+    }
+
+
+@app.get("/api/docs/formats")
+def docs_formats() -> dict:
+    return {"read": sorted(docs.SUPPORTED), "write": list(exporter.FORMATS)}
+
+
+class ExportBody(BaseModel):
+    markdown: str
+    format: str
+    title: str = ""
+    lang: str | None = None
+
+
+@app.post("/api/export")
+def export_answer(body: ExportBody) -> dict:
+    """Save an answer as Word, Excel, PowerPoint, PDF, web page, Markdown or text."""
+    if body.format not in exporter.FORMATS:
+        raise HTTPException(400, f"unknown format; choose one of {', '.join(exporter.FORMATS)}")
+    try:
+        p = exporter.export(body.markdown, body.format, body.title, body.lang or core.cfg.lang)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return {"path": str(p), "name": p.name, "folder": str(p.parent)}
+
+
+class ExportCodeBody(BaseModel):
+    code: str
+    lang: str = ""
+    title: str = ""
+
+
+@app.post("/api/export/code")
+def export_code(body: ExportCodeBody) -> dict:
+    p = exporter.export_code(body.code, body.lang, body.title)
+    return {"path": str(p), "name": p.name, "folder": str(p.parent)}
+
+
+class OpenBody(BaseModel):
+    path: str
+    reveal: bool = False
+
+
+@app.post("/api/open")
+def open_exported(body: OpenBody) -> dict:
+    """Open a file Datas saved (or show it in its folder) with the user's usual program."""
+    try:
+        exporter.open_file(exporter.allowed(body.path), body.reveal)
+    except (ValueError, OSError) as e:
+        raise HTTPException(400, str(e)) from e
+    return {"opened": True}
 
 
 @app.get("/agent", response_class=HTMLResponse)
@@ -902,8 +1213,18 @@ def agent_run(body: AgentBody):
     )
 
     def gen():
-        for ev in run_agent(body.task, acfg):
-            yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+        core.agent_busy += 1
+        try:
+            if not core.server.running() and core.can_wake():
+                yield f"data: {json.dumps({'type': 'assistant', 'step': 0, 'content': 'Waking the AI…'})}\n\n"
+                core.wake()
+            for ev in run_agent(body.task, acfg):
+                core.touch()
+                yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+        except Exception as e:  # noqa: BLE001
+            yield f"data: {json.dumps({'type': 'error', 'step': 0, 'error': str(e)})}\n\n"
+        finally:
+            core.agent_busy -= 1
 
     return StreamingResponse(
         gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
@@ -1118,7 +1439,14 @@ _HOP = {
 
 @app.api_route("/v1/{path:path}", methods=["GET", "POST"])
 async def v1_proxy(path: str, request: Request):
+    core.touch()
     prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    if prov.kind in ("local", "pool") and not core.server.running() and core.can_wake():
+        try:
+            await run_in_threadpool(core.wake)
+        except Exception:  # noqa: BLE001 - reported just below as "no model running"
+            pass
+        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
     if prov.kind in ("local", "pool") and not core.server.running():
         return JSONResponse(
             {
@@ -1144,7 +1472,10 @@ async def v1_proxy(path: str, request: Request):
             pass
     headers = {k: v for k, v in request.headers.items() if k.lower() not in _HOP}
     headers.update(prov.headers())
-    client = httpx.AsyncClient(timeout=httpx.Timeout(600, connect=30))
+    client = httpx.AsyncClient(
+        timeout=httpx.Timeout(600, connect=30),
+        trust_env=not chat_engine.is_local_url(prov.base_url),
+    )
     try:
         req = client.build_request(
             request.method, url, content=body, headers=headers, params=dict(request.query_params)
@@ -1160,6 +1491,7 @@ async def v1_proxy(path: str, request: Request):
     async def gen():
         try:
             async for chunk in resp.aiter_raw():
+                core.touch()
                 yield chunk
         finally:
             await resp.aclose()

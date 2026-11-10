@@ -106,7 +106,7 @@ class LlamaServer:
         deadline = time.time() + timeout
         url = f"http://127.0.0.1:{self.state.port}/health"
         last = ""
-        with httpx.Client(timeout=5) as c:
+        with httpx.Client(timeout=5, trust_env=False) as c:
             while time.time() < deadline:
                 if self.proc and self.proc.poll() is not None:
                     tail = self.log_tail(40)
@@ -158,7 +158,7 @@ class LlamaServer:
         if not self.running():
             return None
         try:
-            return httpx.get(self.base_url() + "/props", timeout=5).json()
+            return httpx.get(self.base_url() + "/props", timeout=5, trust_env=False).json()
         except Exception:
             return None
 

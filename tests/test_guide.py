@@ -25,5 +25,12 @@ def test_guide_briefing_and_starters():
         assert (
             "Answer in Spanish" in es and "¿" in c.get("/api/guide?lang=es").json()["starters"][0]
         )
-        skills = c.get("/api/skills").json()["skills"]
-        assert skills[0]["id"] == "guide"
+        # the guide answers even with no AI installed (canned, from the device facts)
+        r = c.post(
+            "/api/chat",
+            json={
+                "messages": [{"role": "user", "content": "What can this computer do?"}],
+                "assistant": "guide",
+            },
+        )
+        assert r.status_code == 200 and '"type": "token"' in r.text
