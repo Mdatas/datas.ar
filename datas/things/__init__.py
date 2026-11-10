@@ -20,10 +20,9 @@ See docs/HARDWARE.md.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
-from datas.config import home
+from datas.config import home, write_text_safely
 from datas.words import Problem, tr
 
 
@@ -98,14 +97,8 @@ def save_settings(new: dict) -> dict:
         cur["mqtt"]["username"] = cur["mqtt"]["password"] = ""
     if not cur["home_assistant"]["url"].strip():
         cur["home_assistant"]["token"] = ""
-    p = settings_path()
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(cur, indent=1), encoding="utf-8")
-    try:
-        os.chmod(tmp, 0o600)  # it can hold a password and an access token
-    except OSError:
-        pass
-    tmp.replace(p)
+    # private: it can hold a password and an access token
+    write_text_safely(settings_path(), json.dumps(cur, indent=1), private=True)
     return public_settings()
 
 

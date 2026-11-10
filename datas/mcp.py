@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 
 from datas import __version__
-from datas.config import home
+from datas.config import home, write_text_safely
 
 PROTOCOL = "2025-06-18"
 MAX_TOOLS_PER_SERVER = 24  # keep the list a small AI has to read short
@@ -269,9 +269,7 @@ def save_user_server(name: str, command: str, args: list[str], env: dict | None 
         "args": [str(a) for a in args],
         **({"env": env} if env else {}),
     }
-    tmp = config_path().with_suffix(".tmp")
-    tmp.write_text(json.dumps(d, indent=1), encoding="utf-8")
-    tmp.replace(config_path())
+    write_text_safely(config_path(), json.dumps(d, indent=1))
     return {"name": name, **d["mcpServers"][name]}
 
 

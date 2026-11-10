@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     steps:
@@ -32,12 +32,14 @@ jobs:
       - if: runner.os == 'Linux'
         run: sudo apt-get update -q && sudo apt-get install -y -q libportaudio2
       - name: install as a user would, with voice
-        run: pip install ".[voice]"
+        shell: bash
+        run: pip install ".[voice]" || { echo "::warning::voice parts did not install here; testing without voice"; pip install .; }
       - name: a real AI, a real answer, a document, voice, FFmpeg and hardware
         shell: bash
         run: |
           export DATAS_HOME="$RUNNER_TEMP/datas-e2e"
-          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" --voice --hardware --report "$RUNNER_TEMP/e2e.json"
+          VOICE=""; python -c "import pywhispercpp, kokoro_onnx" 2>/dev/null && VOICE="--voice"
+          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" $VOICE --hardware --report "$RUNNER_TEMP/e2e.json"
       - name: logs
         if: always()
         shell: bash

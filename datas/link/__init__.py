@@ -49,7 +49,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from datas import __version__, chats
-from datas.config import home
+from datas.config import home, write_text_safely
 
 PROTO = b"datas-link-v1"
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I: easy to read aloud and type
@@ -367,9 +367,7 @@ class LinkManager:
             return {}
 
     def _save_peers(self) -> None:
-        tmp = self._peers_path().with_suffix(".tmp")
-        tmp.write_text(json.dumps(self._peers, indent=1), encoding="utf-8")
-        tmp.replace(self._peers_path())
+        write_text_safely(self._peers_path(), json.dumps(self._peers, indent=1), private=True)
 
     def _add_peer(
         self, pid: str, name: str, cert: str, address: str, kind: str = "device", os: str = ""

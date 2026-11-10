@@ -32,7 +32,7 @@ from pathlib import Path
 import httpx
 
 from datas import __version__
-from datas.config import home, runtime_dir
+from datas.config import home, runtime_dir, write_text_safely
 
 REPO = "Mdatas/datas.ar"
 API = f"https://api.github.com/repos/{REPO}"
@@ -54,9 +54,7 @@ def state() -> dict:
 
 
 def _save(d: dict) -> None:
-    tmp = _state_path().with_suffix(".tmp")
-    tmp.write_text(json.dumps(d, indent=1), encoding="utf-8")
-    tmp.replace(_state_path())
+    write_text_safely(_state_path(), json.dumps(d, indent=1))
 
 
 def _record(piece: str, **entry) -> None:
@@ -464,9 +462,7 @@ def update_catalog(client: httpx.Client | None = None) -> dict:
     before = catalog_info()
     if (new.generated or "") <= (before["active"] or ""):
         return {"changed": False, **before}
-    tmp = catalog.update_path().with_suffix(".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(catalog.update_path())
+    write_text_safely(catalog.update_path(), text)
     catalog.reload()
     _record("catalog", action="update", to=new.generated, result="ok")
     return {"changed": True, **catalog_info()}

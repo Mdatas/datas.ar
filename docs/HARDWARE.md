@@ -156,7 +156,8 @@ devices send): name, address and what it says it is. Datas only listens to these
 announcements. It does not scan addresses or try passwords.
 
 A NAS that shows up as *shared folders* is used like any folder: connect it in your system's
-file manager, then tick that folder for the agent.
+file manager, then tick that folder for the agent. A Raspberry Pi or a home server can also
+run Datas itself, without a screen: [SMALL_COMPUTERS.md](SMALL_COMPUTERS.md).
 
 ### Mouse and keyboard (experimental)
 

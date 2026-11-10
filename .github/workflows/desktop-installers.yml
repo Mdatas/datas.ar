@@ -44,6 +44,22 @@ jobs:
           dist/Datas/datas-cli images status > /dev/null
           dist/Datas/datas-cli apps list
           dist/Datas/datas-cli voice say "Datas can talk." --out /tmp/say.wav && test -s /tmp/say.wav
+          dist/Datas/datas-cli things list
+      - name: start with the computer (systemd user service), link code without a window, remove
+        run: |
+          set -e
+          sudo loginctl enable-linger "$USER"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          for i in $(seq 1 30); do [ -S "$XDG_RUNTIME_DIR/bus" ] && break; sleep 1; done
+          export DATAS_HOME="$RUNNER_TEMP/datas-service"
+          dist/Datas/datas-cli service install
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8420/api/status > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8420/api/status | head -c 200; echo
+          dist/Datas/datas-cli service status
+          dist/Datas/datas-cli link code
+          dist/Datas/datas-cli service remove
+          sleep 2
+          if curl -sf http://127.0.0.1:8420/api/status > /dev/null; then echo "still running after remove"; exit 1; fi
       - name: open the real window (Qt WebEngine) and let it check itself
         timeout-minutes: 8
         env:
@@ -110,6 +126,104 @@ jobs:
           subject-path: |
             dist/linux/*.deb
             dist/linux/*.pkg.tar.zst
+            dist/linux/*.tar.gz
+
+  linux-arm64:
+    # Raspberry Pi 4 and 5 (with a 64-bit system), NAS boxes, ARM home servers and laptops.
+    # Built on Ubuntu 22.04 (glibc 2.35) so it runs on Raspberry Pi OS / Debian 12 and newer.
+    # No window toolkit inside: on these machines Datas is used from the phone app, from
+    # another computer, or in the browser of the same machine (docs/SMALL_COMPUTERS.md).
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: system deps (deb tools, sound library for voice)
+        run: sudo apt-get update -q && sudo apt-get install -y -q dpkg-dev libportaudio2
+      - name: install package + pyinstaller (with voice when its parts exist for ARM)
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[voice]" pyinstaller || { echo "::warning::voice parts did not install on ARM; building without voice"; pip install . pyinstaller; }
+      - name: version
+        id: v
+        run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: pyinstaller
+        run: pyinstaller --noconfirm installer/datas.spec
+      - name: smoke test the frozen app
+        run: |
+          set -e
+          uname -m
+          dist/Datas/datas-cli --version
+          dist/Datas/datas-cli selftest
+          dist/Datas/datas-cli scan
+          dist/Datas/datas-cli recommend --context 4096
+          dist/Datas/datas-cli catalog list
+          dist/Datas/datas-cli voice status
+          dist/Datas/datas-cli things list
+      - name: the service answers without a window
+        run: |
+          set -e
+          export DATAS_HOME="$RUNNER_TEMP/datas-plain"
+          dist/Datas/datas-cli serve --no-browser --port 8431 > "$RUNNER_TEMP/serve.log" 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8431/api/status > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8431/api/status | head -c 300; echo
+          curl -sf http://127.0.0.1:8431/ | grep -q "/ui/app.js"
+          curl -sf http://127.0.0.1:8431/api/things | head -c 400; echo
+          curl -sf "http://127.0.0.1:8431/api/recommend" | head -c 300; echo
+          kill %1
+      - name: start with the computer (systemd user service), link code without a window, remove
+        run: |
+          set -e
+          sudo loginctl enable-linger "$USER"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          for i in $(seq 1 30); do [ -S "$XDG_RUNTIME_DIR/bus" ] && break; sleep 1; done
+          export DATAS_HOME="$RUNNER_TEMP/datas-service"
+          dist/Datas/datas-cli service install
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8420/api/status > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8420/api/status | head -c 200; echo
+          dist/Datas/datas-cli service status
+          dist/Datas/datas-cli link code
+          dist/Datas/datas-cli service remove
+          sleep 2
+          if curl -sf http://127.0.0.1:8420/api/status > /dev/null; then echo "still running after remove"; exit 1; fi
+      - name: deb (arm64, no window toolkit)
+        run: installer/linux/build-deb.sh ${{ steps.v.outputs.version }} arm64 plain
+      - name: tarball
+        run: |
+          D=datas-${{ steps.v.outputs.version }}-linux-arm64
+          mkdir -p dist/tar/$D
+          cp -a dist/Datas installer/linux/install.sh installer/linux/datas.desktop LICENSE dist/tar/$D/
+          cp installer/windows/datas-256.png dist/tar/$D/datas.png
+          tar -C dist/tar -czf dist/linux/$D.tar.gz $D
+      - name: test the deb on Debian 12 (the system of Raspberry Pi OS "Bookworm")
+        run: |
+          docker run --rm -v "$PWD/dist/linux:/pkg:ro" debian:bookworm bash -ec '
+            apt-get update -q >/dev/null && apt-get install -y -q --no-install-recommends /pkg/datas_${{ steps.v.outputs.version }}_arm64.deb >/dev/null
+            uname -m && datas-cli --version && datas-cli selftest && datas-cli scan && datas-cli things list
+            apt-get remove -y -q datas >/dev/null && test ! -e /opt/datas'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Datas-linux-arm64
+          path: |
+            dist/linux/*.deb
+            dist/linux/*.tar.gz
+      - name: checksum files (SHA-256) next to the packages
+        run: cd dist/linux && for f in *.deb *.tar.gz; do sha256sum "$f" > "$f.sha256"; cat "$f.sha256"; done
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/linux/*.deb
+            dist/linux/*.tar.gz
+            dist/linux/*.sha256
+      - name: signed provenance — a public, verifiable record that these files were built here from this commit
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/linux/*.deb
             dist/linux/*.tar.gz
 
   macos:

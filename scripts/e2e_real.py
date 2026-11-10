@@ -64,6 +64,11 @@ def chat(c: httpx.Client, text: str, limit: float = 300) -> tuple[str, list[str]
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):  # a Windows console may not know every letter
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8420")
     ap.add_argument("--model", default="qwen3-0.6b")

@@ -18,7 +18,7 @@ import time
 import uuid
 from pathlib import Path
 
-from datas.config import Config, home
+from datas.config import Config, home, write_text_safely
 
 MAX_CONTEXT_CHARS = 60_000  # keep total injected context bounded for small models
 
@@ -110,9 +110,7 @@ def save_chat(
 
 def _write_chat(p: Path, data: dict) -> None:
     """Write through a temporary file so a crash or a full disk never leaves half a chat."""
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(p)
+    write_text_safely(p, json.dumps(data, ensure_ascii=False, indent=1))
 
 
 def _text_of(content) -> str:  # noqa: ANN001 - str, or OpenAI-style parts when a picture is attached

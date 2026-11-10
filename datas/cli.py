@@ -268,6 +268,69 @@ def install(model_id: str = typer.Argument(None), quant: str | None = None, visi
     con.print(f"\n[green]Installed[/] {model_id} {quant} → {path}")
 
 
+def _datas_is_open() -> bool:
+    """Is a Datas already answering on this device (the window or the background service)?"""
+    import httpx
+
+    try:
+        r = httpx.get(
+            f"http://127.0.0.1:{Config.load().ui_port}/api/status", timeout=2, trust_env=False
+        )
+        return r.status_code == 200 and "version" in r.json()
+    except (httpx.HTTPError, ValueError):
+        return False
+
+
+def _run_in_open_datas(
+    model_id: str | None, quant: str | None, context: int | None, kv: int, pool: bool, vision: bool
+) -> None:
+    """Ask the Datas that is already running here to install and start an AI, and follow it."""
+    if not model_id or not quant:
+        rec = _app_api(
+            "GET",
+            "/api/recommend",
+            params={"kv_bits": kv} | ({"context": context} if context else {}),
+        )
+        pick = (
+            rec.get("default")
+            if not model_id
+            else next((c for c in rec.get("fits", []) if c["model_id"] == model_id), None)
+        )
+        if not pick and not model_id:
+            con.print("[red]Nothing fits; pass a model id explicitly.[/]")
+            raise typer.Exit(1)
+        if pick:
+            model_id, quant = pick["model_id"], quant or pick["quant"]
+    if not quant:
+        con.print(f"[red]Say which size of {model_id} to use with --quant.[/]")
+        raise typer.Exit(1)
+    con.print(
+        f"Datas is already running on this device: starting [bold]{model_id}[/] {quant} there."
+    )
+    job = _app_api(
+        "POST",
+        "/api/run",
+        json={"model_id": model_id, "quant": quant, "context": context, "kv_bits": kv,
+              "pool": pool, "with_vision": vision, "starter": False},
+    )  # fmt: skip
+    last = ""
+    while True:
+        j = _app_api("GET", f"/api/jobs/{job['id']}")
+        line = f"  {j.get('phase') or j.get('state')}" + (
+            f" {j['percent']:.0f}%" if j.get("percent") is not None else ""
+        )
+        if line != last:
+            con.print(line)
+            last = line
+        if j["state"] == "done":
+            con.print("[bold green]Ready.[/] The AI is running in Datas on this device.")
+            return
+        if j["state"] == "error":
+            con.print(f"[red]{j.get('error')}[/]")
+            raise typer.Exit(1)
+        time.sleep(2)
+
+
 @app.command()
 def run(
     model_id: str = typer.Argument(None),
@@ -279,7 +342,12 @@ def run(
     exact_layers: bool = False,
     custom: Path | None = typer.Option(None, help="run a GGUF file you already have"),
 ):
-    """Install if needed, start llama-server, keep it running until Ctrl-C."""
+    """Install if needed and start the AI. When Datas is already running on this device (its
+    window, or the background service), the AI is started there; otherwise it runs here
+    until Ctrl-C."""
+    if not custom and _datas_is_open():
+        _run_in_open_datas(model_id, quant, context, kv, pool, vision)
+        return
     core = _core()
     from datas.orchestrator import Job
 
@@ -628,7 +696,10 @@ def link_code():
     """Show an address and a one-time code; type them on the other device within ten minutes."""
     st = _app_api("POST", "/api/link/pairing")
     pr = st["pairing"]
-    con.print("On the other device, open Datas → Devices → Link a device, and type:")
+    con.print(
+        "On the other device, open Datas → Devices (on a phone: My computers → Link a "
+        "computer), and type:"
+    )
     con.print(f"  address: [bold]{(pr['addresses'] or ['(no network address found)'])[0]}[/]")
     con.print(
         f"  code:    [bold]{pr['code']}[/]   (valid {pr['expires_in'] // 60} minutes, works once)"
@@ -1031,6 +1102,73 @@ def apps_open(app_id: str):
 @tools_app.command("remove")
 def apps_remove(app_id: str, keep_models: bool = False):
     con.print("removed" if _core().apps.remove(app_id, keep_models) else "not installed")
+
+
+# ---------------------------------------------------------------------------
+# Datas without a window: start with the computer (Linux), for a Raspberry Pi, a NAS or a
+# home server — docs/SMALL_COMPUTERS.md
+
+service_app = typer.Typer(
+    help="Start Datas with the computer, without a window (Linux): Raspberry Pi, NAS, home server."
+)
+app.add_typer(service_app, name="service")
+
+
+def _service(fn):  # noqa: ANN001, ANN202
+    from datas.words import Problem
+
+    try:
+        return fn()
+    except Problem as e:
+        con.print(f"[red]{e.say(Config.load().lang)}[/]")
+        raise typer.Exit(1) from None
+
+
+@service_app.command("install")
+def service_install():
+    """Start Datas now and every time this computer starts, without a window."""
+    from datas import service
+
+    r = _service(service.install)
+    con.print(f"service file: {r['file']}")
+    if r["started"]:
+        con.print(
+            "[green]Datas is running in the background[/]"
+            + (" and starts with the computer." if r["at_boot"] else ".")
+        )
+        con.print(
+            "Next: `datas-cli run` adds the best AI for this computer; `datas-cli link code` "
+            "shows a code to link your phone or another computer."
+        )
+    for note in r["notes"]:
+        con.print(f"[yellow]{note}[/]")
+    if not r["started"]:
+        raise typer.Exit(1)
+
+
+@service_app.command("remove")
+def service_remove():
+    """Stop starting Datas with the computer. Your AIs, chats and settings stay."""
+    from datas import service
+
+    r = _service(service.remove)
+    con.print("removed" if r["removed"] else "it was not installed")
+
+
+@service_app.command("status")
+def service_status(as_json: bool = typer.Option(False, "--json")):
+    """Is the background service installed and running?"""
+    from datas import service
+
+    st = _service(service.status)
+    if as_json:
+        print(json.dumps(st))
+        return
+    con.print(
+        f"installed: {'yes' if st['installed'] else 'no'} · running: "
+        f"{'yes' if st['running'] else 'no'} · starts with the computer: "
+        f"{'yes' if st['at_boot'] else 'only after you log in'}"
+    )
 
 
 # ---------------------------------------------------------------------------

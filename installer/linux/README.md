@@ -9,6 +9,10 @@ Pick the file for your distro family from the [Releases](https://github.com/Mdat
 | **Arch, Manjaro, EndeavourOS, CachyOS, Garuda** | `datas-bin-<version>-1-x86_64.pkg.tar.zst` | `sudo pacman -U datas-bin-<version>-1-x86_64.pkg.tar.zst` (PKGBUILD in `installer/linux/arch/` for the AUR) | `sudo pacman -R datas-bin` |
 | **Anything else** (Fedora, openSUSE, …) | `datas-<version>-linux-x64.tar.gz` | unpack, run `./install.sh` (no root; installs into `~/.local/opt/datas`) | `./install.sh --uninstall` (or `--purge` to delete data too) |
 
+**64-bit ARM** (Raspberry Pi 4/5 with a 64-bit system, ARM servers): `datas_<version>_arm64.deb`
+or `datas-<version>-linux-arm64.tar.gz`. That build has no window toolkit inside; see
+[`docs/SMALL_COMPUTERS.md`](../../docs/SMALL_COMPUTERS.md).
+
 After installing, **Datas.ar** is in your applications menu; `datas-cli` is on the PATH for the terminal.
 
 Upgrading is a clean install: the package manager replaces every program file; your data is never touched.
@@ -42,6 +46,12 @@ release or building stable-diffusion.cpp locally. Vulkan needs the distro's Vulk
 The Linux build ships its own Qt WebEngine (that is why it is bigger than the Windows one): it does not depend
 on your distro's WebKitGTK version, and works on Wayland and X11 alike. If the window still cannot open,
 Datas falls back to your browser at http://127.0.0.1:8420.
+
+## Starting with the computer, without a window
+
+`datas-cli service install` (and `service status`, `service remove`). It is a systemd *user*
+service: no administrator rights, the file is `~/.config/systemd/user/datas.service`. Tasks
+on a schedule then run with the window closed.
 
 ## Build it yourself
 

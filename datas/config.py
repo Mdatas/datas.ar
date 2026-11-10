@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -22,6 +24,49 @@ def home() -> Path:
     base = Path(override).expanduser() if override else Path(user_data_dir(APP, appauthor=False))
     base.mkdir(parents=True, exist_ok=True)
     return base
+
+
+_write_locks: dict[str, threading.Lock] = {}
+_write_guard = threading.Lock()
+
+
+def write_text_safely(path: Path, text: str, private: bool = False, backup: bool = False) -> Path:
+    """Save a file so that it is never left half-written and two savers at once never trip
+    over each other: the text goes to a temporary file of its own, which then takes the place
+    of the old one in a single step.
+
+    ``private``  readable by this user only (settings that hold keys or passwords)
+    ``backup``   keep the previous copy beside it as ``<name>.bak``
+    """
+    with _write_guard:
+        lock = _write_locks.setdefault(str(path), threading.Lock())
+    with lock:
+        tmp = path.with_name(f"{path.name}.{os.getpid()}-{threading.get_ident()}.tmp")
+        tmp.write_text(text, encoding="utf-8")
+        if private:
+            try:
+                os.chmod(tmp, 0o600)
+            except OSError:
+                pass
+        if backup and path.exists():
+            try:
+                path.replace(path.with_name(path.name + ".bak"))
+            except OSError:
+                pass
+        for attempt in range(6):
+            try:
+                tmp.replace(path)
+                break
+            except PermissionError:
+                # Windows: another program (an antivirus, a backup) has the file open for a moment
+                if attempt == 5:
+                    tmp.unlink(missing_ok=True)
+                    raise
+                time.sleep(0.05 * (attempt + 1))
+            except OSError:
+                tmp.unlink(missing_ok=True)
+                raise
+    return path
 
 
 def models_dir() -> Path:
@@ -187,19 +232,9 @@ class Config:
     def save(self) -> Path:
         """Written through a temporary file, keeping the previous good copy as ``.bak``."""
         p = home() / CONFIG_PATH_NAME
-        tmp = p.with_name(CONFIG_PATH_NAME + ".tmp")
-        tmp.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
-        if p.exists():
-            try:
-                p.replace(p.with_name(CONFIG_PATH_NAME + ".bak"))
-            except OSError:
-                pass
-        tmp.replace(p)
-        try:
-            os.chmod(p, 0o600)  # holds API keys: readable by this user only (no effect on Windows)
-        except OSError:
-            pass
-        return p
+        # private: it holds API keys (no effect on Windows). Several parts of Datas save the
+        # settings, sometimes at the same moment: write_text_safely keeps them apart.
+        return write_text_safely(p, json.dumps(asdict(self), indent=2), private=True, backup=True)
 
     def remote(self, name: str) -> RemoteProviderConfig | None:
         for r in self.remotes:

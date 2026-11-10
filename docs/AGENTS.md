@@ -75,10 +75,12 @@ chosen for the task are their limits.
 The question appears as a card in the agent window (Allow / Deny / Allow everything for this
 task); unanswered questions are denied after 15 minutes. For hardware the question is in
 plain words and in your language — *Print report.pdf on paper (2 copies)*, *Ask Home Assistant
-to do light.turn_on on light.kitchen* — instead of the tool's name and raw arguments. Approving every click exists in every
-serious agent product and is useful as a learning mode — but as a permanent setting it fails in
-practice: after a dozen "OK"s people stop reading and rubber-stamp, which is less safe than a
-good default. Hence the risk-based default plus a stop key.
+to do light.turn_on on light.kitchen* — instead of the tool's name and raw arguments.
+
+Approving every click exists in every serious agent product and is useful as a learning mode
+— but as a permanent setting it fails in practice: after a dozen "OK"s people stop reading
+and rubber-stamp, which is less safe than a good default. Hence the risk-based default plus a
+stop key.
 
 ### Tasks it does by itself (scheduled)
 
@@ -88,8 +90,10 @@ good default. Hence the risk-based default plus a stop key.
 A background thread in the server checks every 30 s and runs due tasks one at a time through the
 same runner; a task missed while the computer was off runs at the next start. Each run writes
 `<data>/agent/results/<task>-<time>.md` (summary + the list of tool calls), shown in the window's
-inbox. They run while Datas is open; running in the background with the window closed is on
-the roadmap.
+inbox. They run while Datas is running: with its window open, or — on Linux — as a background
+service that starts with the computer (`datas-cli service install`,
+[SMALL_COMPUTERS.md](SMALL_COMPUTERS.md)). On Windows and macOS the window has to stay open
+for now.
 
 ### What "do tasks on my computer by itself" means today
 
@@ -218,4 +222,5 @@ The full picture, including what Datas does *not* protect against: [SECURITY.md]
 - [ ] The system's automation hooks; one-window limit and dry run for the mouse and keyboard.
 - [ ] Per-tool allowlists in the settings (for example commands allowed only for `git` and
       `pytest`), and a kept record of every tool call.
-- [ ] Running scheduled tasks with the window closed.
+- [x] Running scheduled tasks with the window closed — on Linux, with the background
+      service. Not yet on Windows and macOS.

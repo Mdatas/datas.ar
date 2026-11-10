@@ -12,6 +12,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python: ["3.10", "3.13"]
+        include:
+          # 64-bit ARM Linux: Raspberry Pi, NAS boxes, ARM servers and laptops
+          - os: ubuntu-24.04-arm
+            python: "3.12"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +24,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: ruff check .
-      - run: pytest -q
+      - run: pytest -q -rs   # -rs: say why a test was skipped (no Java here, no printer there…)
       # Integration: fetch the pinned llama.cpp build and run the synthetic-GGUF server test
       - name: install runtime (pinned tag)
         if: matrix.os != 'windows-latest'

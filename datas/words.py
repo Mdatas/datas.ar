@@ -311,6 +311,15 @@ ES: dict[str, str] = {
     "programa.",
     "Getting FFmpeg, the free program that reads cameras and recordings…": "Bajando FFmpeg, "
     "el programa libre que lee cámaras y grabaciones…",
+    # ---- starting with the computer (datas/service.py) ------------------------------------
+    "Starting Datas with the computer is only available on Linux for now. On Windows and "
+    "macOS, leave Datas open (it uses almost nothing while the AI sleeps).": "Que Datas "
+    "arranque con la computadora por ahora solo está disponible en Linux. En Windows y "
+    "macOS, dejá Datas abierto (casi no usa nada mientras la IA duerme).",
+    "This system has no systemd, the part of Linux that Datas uses to start with the "
+    "computer. Start it yourself with: datas-cli serve --no-browser": "Este sistema no "
+    "tiene systemd, la parte de Linux que Datas usa para arrancar con la computadora. "
+    "Arrancalo vos con: datas-cli serve --no-browser",
     # ---- the local service: who may ask for what (datas/server/app.py) --------------------
     "This can only be done at the computer itself, not from a linked phone.": "Esto solo se "
     "puede hacer en la computadora misma, no desde un teléfono vinculado.",

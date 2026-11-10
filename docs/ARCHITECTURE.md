@@ -144,6 +144,7 @@ datas/
   things/               hardware: local.py (camera, screen, printers, serial ports), net.py (MQTT,
                         Home Assistant, Modbus, what is on the network), control.py (mouse and keyboard)
   words.py              the backend's sentences in English and Spanish (Problem, Said, tr)
+  service.py            Datas without a window, started with the computer (Linux, systemd user service)
   mcp.py                Model Context Protocol client (connections)
   apps/                 bigger creative tools in isolated environments (uv)
   agents/tools.py       the agent's tools, each checked against the allowed folders

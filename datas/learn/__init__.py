@@ -20,7 +20,7 @@ from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 
-from datas.config import Config, home
+from datas.config import Config, home, write_text_safely
 
 LANGS = ("en", "es")
 LESSON = "lesson:"
@@ -103,10 +103,7 @@ def mark(ref: str, done: bool, cfg: Config) -> bool:
     cur = [r for r in progress(cfg) if r != ref]
     if done:
         cur.append(ref)
-    path = _progress_path()
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"done": cur}, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    write_text_safely(_progress_path(), json.dumps({"done": cur}, indent=1))
     return True
 
 

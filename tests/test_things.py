@@ -902,6 +902,7 @@ def test_an_answer_is_printed_as_a_pdf_kept_in_the_datas_folder(window, monkeypa
         return Said("Sent {name} to the printer {printer}.", name=path.name, printer="Office")
 
     monkeypatch.setattr(local, "print_file", fake_print)
+    monkeypatch.setattr(local, "answer_format", lambda: "pdf")  # wherever a PDF can be printed
     r = client.post(
         "/api/things/print",
         json={"markdown": "# Lista\n\n- pan\n- leche", "title": "Compras", "copies": 2},
@@ -920,6 +921,11 @@ def test_an_answer_is_printed_as_a_pdf_kept_in_the_datas_folder(window, monkeypa
     assert r.json()["said"].startswith("Se envió ") and r.json()["said"].endswith(
         "a la impresora Office."
     )
+    # on a Windows computer without LibreOffice the answer is printed as plain text
+    monkeypatch.setattr(local, "answer_format", lambda: "txt")
+    client.post("/api/things/print", json={"markdown": "# Lista\n\n- pan\n- leche"})
+    plain = sent[-1][0]
+    assert plain.suffix == ".txt" and "pan" in plain.read_text(encoding="utf-8")
     # only files Datas itself saved can be printed by path
     assert client.post("/api/things/print", json={"path": "/etc/passwd"}).status_code == 400
     assert client.post("/api/things/print", json={}).status_code == 400

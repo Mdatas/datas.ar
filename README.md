@@ -102,6 +102,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 |---|---|
 | **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit**. Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No administrator password. |
 | **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in [`installer/linux/README.md`](installer/linux/README.md). |
+| **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
 | **Android** | `Datas-release.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
 | **Anything with Python 3.10+** | `pip install datas-ar && datas` |
@@ -149,7 +150,7 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | [DEVICES.md](docs/DEVICES.md) · [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | linked devices; the older manual pooling; why strangers' devices are ruled out |
 | [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
 | [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
-| [HARDWARE.md](docs/HARDWARE.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard |
+| [HARDWARE.md](docs/HARDWARE.md) · [SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard; Raspberry Pi, home servers, NAS and the background service |
 | [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; paid services and the `/v1` address; phones |
 | [API.md](docs/API.md) | the local HTTP interface |
 | [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | what is next; who Datas is built on; how to help |
