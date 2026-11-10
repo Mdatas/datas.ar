@@ -62,13 +62,13 @@
  "items": [
   {
    "id": "fema-are-you-ready",
-   "title": "Are You Ready? An In-depth Guide to Citizen Preparedness",
+   "title": "Are You Ready? An In-Depth Guide to Citizen Preparedness (2020)",
    "by": "FEMA (United States)",
    "topic": "start",
    "lang": "en",
    "kind": "guide",
-   "page": "https://www.ready.gov/prepare-for-emergencies",
-   "url": "https://www.fema.gov/media-library-data/20130726-1549-20490-4633/areyouready_full.pdf",
+   "page": "https://www.ready.gov/collection/are-you-ready",
+   "url": "https://www.ready.gov/sites/default/files/2021-03/are-you-ready-guide.pdf",
    "format": "pdf",
    "license": "US Government work: public domain in the USA",
    "license_url": "https://www.usa.gov/government-copyright",
@@ -81,7 +81,7 @@
   },
   {
    "id": "fema-esta-listo",
-   "title": "¿Está listo? Una guía completa para la preparación ciudadana",
+   "title": "¿Está listo? Una guía completa para la preparación ciudadana (2004)",
    "by": "FEMA (Estados Unidos)",
    "topic": "start",
    "lang": "es",
@@ -95,8 +95,8 @@
     "en": "The same preparedness book in Spanish.",
     "es": "El mismo libro de preparación, en español."
    },
-   "size": null,
-   "sha256": null
+   "size": 8272434,
+   "sha256": "9f5db4793e44ad02b03d43db76167290f1bec791f20fc3e2f8516179d51dd6f5"
   },
   {
    "id": "cert-basic-manual",
@@ -114,8 +114,8 @@
     "en": "How neighbours organise as a Community Emergency Response Team: fire safety, light search and rescue, triage, team organisation, helping each other until help arrives.",
     "es": "Cómo los vecinos se organizan como equipo comunitario de respuesta a emergencias (CERT): incendios, búsqueda y rescate livianos, clasificación de heridos, organización del equipo y ayuda mutua hasta que llega ayuda."
    },
-   "size": null,
-   "sha256": null
+   "size": 5509166,
+   "sha256": "ca297bbc329c322ccbcb252fae7a1c89fd95f93dbf72b78b165b53cafa664026"
   },
   {
    "id": "older-adults-guide",
@@ -133,8 +133,8 @@
     "en": "Worksheets to prepare with older people and the ones who care for them — useful for anyone looking after a neighbour.",
     "es": "Planillas para prepararse con personas mayores y quienes las cuidan; útil para cualquiera que cuide a un vecino."
    },
-   "size": null,
-   "sha256": null
+   "size": 3588917,
+   "sha256": "b1a5faebc0d4fe01d368dd7895ad8b9e720c0a3fb6b382f3c3e8f6660a4257cc"
   },
   {
    "id": "army-survival-atp-3-50-21",
@@ -152,8 +152,8 @@
     "en": "Outdoor survival in depth: water, fire, shelter, food, first aid, navigation, signalling.",
     "es": "Supervivencia al aire libre en profundidad: agua, fuego, refugio, comida, primeros auxilios, orientación, señales (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 23749774,
+   "sha256": "817746b13262e9e26e8ac7d25bf879790df369c2aa0a2600f69158ec4090461c"
   },
   {
    "id": "cdc-water-safe-en",
@@ -162,8 +162,8 @@
    "topic": "water",
    "lang": "en",
    "kind": "sheet",
-   "page": "https://www.cdc.gov/water-emergency/",
-   "url": "https://www.cdc.gov/healthywater/emergency/pdf/make-water-safe-during-emergency-p.pdf",
+   "page": "https://www.cdc.gov/water-emergency/communication-resources/index.html",
+   "url": "https://www.cdc.gov/water-emergency/media/pdfs/make-water-safe-during-emergency-p.pdf",
    "format": "pdf",
    "license": "US Government work: public domain in the USA",
    "license_url": "https://www.usa.gov/government-copyright",
@@ -181,14 +181,33 @@
    "topic": "water",
    "lang": "es",
    "kind": "sheet",
-   "page": "https://www.cdc.gov/water-emergency/",
-   "url": "https://www.cdc.gov/healthywater/emergency/pdf/make-water-safe-during-emergency-spanish-p.pdf",
+   "page": "https://www.cdc.gov/water-emergency/communication-resources/index.html",
+   "url": "https://www.cdc.gov/water-emergency/media/pdfs/make-water-safe-during-emergency-spanish-p.pdf",
    "format": "pdf",
    "license": "US Government work: public domain in the USA",
    "license_url": "https://www.usa.gov/government-copyright",
    "why": {
     "en": "The same page in Spanish.",
     "es": "Una página: hervir, lavandina, filtros."
+   },
+   "size": null,
+   "sha256": null
+  },
+  {
+   "id": "cdc-use-safe-water",
+   "title": "Use Safe Water During an Emergency",
+   "by": "CDC (United States)",
+   "topic": "water",
+   "lang": "en",
+   "kind": "sheet",
+   "page": "https://www.cdc.gov/water-emergency/communication-resources/index.html",
+   "url": "https://www.cdc.gov/water-emergency/media/pdfs/334749-B_UseSafeWater-OnePager-508.pdf",
+   "format": "pdf",
+   "license": "US Government work: public domain in the USA",
+   "license_url": "https://www.usa.gov/government-copyright",
+   "why": {
+    "en": "What safe water is needed for: drinking, cooking, brushing teeth, washing hands, baby formula.",
+    "es": "Para qué hace falta agua segura: beber, cocinar, lavarse los dientes y las manos, preparar la leche del bebé (en inglés)."
    },
    "size": null,
    "sha256": null
@@ -209,8 +228,8 @@
     "en": "Fifteen illustrated notes for a whole community: cleaning wells and tanks, treating water, how much water is needed, toilets, waste, hygiene.",
     "es": "Quince notas ilustradas para toda una comunidad: limpiar pozos y tanques, tratar el agua, cuánta agua hace falta, letrinas, residuos, higiene (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 13587357,
+   "sha256": "0c5fa95490f87bb434f8af5a8d5118ec888cad77e499888f20875f16f4e732d3"
   },
   {
    "id": "cdc-generator-co",
@@ -228,8 +247,8 @@
     "en": "Generators and carbon monoxide, the gas that kills without warning.",
     "es": "Grupos electrógenos y monóxido de carbono, el gas que mata sin avisar (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 650333,
+   "sha256": "da6ebede8bf93a6a4461c34c5ebcb134bb5cbe807a65d34820b0e8ba5a5eefbe"
   },
   {
    "id": "cpsc-generators",
@@ -247,8 +266,8 @@
     "en": "Do's and don'ts for running a generator safely.",
     "es": "Qué hacer y qué no para usar un grupo electrógeno sin riesgo (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 175754,
+   "sha256": "968de2f7920d2244959a33f65f7c312bd4ac149bc9bc436f06bd501a525332fb"
   },
   {
    "id": "hesperian-first-aid-en",
@@ -266,8 +285,8 @@
     "en": "First aid from the world's most used community health book: bleeding, burns, broken bones, shock, choking.",
     "es": "Primeros auxilios del libro de salud comunitaria más usado del mundo (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 886709,
+   "sha256": "90b55056823ad19c4d80beb6c97aeeb211f11eb08d63369763fac1bc3df9f4a3"
   },
   {
    "id": "hesperian-prevention-en",
@@ -285,8 +304,8 @@
     "en": "How to avoid many sicknesses: clean water, hygiene, food, vaccines.",
     "es": "Cómo evitar muchas enfermedades (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 520182,
+   "sha256": "fe09cc357764787b11ccd64e830d8f4d9eba439d23a2e692017dd79ca698afbc"
   },
   {
    "id": "hesperian-primeros-auxilios-es",
@@ -304,8 +323,8 @@
     "en": "First aid, in Spanish.",
     "es": "Primeros auxilios: hemorragias, quemaduras, fracturas, shock, atragantamiento."
    },
-   "size": null,
-   "sha256": null
+   "size": 1211104,
+   "sha256": "7f7ac99958695d5f7facfb339d54532faf1c270d9b4885f422e81e6230e77e1e"
   },
   {
    "id": "hesperian-prevencion-es",
@@ -323,8 +342,8 @@
     "en": "Prevention, in Spanish.",
     "es": "Cómo evitar muchas enfermedades: agua limpia, higiene, comida, vacunas."
    },
-   "size": null,
-   "sha256": null
+   "size": 972218,
+   "sha256": "73559c4c9eed16cd8c0ef309dffdc2e8defc0990f4b036858bc3b35890caab8d"
   },
   {
    "id": "hesperian-water-en",
@@ -342,8 +361,8 @@
     "en": "Protecting and treating a community's water.",
     "es": "Proteger y tratar el agua de una comunidad (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 1358015,
+   "sha256": "a036b6d8c34af23573ac8d1d5ce46bc31a9e9e80fdb46799ba7c3404cc033d38"
   },
   {
    "id": "hesperian-toilets-en",
@@ -361,8 +380,8 @@
     "en": "Building toilets that keep a community healthy.",
     "es": "Construir letrinas que mantengan sana a una comunidad (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 1706641,
+   "sha256": "078e62cbe9f22af0d0b6b3556b6b1919b4bddf116f402b3bdd43a8d074afa0d4"
   },
   {
    "id": "hesperian-food-security-en",
@@ -380,8 +399,8 @@
     "en": "Growing and sharing food as a community.",
     "es": "Producir y compartir alimentos en comunidad (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 928875,
+   "sha256": "ee12e63f71d43e99d9ffd6ca7bd7b73650d9b5ae3c06dc9d2429e4007f1c802c"
   },
   {
    "id": "hesperian-farming-en",
@@ -399,8 +418,8 @@
     "en": "Farming that keeps the soil alive year after year.",
     "es": "Cultivar sin agotar la tierra (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 1418669,
+   "sha256": "4617a67ca3d14c3bd30d8f71dcec44db02eb8bb0594d213600eb9d0f129f0b4f"
   },
   {
    "id": "hesperian-clean-energy-en",
@@ -418,8 +437,8 @@
     "en": "Small-scale solar, wind, water and biogas power for a community.",
     "es": "Energía solar, eólica, hidráulica y biogás a pequeña escala (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 1036410,
+   "sha256": "6dc9560351a1052fe3a421847514ed243cbc2c8c01fbf804351c42b442b98127"
   },
   {
    "id": "hesperian-safety-en",
@@ -437,8 +456,8 @@
     "en": "Safety and emergencies for a community.",
     "es": "Seguridad y emergencias en una comunidad (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 762530,
+   "sha256": "6595c43f85a0ddbd7fd5769294b12dc8f316932af1953918012b0d610ae24fa3"
   },
   {
    "id": "pg-mutual-aid",
@@ -456,8 +475,8 @@
     "en": "Why cooperation, not only competition, keeps groups alive — the classic argument for mutual aid.",
     "es": "Por qué la cooperación, y no solo la competencia, mantiene vivos a los grupos (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 597012,
+   "sha256": "8397bb704142c9740e28b7f7a64142890233df8d572ed29d417fcc87b38ab464"
   },
   {
    "id": "pg-camp-lore",
@@ -475,8 +494,8 @@
     "en": "Old-school woodcraft: camps, fires, shelters, knots, finding your way.",
     "es": "Vida al aire libre a la antigua: campamentos, fuego, refugios, nudos, orientación (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 333675,
+   "sha256": "c0ba1d569b8f4080eef75a1b82ce798b26f2ffd7c65c4222002ffb45ebe782aa"
   },
   {
    "id": "pg-walden",
@@ -494,8 +513,8 @@
     "en": "Two years of living simply by a pond — on what one really needs.",
     "es": "Dos años viviendo con lo justo junto a un lago (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 667957,
+   "sha256": "2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9"
   },
   {
    "id": "pg-robinson-crusoe",
@@ -513,8 +532,8 @@
     "en": "The original castaway story.",
     "es": "La historia original del náufrago (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 653990,
+   "sha256": "6c5c1dc78db2ecd92905b6dd75779eba2361d7ee38e55300002e5cbedda63778"
   },
   {
    "id": "pg-mysterious-island",
@@ -532,8 +551,8 @@
     "en": "Castaways who rebuild a working society from nothing — engineering as an adventure.",
     "es": "Náufragos que reconstruyen una sociedad desde cero (en inglés)."
    },
-   "size": null,
-   "sha256": null
+   "size": 1171510,
+   "sha256": "7133452f63b49690043b6c9af5516bd30f76b39ac6526dacfdc322ae4600a689"
   },
   {
    "id": "pg-quijote",
@@ -551,8 +570,8 @@
     "en": "The great novel in Spanish.",
     "es": "La gran novela en español."
    },
-   "size": null,
-   "sha256": null
+   "size": 2225777,
+   "sha256": "8a3738c61aa507f2319fad526a886c2de74c17c7ba1d64726c53d3591fa62321"
   },
   {
    "id": "pg-martin-fierro",
@@ -570,8 +589,8 @@
     "en": "The Argentine poem of the gaucho.",
     "es": "El poema del gaucho argentino."
    },
-   "size": null,
-   "sha256": null
+   "size": 90822,
+   "sha256": "5c5e06392f16923b673787c9d2befec093daadf7d0c1e72329543af54d24df26"
   }
  ]
 }

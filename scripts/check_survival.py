@@ -57,7 +57,12 @@ def main() -> int:
                 bad += 1
                 continue
             sha = hashlib.sha256(data).hexdigest()
-            ok = status == 200 and len(data) > 1000
+            right_kind = (
+                data[:5] == b"%PDF-"
+                if it["format"] == "pdf"
+                else not data.lstrip()[:15].lower().startswith((b"<!doctype", b"<html"))
+            )
+            ok = status == 200 and len(data) > 1000 and right_kind
             if ok and it.get("sha256") and (it["sha256"] != sha or it["size"] != len(data)):
                 ok = False
                 print(f"DIFF {it['id']}: pinned {it['size']} {it['sha256']}", flush=True)
