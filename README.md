@@ -68,9 +68,9 @@ the middle. Strangers' devices are not supported, because that cannot be made pr
 ### Offline survival
 
 Datas' own guides (English and Spanish, every figure tied to its public source) and a library
-of about 78 MB to keep: FEMA's *Are You Ready?* / *¿Está listo?* and CERT manual, CDC water and
+of about 54 MB to keep: FEMA's *Are You Ready?* / *¿Está listo?* and CERT manual, CDC water and
 generator sheets, WHO water and sanitation notes, Hesperian's *Where There Is No Doctor*
-chapters, the US Army survival manual, and public-domain books such as Kropotkin's *Mutual Aid*,
+chapters, and public-domain books such as Kropotkin's *Mutual Aid*,
 *Don Quijote* and *Martín Fierro*. Each document is downloaded from its publisher and checked
 against a pinned checksum; a built-in helper answers from all of it with no internet.
 → [docs/SURVIVAL.md](docs/SURVIVAL.md)

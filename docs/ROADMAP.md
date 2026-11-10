@@ -70,7 +70,7 @@ Status:
 
 ## 0.5 (next) — offline survival, one place for how Datas works
 
-- [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 28 checked documents from FEMA, CDC, WHO, Hesperian, the US Army and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
+- [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 27 checked documents from FEMA, CDC, CPSC, WHO, Hesperian and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
 - [x] A weekly check that every library document still downloads and matches its checksum
 - [x] *About*: how Datas works in seven steps, and every part it is built on grouped, with official links and licence links; a test keeps every dependency credited
 - [ ] More Spanish documents in the library; Portuguese

@@ -660,14 +660,6 @@
       "group": "survival"
     },
     {
-      "name": "US Army ATP 3-50.21 Survival",
-      "role": "Offline survival library: outdoor survival manual (approved for public release), from the copy kept by the Federation of American Scientists.",
-      "by": "US Department of the Army; Federation of American Scientists",
-      "license": "US Government work (public domain in the USA)",
-      "url": "https://irp.fas.org/doddir/army/",
-      "group": "survival"
-    },
-    {
       "name": "Project Gutenberg",
       "role": "Offline survival library: public-domain books (Mutual Aid, camp-craft, Walden, Robinson Crusoe, Verne, Don Quijote, Martín Fierro).",
       "by": "Project Gutenberg volunteers",

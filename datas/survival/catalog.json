@@ -137,25 +137,6 @@
    "sha256": "b1a5faebc0d4fe01d368dd7895ad8b9e720c0a3fb6b382f3c3e8f6660a4257cc"
   },
   {
-   "id": "army-survival-atp-3-50-21",
-   "title": "ATP 3-50.21 Survival (2018)",
-   "by": "US Department of the Army",
-   "topic": "outdoors",
-   "lang": "en",
-   "kind": "guide",
-   "page": "https://armypubs.army.mil",
-   "url": "https://irp.fas.org/doddir/army/atp3-50-21.pdf",
-   "format": "pdf",
-   "license": "US Government work: public domain in the USA — approved for public release; distribution unlimited (copy kept by the Federation of American Scientists)",
-   "license_url": "https://www.usa.gov/government-copyright",
-   "why": {
-    "en": "Outdoor survival in depth: water, fire, shelter, food, first aid, navigation, signalling.",
-    "es": "Supervivencia al aire libre en profundidad: agua, fuego, refugio, comida, primeros auxilios, orientación, señales (en inglés)."
-   },
-   "size": 23749774,
-   "sha256": "817746b13262e9e26e8ac7d25bf879790df369c2aa0a2600f69158ec4090461c"
-  },
-  {
    "id": "cdc-water-safe-en",
    "title": "Make Water Safe During an Emergency",
    "by": "CDC (United States)",

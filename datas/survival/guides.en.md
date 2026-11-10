@@ -191,8 +191,8 @@ Sources: Hesperian, *Where There Is No Doctor* / *Donde no hay doctor* (library)
   your route and when you will be back.
 - **Signalling**: three of anything (whistles, fires, flashes) is a call for help.
 
-The library has the US Army survival manual and *The Book of Camp-Lore and Woodcraft* for fire,
-shelter, knots and navigation.
+The library has *The Book of Camp-Lore and Woodcraft* for fire, shelter, knots and finding your
+way.
 
 **Together:** a group moves at the pace of its slowest member and never leaves anyone behind.
 

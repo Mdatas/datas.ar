@@ -16,9 +16,9 @@ fail — for a few hours, for weeks, or far from home — with the emphasis on g
   publishers — FEMA and Ready.gov (*Are You Ready?* / *¿Está listo?*, the CERT manual, the guide
   for older adults), CDC and CPSC (water, generators), WHO/WEDC (water and sanitation for a whole
   community), Hesperian (*Where There Is No Doctor* / *Donde no hay doctor* and *A Community Guide
-  to Environmental Health* chapters), the US Army survival manual, and public-domain books from
+  to Environmental Health* chapters), and public-domain books from
   Project Gutenberg (Kropotkin's *Mutual Aid*, camp-craft, *Walden*, *Robinson Crusoe*, Verne,
-  *Don Quijote*, *Martín Fierro*). About 78 MB in all; each can be kept or removed on its own.
+  *Don Quijote*, *Martín Fierro*). About 54 MB in all; each can be kept or removed on its own.
 - **The survival helper** (*Ask*): a built-in helper that answers from the guides and every kept
   document (not the novels), names the document it used, gives no medicine doses and puts
   safety and the community first. It works with no internet and with the smallest AI.

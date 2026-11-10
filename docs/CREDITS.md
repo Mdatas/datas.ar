@@ -138,8 +138,7 @@ the code.
 Downloaded once from each publisher, checked against a pinned SHA-256 →
 [SURVIVAL.md](SURVIVAL.md): **FEMA / Ready.gov** and **CDC / US CPSC** (US Government works,
 public domain in the USA), **WHO / WEDC** technical notes (© WHO), **Hesperian Health Guides**
-(Hesperian Open Copyright), **US Army ATP 3-50.21 Survival** (approved for public release; copy
-kept by the Federation of American Scientists), **Project Gutenberg** (public domain in the
+(Hesperian Open Copyright), **Project Gutenberg** (public domain in the
 USA). The guides also recommend [Kiwix](https://kiwix.org) and
 [Meshtastic](https://meshtastic.org) (both GPL-3.0), which are not included.
 

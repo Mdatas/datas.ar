@@ -205,8 +205,8 @@ Fuentes: Hesperian, *Donde no hay doctor* / *Where There Is No Doctor* (bibliote
   tu recorrido y cuándo volvés.
 - **Señales**: tres de cualquier cosa (silbatos, fogatas, destellos) es un pedido de ayuda.
 
-La biblioteca tiene el manual de supervivencia del Ejército de EE. UU. y
-*The Book of Camp-Lore and Woodcraft* para fuego, refugio, nudos y orientación (en inglés).
+La biblioteca tiene *The Book of Camp-Lore and Woodcraft* para fuego, refugio, nudos y
+orientación (en inglés).
 
 **En comunidad:** un grupo avanza al ritmo del más lento y no deja a nadie atrás.
 
