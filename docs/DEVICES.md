@@ -186,7 +186,9 @@ Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_
 - With a real AI on both sides: the weekly and per-release run (`scripts/e2e_real.py --link`)
   starts a second Datas, links the two with a code, answers on one with the AI of the other,
   shares a long document out between both AIs and opens one's window from the other — on
-  Windows, macOS, Linux and ARM Linux.
+  Windows, macOS, Linux and ARM Linux. One exception: the shared document is not run on the
+  Mac test machine, where two engines would share one *virtual* graphics chip and drop to
+  about two words a second; real Macs have one engine each.
 - Rediscovery after an address change: mDNS service `_datas-link._tcp` carrying the device id.
 - Files in `<data folder>/link/`: `device.key` (private, mode 600), `device.crt`,
   `peers.json` (name, address and certificate of each paired computer; name and secret
