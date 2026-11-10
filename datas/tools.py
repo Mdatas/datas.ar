@@ -220,6 +220,8 @@ PROMPTS = {
     "translate": "Translate the following text into {lang}. Keep the meaning, tone, names, numbers and the "
     "Markdown formatting. Output only the translation.\n\n---\n{text}",
 }
+PART_TOKENS = 800  # the most an AI may write about one part of a document being summarised
+FINAL_TOKENS = 1500  # … and for the summary of the whole
 LANG_NAMES = {
     "en": "English",
     "es": "Spanish",
@@ -326,7 +328,7 @@ def helpers(core) -> list[dict]:  # noqa: ANN001
     return out
 
 
-def _share_out(core, prompts: list[str], hands: list[dict], job, steps: int) -> tuple:  # noqa: ANN001
+def _share_out(core, prompts: list[str], hands: list[dict], job, steps: int, limit=None) -> tuple:  # noqa: ANN001
     """Many hands: this device and each helping device take the next part as soon as they are
     free. A helper that stops answering gives its part back and the others carry on; if this
     device's own AI fails, the job fails as it would alone. Returns the answers in order, the
@@ -356,7 +358,7 @@ def _share_out(core, prompts: list[str], hands: list[dict], job, steps: int) -> 
                     return
                 i = todo.popleft()
             try:
-                answer = _ask(core, prompts[i], provider=provider)
+                answer = _ask(core, prompts[i], limit, provider=provider)
             except Exception as e:  # noqa: BLE001 - asleep, unplugged, its AI stopped
                 with lock:
                     todo.appendleft(i)
@@ -383,7 +385,7 @@ def _share_out(core, prompts: list[str], hands: list[dict], job, steps: int) -> 
         raise failed[0]
     while todo:  # parts a helper gave back after this device had finished its own
         i = todo.popleft()
-        results[i] = _ask(core, prompts[i])
+        results[i] = _ask(core, prompts[i], limit)
         tick("this device")
     return results, dropped, took
 
@@ -416,6 +418,9 @@ def long_document(
     part = PROMPTS["summary_part" if mode == "summary" else "translate"]
     prompts = [part.format(n=6, lang=lang_name, text=piece) for piece in pieces]
     steps = len(pieces) + (1 if mode == "summary" else 0)
+    # the notes on one part are a handful of bullets: a small AI must not write on until its
+    # working memory is full (minutes on a slow device). A translation is as long as its text.
+    limit = PART_TOKENS if mode == "summary" else None
     dropped: list[str] = []
     took: dict[str, int] = {}
     if hands and len(pieces) > 1:
@@ -425,7 +430,7 @@ def long_document(
                 f"{len(pieces)} parts, shared between this device and "
                 + ", ".join(h["name"] for h in hands)
             )
-        results, dropped, took = _share_out(core, prompts, hands, job, steps)
+        results, dropped, took = _share_out(core, prompts, hands, job, steps, limit)
     else:
         hands = []
         results = []
@@ -434,13 +439,17 @@ def long_document(
                 job.phase = "reading"
                 job.progress(i - 1, steps)
                 job.say(f"Part {i} of {len(pieces)}…")
-            results.append(_ask(core, prompt))
+            results.append(_ask(core, prompt, limit))
     if mode == "summary":
         notes = "\n\n".join(f"Part {i}:\n{r}" for i, r in enumerate(results, 1))
         final = (
             results[0]
             if len(results) == 1
-            else _ask(core, PROMPTS["summary_final"].format(lang=lang_name, text=notes[: size * 2]))
+            else _ask(
+                core,
+                PROMPTS["summary_final"].format(lang=lang_name, text=notes[: size * 2]),
+                FINAL_TOKENS,
+            )
         )
         md = (f"# {title}\n\n" if title else "") + final
     else:

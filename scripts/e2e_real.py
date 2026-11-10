@@ -464,6 +464,7 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
             if seen["online"] and (seen.get("ai") or {}).get("available"):
                 break
             time.sleep(1)
+        saw = f"saw its AI after {time.time() - t:.0f}s"
         b.post(f"/api/link/use/{ida}")
         answer, errors = "", ["not tried"]
         try:
@@ -473,7 +474,7 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
         step(
             "one Datas answers with the AI of the other, through the link",
             bool(answer.strip()) and not errors,
-            repr(answer.strip()[:80]) if answer.strip() else "; ".join(errors)[:200],
+            f"{answer.strip()[:80]!r}, {saw}" if answer.strip() else "; ".join(errors)[:200],
             time.time() - t,
         )
 
@@ -508,11 +509,11 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
                     "/api/tools/long",
                     json={"mode": "summary", "lang": "en", "devices": True, "text": MINUTES},
                 ).json(),
-                1500,
+                600,
             )
         res = job.get("result") or {}
         shares = res.get("shares") or {}
-        step(
+        shared = step(
             "a long document is shared out between the two AIs",
             job["state"] == "done"
             and res.get("parts", 0) >= 2
@@ -523,9 +524,21 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
             f"{res.get('parts')} parts, written by {shares}; dropped out: {res.get('dropped')}; "
             f"the summary begins {(res.get('markdown') or '')[:70]!r}"
             if res
-            else (job.get("error") or f"no helper was offered: {helpers}"),
+            else (job.get("error") or f"no helper was offered: {helpers}; job: {job.get('state')}"),
             time.time() - t,
         )
+        if not shared:  # how fast each engine really was, from its own log
+            for who, folder in (("this device", home()), ("Laptop", home_b)):
+                try:
+                    lines = (
+                        (folder / "logs" / "llama-server.log")
+                        .read_text(encoding="utf-8", errors="replace")
+                        .splitlines()
+                    )
+                except OSError:
+                    continue
+                for line in [x for x in lines if "eval time" in x or "truncat" in x][-6:]:
+                    print(f"       … {who}: {line[-150:]}", flush=True)
 
         # the second one opens the Datas of the first, once the first allows it
         t = time.time()

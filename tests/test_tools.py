@@ -88,10 +88,11 @@ def test_recording_becomes_text_and_subtitles(tmp_path, monkeypatch):
 
 def test_long_documents_are_worked_piece_by_piece(monkeypatch):
     core = Datas(Config())
-    asked = []
+    asked, caps = [], []
 
     def fake_ask(core_, prompt, max_tokens=None):  # noqa: ANN001
         asked.append(prompt)
+        caps.append(max_tokens)
         if prompt.startswith("These are notes"):
             return "Main point.\n- a\n- b"
         if prompt.startswith("Summarize"):
@@ -104,9 +105,13 @@ def test_long_documents_are_worked_piece_by_piece(monkeypatch):
     assert r["parts"] > 3 and r["markdown"].startswith("# Report\n\nMain point.")
     assert len(asked) == r["parts"] + 1 and "Spanish" in asked[0]
     assert all(len(a) < 2048 * 3 for a in asked[:-1])  # every piece fits the AI's memory
+    # notes on a part are short: a small AI may not write on until its memory is full
+    assert caps == [tools.PART_TOKENS] * r["parts"] + [tools.FINAL_TOKENS]
     asked.clear()
+    caps.clear()
     r = tools.long_document(core, text, "translate", "en", ctx_tokens=2048)
     assert r["markdown"].count("TRADUCIDO") == r["parts"] == len(asked)
+    assert set(caps) == {None}  # a translation is as long as its text
     short = tools.long_document(core, "One short paragraph.", "summary", "en", ctx_tokens=8192)
     assert short["parts"] == 1 and short["markdown"].startswith("- note")
     with pytest.raises(RuntimeError):
