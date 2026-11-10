@@ -1059,7 +1059,10 @@ class LinkManager:
         reader, writer = await self._connect(pid)
         try:
             await send(writer, {"op": "v1", "port": self.cfg.link_port, "path": path, "body": body})
-            head = await asyncio.wait_for(recv(reader, 1 << 20), 120)
+            # an answer that comes as it is written starts at once; one sent in one piece
+            # starts only when the other device's AI has finished writing it
+            patience = 120 if (body or {}).get("stream") or body is None else 660
+            head = await asyncio.wait_for(recv(reader, 1 << 20), patience)
         except Exception:
             writer.close()
             raise

@@ -6,7 +6,8 @@ Three open ways cover most home and industrial devices:
   Home Assistant…). Spoken by Zigbee2MQTT, Tasmota, ESPHome, Shelly, many sensors and robots.
 * **Home Assistant** — a free home-automation hub that already knows thousands of devices;
   Datas asks it over its web interface with a token the person creates there.
-* **Modbus TCP** — the common language of industrial equipment: PLCs, inverters, meters.
+* **Modbus** (over the network, or on a serial cable) — the common language of industrial
+  equipment: PLCs, inverters, meters.
 
 The addresses, the password and the token are in ``<home>/things.json`` (see datas.things).
 """
@@ -20,7 +21,7 @@ import time
 
 import httpx
 
-from datas.things import ThingError, settings
+from datas.things import ThingError, local, settings
 from datas.words import Said
 
 # ---------------------------------------------------------------------------
@@ -200,7 +201,7 @@ def home_call(
 
 
 # ---------------------------------------------------------------------------
-# Modbus TCP
+# Modbus: over the network (TCP) or on a serial cable (RTU, usually an RS-485 adapter)
 # ---------------------------------------------------------------------------
 
 MODBUS_ERRORS = {
@@ -231,7 +232,102 @@ def modbus_device(name: str) -> dict:
     )
 
 
+def crc16(data: bytes) -> int:
+    """The checksum at the end of every Modbus message on a serial cable."""
+    crc = 0xFFFF
+    for b in data:
+        crc ^= b
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+    return crc
+
+
+def _rtu_length(got: bytes) -> int:
+    """How long the answer that starts with ``got`` will be, or 0 while that is not known."""
+    if len(got) < 2:
+        return 0
+    if got[1] & 0x80:
+        return 5  # the device refused: unit, code, reason, checksum
+    if got[1] in (1, 2, 3, 4):
+        return 5 + got[2] if len(got) >= 3 else 0
+    return 8  # the echo of a write
+
+
+def _modbus_cable(dev: dict, pdu: bytes) -> bytes:
+    """One question and its answer on a serial cable (Modbus RTU)."""
+    try:
+        import serial
+    except ImportError as e:
+        raise ThingError(
+            "The serial-port part (pyserial) is missing from this copy of Datas."
+        ) from e
+    unit = int(dev.get("unit", 1)) & 0xFF
+    frame = bytes([unit]) + pdu
+    frame += struct.pack("<H", crc16(frame))
+    port, baud = dev["serial"], int(dev.get("baud") or 9600)
+    got = b""
+    try:
+        with serial.Serial(
+            port,
+            baud,
+            bytesize=8,
+            parity=str(dev.get("parity") or "N"),
+            stopbits=1,
+            timeout=0.05,
+            write_timeout=3,
+        ) as s:
+            s.reset_input_buffer()
+            s.write(frame)
+            end = time.time() + float(dev.get("timeout") or 2.0)
+            last = time.time()
+            while time.time() < end:
+                chunk = s.read(256)
+                if chunk:
+                    got += chunk
+                    last = time.time()
+                    want = _rtu_length(got)
+                    if want and len(got) >= want:
+                        break
+                elif got and time.time() - last > 0.2:
+                    break  # the line went quiet: that was all
+    except local.SERIAL_ERRORS as e:
+        raise ThingError(
+            "Could not use {port}: {why}. Is the cable plugged in, and is another program "
+            "using it?",
+            port=port,
+            why=str(e),
+        ) from e
+    if not got:
+        raise ThingError(
+            "The device on {port} did not answer. Check its unit number ({unit}), the speed "
+            "({baud}) and the two wires (A and B).",
+            port=port,
+            unit=unit,
+            baud=baud,
+        )
+    if len(got) < 5 or crc16(got[:-2]) != struct.unpack("<H", got[-2:])[0]:
+        raise ThingError(
+            "The answer from {port} arrived damaged. Check the speed ({baud}) and the wiring.",
+            port=port,
+            baud=baud,
+        )
+    if got[0] != unit:
+        raise ThingError("The device answered a different question than the one asked.")
+    return got[1:-2]
+
+
 def _modbus(dev: dict, pdu: bytes) -> bytes:
+    body = _modbus_cable(dev, pdu) if dev.get("serial") else _modbus_network(dev, pdu)
+    if body[0] == (pdu[0] | 0x80):
+        raise ThingError(
+            "The device refused: {why}.", why=MODBUS_ERRORS.get(body[1]) or f"error {body[1]}"
+        )
+    if body[0] != pdu[0]:
+        raise ThingError("The device answered a different question than the one asked.")
+    return body[1:]
+
+
+def _modbus_network(dev: dict, pdu: bytes) -> bytes:
     tid = int(time.time() * 1000) & 0xFFFF
     frame = struct.pack(">HHHB", tid, 0, len(pdu) + 1, int(dev.get("unit", 1)) & 0xFF) + pdu
     try:
@@ -250,13 +346,7 @@ def _modbus(dev: dict, pdu: bytes) -> bytes:
             port=dev.get("port", 502),
             why=str(e),
         ) from e
-    if body[0] == (pdu[0] | 0x80):
-        raise ThingError(
-            "The device refused: {why}.", why=MODBUS_ERRORS.get(body[1]) or f"error {body[1]}"
-        )
-    if body[0] != pdu[0]:
-        raise ThingError("The device answered a different question than the one asked.")
-    return body[1:]
+    return body
 
 
 def _exactly(s: socket.socket, n: int) -> bytes:
@@ -325,7 +415,7 @@ def modbus_write(dev: dict, kind: str, address: int, values: list[int]) -> str:
         "Wrote {n} value(s) at {address} on {name}.",
         n=len(vals),
         address=address,
-        name=dev.get("name") or dev["host"],
+        name=dev.get("name") or dev.get("host") or dev.get("serial"),
     )
 
 

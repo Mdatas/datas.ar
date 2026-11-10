@@ -162,7 +162,7 @@ language Datas is set to. → [HARDWARE.md](HARDWARE.md)
 | POST | `/api/things/print` | `{markdown, title?}` (becomes a PDF; plain text on Windows without LibreOffice) or `{path}` (a file Datas saved), `printer?`, `copies?` → `{said, path, name}` |
 | POST | `/api/things/serial` | `{port, seconds?, baud?}` → `{text}` — listens only; writing is the agent's |
 | GET | `/api/things/around?seconds=` | devices that announce themselves on the network |
-| POST | `/api/things/settings` | `{mqtt?: {host, port, username, password, tls}, home_assistant?: {url, token}, modbus?: [{name, host, port, unit}]}`; an empty secret keeps the saved one, `-` removes it |
+| POST | `/api/things/settings` | `{mqtt?: {host, port, username, password, tls}, home_assistant?: {url, token}, modbus?: [{name, host, port, unit} | {name, serial, baud, parity, unit}]}` (the second shape is a device on a serial cable); an empty secret keeps the saved one, `-` removes it |
 | POST | `/api/things/check` | `{what: mqtt\|home_assistant\|modbus, name?}` → `{ok, detail}` |
 
 ### Agent

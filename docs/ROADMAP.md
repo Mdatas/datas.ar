@@ -72,7 +72,7 @@ Status:
 
 - [x] **Cameras, the screen, printers**: a photo or a picture of the screen in a chat for AIs that understand pictures; *Print on paper* for any answer — docs/HARDWARE.md
 - [x] **Boards and instruments** on a serial cable (Arduino, ESP32, 3D printers): listen from Tools; the agent reads and writes lines
-- [x] **Smart home and industry**: MQTT, Home Assistant and Modbus TCP through your own hub and devices; what announces itself on the network (printers, NAS, Raspberry Pi…)
+- [x] **Smart home and industry**: MQTT, Home Assistant and Modbus — over the network (TCP) and on a serial cable (RTU, RS-485 adapters) — through your own hub and devices; what announces itself on the network (printers, NAS, Raspberry Pi…)
 - [x] **The agent's hardware switch**, off until switched on for a task; anything that looks at you or acts on the world asks first, in plain words and in your language; scheduled tasks may be given it
 - [x] **Mouse and keyboard**, experimental, behind a second switch: asks before every action, clicks only inside the picture it was shown, stops when the mouse reaches a corner
 - [x] **FFmpeg fetched once and checked** (fixed commit, size, SHA-256) when the computer has none — this also makes *Recording to text* read MP3, M4A and video in the installed app
@@ -126,7 +126,7 @@ Status:
 - [x] "Look at my screen and help" (a picture of the screen in a chat; the user clicks)
 - [x] Mouse and keyboard, experimental: own switch, asks before every action, corner of the screen stops it
 - [ ] For the mouse and keyboard: one chosen window only, a dry run, a visible marker before a click
-- [ ] Hardware: Modbus over a serial cable (RTU), OPC UA, a live camera view, scanning documents, trying it on real devices
+- [ ] Hardware: OPC UA, a live camera view, scanning documents, the Raspberry Pi's own camera and pins (GPIO), trying it all on real devices
 - [ ] Per-tool allowlists; a kept record of every tool call
 - [ ] Task templates (research → file, inbox triage via IMAP, questions over a folder)
 

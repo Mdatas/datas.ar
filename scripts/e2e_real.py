@@ -376,8 +376,8 @@ MINUTES = "\n\n".join(
     f"Marta voted for, Jorge voted against, and the treasurer said the cost of {i * 15 + 40} "
     "pesos fits this year's budget. The next step is to collect three price quotes, compare "
     "them at the following meeting and write down who is responsible for each purchase."
-    for i in range(1, 49)
-)  # about 24,000 characters: several parts for an AI with a 4096-token working memory
+    for i in range(1, 25)
+)  # about 11,000 characters: three parts for an AI with a 4096-token working memory
 
 
 def linked(c: httpx.Client, a: argparse.Namespace) -> None:
@@ -518,6 +518,7 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
             and res.get("parts", 0) >= 2
             and shares.get("Laptop", 0) >= 1
             and shares.get("this device", 0) >= 1
+            and not res.get("dropped")
             and len(res.get("markdown") or "") > 40,
             f"{res.get('parts')} parts, written by {shares}; dropped out: {res.get('dropped')}"
             if res

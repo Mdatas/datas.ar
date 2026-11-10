@@ -14,7 +14,7 @@ import pytest
 from datas import things
 from datas.things import ThingError, control, local, net
 
-from .fake_things import Board, Broker, ModbusDevice
+from .fake_things import Board, Broker, ModbusDevice, ModbusOnACable
 
 PATTERN = ["-f", "lavfi", "-i", "testsrc=size=1920x1080:rate=10"]  # FFmpeg's own test picture
 
@@ -477,6 +477,71 @@ def test_modbus_reads_and_writes_against_a_device():
     with pytest.raises(ThingError) as e:
         net.modbus_read({**dev, "port": 1}, "holding", 0, 1)
     assert "Could not reach the device" in str(e.value)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="pseudo-terminals are POSIX")
+def test_modbus_on_a_serial_cable(tmp_path, monkeypatch):
+    """Modbus RTU: the same questions as on the network, framed for a cable (unit number
+    first, checksum last) — against a device on a pseudo-terminal."""
+    pytest.importorskip("serial")
+    # the checksum of the textbook message "read 10 registers from unit 1": C5 CD on the wire
+    assert net.crc16(bytes.fromhex("01030000000A")) == 0xCDC5
+    meter = ModbusOnACable(unit=5)
+    dev = {"name": "meter", "serial": meter.port, "baud": 19200, "unit": 5, "timeout": 0.6}
+    try:
+        meter.registers.update({0: 2301, 1: 50, 2: 65535})
+        assert net.modbus_read(dev, "holding", 0, 3) == [2301, 50, 65535]
+        assert net.modbus_read(dev, "input", 1, 1) == [50]
+        assert net.modbus_write(dev, "holding", 7, [42]) == "Wrote 1 value(s) at 7 on meter."
+        net.modbus_write(dev, "holding", 8, [1, 2, 3])
+        net.modbus_write(dev, "coil", 2, [1])
+        net.modbus_write(dev, "coil", 9, [1, 0, 1])
+        assert [meter.registers[a] for a in (7, 8, 9, 10)] == [42, 1, 2, 3]
+        assert net.modbus_read(dev, "coil", 0, 12) == [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1]
+        with pytest.raises(ThingError) as e:
+            net.modbus_read(dev, "holding", 500, 1)
+        assert "nothing at that address" in str(e.value)
+        # another unit number: nobody on the cable answers, and the sentence says what to check
+        with pytest.raises(ThingError) as e:
+            net.modbus_read({**dev, "unit": 9}, "holding", 0, 1)
+        assert "did not answer" in str(e.value) and "(9)" in str(e.value)
+        assert "no respondió" in e.value.say("es")
+        meter.damage = True  # a wrong speed or a loose wire garbles the answer
+        with pytest.raises(ThingError) as e:
+            net.modbus_read(dev, "holding", 0, 1)
+        assert "arrived damaged" in str(e.value)
+        meter.damage = False
+
+        # saved from the window like any other device, and checked by name
+        monkeypatch.setenv("DATAS_HOME", str(tmp_path))
+        things.save_settings(
+            {
+                "modbus": [
+                    {"name": "Meter", "serial": meter.port, "baud": 19200, "unit": 5},
+                    {"name": "Pump", "serial": "COM7", "parity": "e", "unit": 2},
+                    {"name": "Inverter", "host": "10.0.0.9"},
+                    {"name": "nothing given"},
+                ]
+            }
+        )
+        saved = things.settings()["modbus"]
+        assert saved == [
+            {"name": "Meter", "serial": meter.port, "baud": 19200, "parity": "N", "unit": 5},
+            {"name": "Pump", "serial": "COM7", "baud": 9600, "parity": "E", "unit": 2},
+            {"name": "Inverter", "host": "10.0.0.9", "port": 502, "unit": 1},
+        ]
+        assert net.check("modbus", "meter") == "Meter answers; the value at address 0 is 2301."
+        # a setting the port does not accept is a sentence too (Linux: a pseudo-terminal
+        # has no parity), never a crash
+        try:
+            net.modbus_read({**dev, "parity": "E"}, "holding", 0, 1)
+        except ThingError as refused:
+            assert "Could not use" in str(refused)
+    finally:
+        meter.close()
+    with pytest.raises(ThingError) as e:
+        net.modbus_read({**dev, "serial": "/dev/ttyNOPE"}, "holding", 0, 1)
+    assert "Could not use /dev/ttyNOPE" in str(e.value)
 
 
 def test_what_devices_say_they_are():

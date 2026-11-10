@@ -107,3 +107,27 @@ def test_a_computer_without_a_screen_lets_another_open_its_datas(monkeypatch):
     assert calls[-1] == ("POST", f"/api/link/peers/{'cd34' * 16}/open", {"show": False})
     r = run(app, ["link", "open", "cd34"])  # the start of its id works too
     assert "is open in its own window" in r.output and calls[-1][2] == {"show": True}
+
+
+def test_every_file_that_states_the_version_states_the_same_one():
+    """The version is written in a few places a build reads by itself (the Arch package
+    recipe, the Windows installer script, the phone apps). One left behind breaks a build."""
+    import re
+    from pathlib import Path
+
+    from datas import __version__
+
+    root = Path(__file__).resolve().parents[1]
+    places = {
+        "pyproject.toml": r'(?m)^version = "(.+?)"',
+        "installer/linux/arch/PKGBUILD": r"(?m)^pkgver=(\S+)",
+        "installer/windows/datas.iss": r'#define AppVersion "(.+?)"',
+        "android/app/build.gradle.kts": r'versionName = "(.+?)"',
+        "ios/App/project.yml": r'MARKETING_VERSION: "(.+?)"',
+    }
+    found = {}
+    for name, pattern in places.items():
+        text = (root / name).read_text(encoding="utf-8")
+        m = re.search(pattern, text)
+        found[name] = m.group(1) if m else None
+    assert found == dict.fromkeys(places, __version__)

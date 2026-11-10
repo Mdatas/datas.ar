@@ -137,16 +137,27 @@ Datas the address of your own hub once.
 ### Industrial equipment: Modbus
 
 **Modbus** is the common language of industrial equipment: PLCs (the small computers that run
-machines), solar inverters, energy meters, heat pumps. Datas speaks Modbus TCP (over your
-network). Add each device with a name, its address, its port (502 unless the manual says
-otherwise) and its unit number (1 unless the manual says otherwise).
+machines), solar inverters, energy meters, heat pumps. Datas speaks it both ways:
+
+- **over your network** (Modbus TCP): add the device with a name, its address, its port (502
+  unless the manual says otherwise) and its unit number (1 unless the manual says otherwise);
+- **on a serial cable** (Modbus RTU — usually a small USB adapter marked RS-485, with two
+  wires called A and B going to the device): as the address, type the cable's port — `COM3`
+  on Windows, `/dev/ttyUSB0` on Linux, `/dev/cu.usbserial…` on a Mac (Tools lists the ports
+  it sees). The box next to it becomes the **speed** (9600 unless the manual says otherwise)
+  and a **check bit (parity)** choice appears: none, even or odd, as the manual says. Several
+  devices can share one cable; each has its own unit number.
 
 The agent can read holding and input registers, coils and discrete inputs, and write holding
 registers and coils. Which address means what is in the device's manual; Datas does not
 guess. Writing changes how a machine behaves, so every write asks first.
 
-Not built in today: Modbus RTU over a serial cable, OPC UA, BACnet, KNX, Zigbee or Z-Wave
-radios directly (use Home Assistant or Zigbee2MQTT for those — both are supported above).
+If a device on a cable does not answer, Datas says what to check: the unit number, the
+speed, the two wires. An answer that arrives damaged usually means the wrong speed or check
+bit.
+
+Not built in today: OPC UA, BACnet, KNX, Zigbee or Z-Wave radios directly (use Home Assistant
+or Zigbee2MQTT for those — both are supported above).
 
 ### What is on my network
 
@@ -218,14 +229,16 @@ Tested automatically on Windows, macOS and Linux, on every change: the camera pa
 FFmpeg's own test picture in place of a camera; the lists of cameras and printers against
 recorded answers of each system; a board on a (pretend) serial port that answers like an
 Arduino program; a real MQTT conversation with a small broker written for the tests; Home
-Assistant's web interface; a Modbus device that keeps registers and coils; every mouse and
-keyboard action against a stand-in; the questions the agent asks; the refusals from a phone.
+Assistant's web interface; a Modbus device that keeps registers and coils, on the network and
+(Linux and macOS) on a pretend serial cable, with a wrong unit number and a damaged answer;
+every mouse and keyboard action against a stand-in; the questions the agent asks; the
+refusals from a phone.
 The weekly test with a real AI also downloads FFmpeg from its fixed address on all three
 systems, checks it, and has it read an MP3.
 
 **Not tested with the real thing**, because the test machines have none: a physical camera,
-a physical printer, a real Arduino, a real Home Assistant, a real PLC, and the mouse and
-keyboard on a real desktop. Each speaks a public, stable protocol and the code follows it,
+a physical printer, a real Arduino, a real Home Assistant, a real PLC, a real RS-485 adapter,
+and the mouse and keyboard on a real desktop. Each speaks a public, stable protocol and the code follows it,
 but the first time you try one, expect that something may need a fix — and please say so
 (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
@@ -238,6 +251,6 @@ FFmpeg (camera and sound, LGPL/GPL builds as published by their builders),
 small packages it brings (mouse and keyboard; BSD, MIT, and GPL for MouseInfo, PyMsgBox and
 python-xlib), [python-zeroconf](https://github.com/python-zeroconf/python-zeroconf) (network
 announcements, LGPL-2.1-or-later), your system's printing service (CUPS on Linux and macOS).
-The Modbus part is a few dozen lines of Datas' own, following the public Modbus
+The Modbus part (network and serial cable) is Datas' own, following the public Modbus
 specification. Licences are the ones each package states about itself. Full list:
 [CREDITS.md](CREDITS.md).

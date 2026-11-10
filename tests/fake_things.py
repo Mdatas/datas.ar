@@ -149,21 +149,13 @@ class Broker(Server):
                 return
 
 
-class ModbusDevice(Server):
-    """Modbus TCP over a small memory: holding registers and coils; reads of input registers
-    and discrete inputs see the same values."""
+class ModbusMemory:
+    """What a Modbus device holds: holding registers and coils; reads of input registers and
+    discrete inputs see the same values."""
 
     def __init__(self) -> None:
         self.registers = {i: 0 for i in range(100)}
         self.coils = {i: 0 for i in range(100)}
-        super().__init__()
-
-    def handle(self, conn: socket.socket) -> None:
-        while True:
-            tid, proto, length, unit = struct.unpack(">HHHB", exactly(conn, 7))
-            pdu = exactly(conn, length - 1)
-            out = self.answer(pdu)
-            conn.sendall(struct.pack(">HHHB", tid, proto, len(out) + 1, unit) + out)
 
     def answer(self, pdu: bytes) -> bytes:
         fc = pdu[0]
@@ -212,11 +204,25 @@ class ModbusDevice(Server):
             return bytes([fc | 0x80, 2])  # illegal data address
 
 
-class Board:
-    """A board on a serial port (a pseudo-terminal): says READY while it waits, then answers
-    each line — like an Arduino sketch that reads commands. POSIX only.
+class ModbusDevice(ModbusMemory, Server):
+    """The same device on the network (Modbus TCP)."""
 
-    Its two threads never sit inside a read or a write of the pseudo-terminal: they wait with
+    def __init__(self) -> None:
+        ModbusMemory.__init__(self)
+        Server.__init__(self)
+
+    def handle(self, conn: socket.socket) -> None:
+        while True:
+            tid, proto, length, unit = struct.unpack(">HHHB", exactly(conn, 7))
+            pdu = exactly(conn, length - 1)
+            out = self.answer(pdu)
+            conn.sendall(struct.pack(">HHHB", tid, proto, len(out) + 1, unit) + out)
+
+
+class Cable:
+    """The far end of a serial cable (a pseudo-terminal). POSIX only.
+
+    Its threads never sit inside a read or a write of the pseudo-terminal: they wait with
     ``select`` and stop before the ends are closed. On macOS, closing an end while another
     thread is blocked reading it never returns."""
 
@@ -229,12 +235,10 @@ class Board:
         os.set_blocking(self.master, False)
         self.port = os.ttyname(slave)
         self._slave = slave
-        self.got: list[str] = []
         self._stop = threading.Event()
-        self._threads = [
-            threading.Thread(target=self._run, daemon=True),
-            threading.Thread(target=self._greet, daemon=True),
-        ]
+        self._threads = [threading.Thread(target=self._run, daemon=True)]
+
+    def start(self) -> None:
         for t in self._threads:
             t.start()
 
@@ -244,14 +248,12 @@ class Board:
         except OSError:  # nobody is listening and the line is full, or it was closed
             pass
 
-    def _greet(self) -> None:
-        while not self.got and not self._stop.wait(0.1):
-            self._say(b"READY v1\r\n")
+    def feed(self, data: bytes) -> None:  # pragma: no cover - overridden
+        raise NotImplementedError
 
     def _run(self) -> None:
         import select
 
-        buf = b""
         while not self._stop.is_set():
             try:
                 ready, _, _ = select.select([self.master], [], [], 0.05)
@@ -269,17 +271,7 @@ class Board:
                 if self._stop.wait(0.05):
                     return
                 continue
-            buf += data
-            while b"\n" in buf:
-                line, buf = buf.split(b"\n", 1)
-                cmd = line.decode("utf-8", "replace").strip()
-                self.got.append(cmd)
-                if cmd == "LED ON":
-                    self._say(b"OK led=1\r\n")
-                elif cmd == "TEMP?":
-                    self._say(b"TEMP 21.5\r\n")
-                else:
-                    self._say(b"ERR unknown\r\n")
+            self.feed(data)
 
     def close(self) -> None:
         self._stop.set()
@@ -290,3 +282,69 @@ class Board:
                 os.close(fd)
             except OSError:
                 pass
+
+
+class ModbusOnACable(ModbusMemory, Cable):
+    """The same device on a serial cable (Modbus RTU): it answers only to its unit number,
+    and only to messages whose checksum is right."""
+
+    def __init__(self, unit: int = 1) -> None:
+        ModbusMemory.__init__(self)
+        Cable.__init__(self)
+        self.unit, self.damage, self._buf = unit, False, b""
+        self.start()
+
+    @staticmethod
+    def crc(data: bytes) -> bytes:
+        crc = 0xFFFF
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+        return struct.pack("<H", crc)
+
+    def feed(self, data: bytes) -> None:
+        self._buf += data
+        while len(self._buf) >= 8:
+            fc = self._buf[1]
+            size = 9 + self._buf[6] if fc in (15, 16) else 8
+            if len(self._buf) < size:
+                return
+            frame, self._buf = self._buf[:size], self._buf[size:]
+            if self.crc(frame[:-2]) != frame[-2:]:
+                self._buf = b""  # noise on the line: start again
+                return
+            if frame[0] != self.unit:
+                continue  # meant for another device on the same cable
+            out = bytes([self.unit]) + self.answer(frame[1:-2])
+            out += self.crc(out)
+            self._say(out[:-1] + bytes([out[-1] ^ 0xFF]) if self.damage else out)
+
+
+class Board(Cable):
+    """A board on a serial port: says READY while it waits, then answers each line — like an
+    Arduino sketch that reads commands."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.got: list[str] = []
+        self._buf = b""
+        self._threads.append(threading.Thread(target=self._greet, daemon=True))
+        self.start()
+
+    def _greet(self) -> None:
+        while not self.got and not self._stop.wait(0.1):
+            self._say(b"READY v1\r\n")
+
+    def feed(self, data: bytes) -> None:
+        self._buf += data
+        while b"\n" in self._buf:
+            line, self._buf = self._buf.split(b"\n", 1)
+            cmd = line.decode("utf-8", "replace").strip()
+            self.got.append(cmd)
+            if cmd == "LED ON":
+                self._say(b"OK led=1\r\n")
+            elif cmd == "TEMP?":
+                self._say(b"TEMP 21.5\r\n")
+            else:
+                self._say(b"ERR unknown\r\n")

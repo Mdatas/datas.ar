@@ -39,7 +39,9 @@ class ThingError(Problem):
 DEFAULTS: dict = {
     "mqtt": {"host": "", "port": 1883, "username": "", "password": "", "tls": False},
     "home_assistant": {"url": "", "token": ""},
-    "modbus": [],  # [{"name": "inverter", "host": "192.168.1.50", "port": 502, "unit": 1}]
+    # on the network: {"name": "inverter", "host": "192.168.1.50", "port": 502, "unit": 1}
+    # on a serial cable: {"name": "meter", "serial": "COM3", "baud": 9600, "parity": "N", "unit": 1}
+    "modbus": [],
 }
 SECRETS = (("mqtt", "password"), ("home_assistant", "token"))
 
@@ -64,15 +66,24 @@ def settings() -> dict:
 
 
 def _modbus_entry(x) -> dict | None:  # noqa: ANN001
-    if not isinstance(x, dict) or not str(x.get("host", "")).strip():
+    if not isinstance(x, dict):
+        return None
+    host, cable = str(x.get("host") or "").strip(), str(x.get("serial") or "").strip()
+    if not host and not cable:
         return None
     try:
-        return {
-            "name": " ".join(str(x.get("name") or x["host"]).split())[:40],
-            "host": str(x["host"]).strip(),
-            "port": int(x.get("port") or 502),
-            "unit": int(x.get("unit") or 1),
-        }
+        name = " ".join(str(x.get("name") or cable or host).split())[:40]
+        unit = int(x.get("unit") or 1)
+        if cable:  # Modbus RTU: the device hangs on a serial cable (often an RS-485 adapter)
+            parity = str(x.get("parity") or "N").strip().upper()[:1]
+            return {
+                "name": name,
+                "serial": cable,
+                "baud": int(x.get("baud") or 9600),
+                "parity": parity if parity in ("N", "E", "O") else "N",
+                "unit": unit,
+            }
+        return {"name": name, "host": host, "port": int(x.get("port") or 502), "unit": unit}
     except (TypeError, ValueError):
         return None
 

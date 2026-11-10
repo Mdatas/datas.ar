@@ -474,4 +474,8 @@ ES: dict[str, str] = {
     "Could not open port {port} on this device ({why}). Another program may be using it.": "No se pudo abrir el puerto {port} en este dispositivo ({why}). Puede que otro programa lo esté usando.",
     "Could not reach {address}. Check that Datas is open on the other device, that it shows the pairing code, and that both are on the same network (or that the address is reachable). ({why})": "No se pudo llegar a {address}. Fijate que Datas esté abierto en el otro dispositivo, que muestre el código y que los dos estén en la misma red (o que se pueda llegar a esa dirección). ({why})",
     "Could not reach that device ({why}). Is it on, and is Datas open on it?": "No se pudo llegar a ese dispositivo ({why}). ¿Está prendido y tiene Datas abierto?",
+    # ---- Modbus on a serial cable (datas/things/net.py) ----------------------------------------
+    "Could not use {port}: {why}. Is the cable plugged in, and is another program using it?": "No se pudo usar {port}: {why}. ¿Está enchufado el cable? ¿Lo está usando otro programa?",
+    "The device on {port} did not answer. Check its unit number ({unit}), the speed ({baud}) and the two wires (A and B).": "El aparato en {port} no respondió. Revisá su número de unidad ({unit}), la velocidad ({baud}) y los dos cables (A y B).",
+    "The answer from {port} arrived damaged. Check the speed ({baud}) and the wiring.": "La respuesta de {port} llegó dañada. Revisá la velocidad ({baud}) y el cableado.",
 }

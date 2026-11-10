@@ -504,6 +504,14 @@ def serial_ports() -> list[dict]:
     return out
 
 
+try:  # what a serial port can fail with: pyserial's own error is an OSError; a setting the
+    import termios  # port does not accept comes straight from the system on Linux and macOS
+
+    SERIAL_ERRORS: tuple = (OSError, ValueError, termios.error)
+except ImportError:  # Windows
+    SERIAL_ERRORS = (OSError, ValueError)
+
+
 def serial_talk(
     port: str,
     send: str | None = None,
@@ -536,7 +544,7 @@ def serial_talk(
             end = time.time() + seconds
             while time.time() < end and len(got) < limit:
                 got += s.read(4096)
-    except (OSError, ValueError) as e:  # serial.SerialException is an OSError
+    except SERIAL_ERRORS as e:
         raise ThingError(
             "Could not use {port}: {why}. Is the board plugged in, and is another program "
             "(the Arduino program's serial monitor, for example) using it?",

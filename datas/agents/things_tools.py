@@ -285,7 +285,7 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
         modbus_read,
         _schema(
             "modbus_read",
-            "Read values from an industrial device the user set up (PLC, inverter, meter) over Modbus TCP. kind: holding or input (numbers 0–65535), coil or discrete (1/0).",
+            "Read values from an industrial device the user set up (PLC, inverter, meter) over Modbus (network or serial cable). kind: holding or input (numbers 0–65535), coil or discrete (1/0).",
             {"device": S, "kind": S, "address": INT, "count": INT},
             ["device", "kind", "address"],
         ),
@@ -294,7 +294,7 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
         modbus_write,
         _schema(
             "modbus_write",
-            "Write values to an industrial device over Modbus TCP. kind: holding (numbers) or coil (1/0). This changes how a machine behaves: be sure of the address.",
+            "Write values to an industrial device over Modbus (network or serial cable). kind: holding (numbers) or coil (1/0). This changes how a machine behaves: be sure of the address.",
             {"device": S, "kind": S, "address": INT, "values": {"type": "array", "items": INT}},
             ["device", "kind", "address", "values"],
         ),

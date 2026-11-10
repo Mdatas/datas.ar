@@ -425,19 +425,37 @@ async function hardware(box, busy) {
   const saveHa = () => api("/api/things/settings", { body: { home_assistant: { url: haUrl.value.trim(), token: haTok.value.trim() } } });
   // Modbus
   const mbList = h("div", { class: "stack" }), mbNote = result();
-  const mbRows = () => [...mbList.children].map(r => ({ name: r.querySelector("[data-k=name]").value.trim(), host: r.querySelector("[data-k=host]").value.trim(),
-    port: Number(r.querySelector("[data-k=port]").value) || 502, unit: Number(r.querySelector("[data-k=unit]").value) || 1 })).filter(d => d.host);
+  // an address on the network (192.168.1.50) or, for a device on a serial cable, the cable's port (COM3, /dev/ttyUSB0)
+  const isCable = v => /^(com\d+|\/dev\/|tty|cu\.)/i.test(String(v || "").trim());
+  const mbRows = () => [...mbList.children].map(r => {
+    const g = k => r.querySelector("[data-k=" + k + "]").value.trim(), n = Number(g("port")) || 0, unit = Number(g("unit")) || 1;
+    return isCable(g("host")) ? { name: g("name"), serial: g("host"), baud: n || 9600, parity: g("parity") || "N", unit }
+      : { name: g("name"), host: g("host"), port: n || 502, unit };
+  }).filter(d => d.host || d.serial);
   const saveMb = () => api("/api/things/settings", { body: { modbus: mbRows() } });
   const mbRow = d => {
     const name = h("input", { type: "text", value: d.name || "", placeholder: "Inverter", data: { k: "name" } }),
-      host = h("input", { type: "text", value: d.host || "", placeholder: "192.168.1.50", data: { k: "host" } });
+      host = h("input", { type: "text", value: d.serial || d.host || "", placeholder: "192.168.1.50", data: { k: "host" } }),
+      num = h("input", { type: "number", value: String(d.serial ? d.baud || 9600 : d.port || 502), min: "1", max: "4000000", data: { k: "port" } }),
+      numLabel = h("span", {}), parity = h("select", { data: { k: "parity" } },
+        [["N", t("hw_parity_n")], ["E", t("hw_parity_e")], ["O", t("hw_parity_o")]].map(([v, label]) => h("option", { value: v, selected: (d.parity || "N") === v }, label))),
+      parityField = field(t("hw_parity"), parity);
+    // the third box is the port on the network, or the speed on a cable; it follows what is typed as the address
+    const fit = () => {
+      const cable = isCable(host.value);
+      numLabel.textContent = t(cable ? "hw_speed" : "hw_port");
+      parityField.classList.toggle("hidden", !cable);
+      if (cable && num.value === "502") num.value = "9600";
+      if (!cable && num.value === "9600") num.value = "502";
+    };
+    host.addEventListener("input", fit);
     const row = h("div", { class: "mb-row" },
       h("div", { class: "fields" }, field(t("hw_name"), name), field(t("hw_address"), host),
-        field(t("hw_port"), h("input", { type: "number", value: String(d.port || 502), min: "1", max: "65535", data: { k: "port" } })),
-        field(t("hw_unit"), h("input", { type: "number", value: String(d.unit || 1), min: "0", max: "255", data: { k: "unit" } }))),
+        field(numLabel, num), field(t("hw_unit"), h("input", { type: "number", value: String(d.unit || 1), min: "0", max: "255", data: { k: "unit" } })), parityField),
       h("div", { class: "row" },
         h("button", { class: "btn small", onclick: guard(() => check(mbNote, "modbus", name.value.trim() || host.value.trim(), saveMb)()) }, t("hw_check")),
         h("button", { class: "btn small danger", onclick: () => row.remove() }, t("hw_remove"))));
+    fit();
     return row;
   };
   (set.modbus.length ? set.modbus : []).forEach(d => mbList.append(mbRow(d)));

@@ -242,3 +242,41 @@ def test_only_linked_devices_with_an_ai_of_their_own_are_asked_to_help():
         assert r.json() == {"devices": [{"name": "Desk", "ai": "Qwen3 8B"}]}
     finally:
         server.core.link = old
+
+
+def test_the_ai_of_a_linked_device_is_read_as_it_writes(monkeypatch):
+    """A long answer sent in one piece is silent for minutes, and the link takes silence for
+    a device that stopped answering — so a helper's answer is taken as it is written."""
+    import json
+
+    import httpx
+
+    from datas.providers import linked_provider
+
+    core = Datas(Config())
+    asked = []
+
+    def device(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        asked.append((str(request.url), body))
+        if "fail" in body["messages"][0]["content"]:
+            return httpx.Response(502, json={"error": {"message": "no AI is running there"}})
+        words = ["- one", " point", "\n- another", ""]
+        lines = ["data: " + json.dumps({"choices": [{"delta": {"content": w}}]}) for w in words] + [
+            ": keep-alive",
+            "data: not json",
+            "data: [DONE]",
+            "data: ignored after the end",
+        ]
+        return httpx.Response(200, text="\n\n".join(lines) + "\n\n")
+
+    real = httpx.Client
+    monkeypatch.setattr(
+        tools.httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(device), **kw)
+    )
+    prov = linked_provider(core.cfg, "ab" * 32)
+    assert tools._ask(core, "summarise this", provider=prov) == "- one point\n- another"
+    url, body = asked[0]
+    assert url.endswith(f"/link/{'ab' * 32}/v1/chat/completions") and body["stream"] is True
+    with pytest.raises(RuntimeError):
+        tools._ask(core, "fail please", provider=prov)

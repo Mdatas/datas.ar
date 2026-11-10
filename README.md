@@ -85,7 +85,8 @@ that speaks the Model Context Protocol (MCP), an open standard for giving tools 
 
 When you ask, Datas can take a photo, look at your screen, print, talk to a board on a USB
 cable (Arduino, ESP32, a 3D printer), read sensors and switch things through your own
-smart-home hub (MQTT, Home Assistant), read and write industrial devices (Modbus), and list
+smart-home hub (MQTT, Home Assistant), read and write industrial devices (Modbus, on the
+network or on a serial cable), and list
 what is on your network (printers, NAS, Raspberry Pi). For the agent it is one switch, off
 until you turn it on; anything that looks at you or acts on the world asks first. The mouse
 and keyboard are a second, experimental switch. None of it can be reached from a linked

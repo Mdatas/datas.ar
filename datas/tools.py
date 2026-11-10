@@ -252,13 +252,38 @@ def _ask(core, prompt: str, max_tokens: int | None = None, provider=None) -> str
     }
     if max_tokens:
         body["max_tokens"] = max_tokens
+    from datas.chat_engine import friendly_error
+
+    url = f"{prov.base_url}/chat/completions"
     with httpx.Client(
         timeout=httpx.Timeout(900, connect=30), trust_env=not is_local_url(prov.base_url)
     ) as c:
-        r = c.post(f"{prov.base_url}/chat/completions", headers=prov.headers(), json=body)
-    if r.status_code >= 400:
-        from datas.chat_engine import friendly_error
+        if prov.kind == "linked":
+            # The AI of another device: take the answer as it is written. A long answer sent
+            # in one piece is silent for minutes, and the link takes silence for a device
+            # that stopped answering.
+            import json
 
+            pieces = []
+            with c.stream("POST", url, headers=prov.headers(), json=body | {"stream": True}) as r:
+                if r.status_code >= 400:
+                    r.read()
+                    raise RuntimeError(friendly_error(r.status_code, r.text))
+                for line in r.iter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        delta = json.loads(data)["choices"][0].get("delta") or {}
+                    except (ValueError, KeyError, IndexError, AttributeError):
+                        continue
+                    pieces.append(delta.get("content") or "")
+            core.touch()
+            return "".join(pieces).strip()
+        r = c.post(url, headers=prov.headers(), json=body)
+    if r.status_code >= 400:
         raise RuntimeError(friendly_error(r.status_code, r.text))
     core.touch()
     msg = r.json()["choices"][0]["message"]
