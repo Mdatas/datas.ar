@@ -38,6 +38,8 @@ catalog_app = typer.Typer(help="Model catalog.")
 voice_app = typer.Typer(help="Hearing (whisper.cpp) and speaking (Kokoro).")
 images_app = typer.Typer(help="Making images (stable-diffusion.cpp, Z-Image-Turbo).")
 app.add_typer(pool_app, name="pool")
+link_app = typer.Typer(help="Link your own devices (encrypted): share memory, the AI, chats.")
+app.add_typer(link_app, name="link")
 app.add_typer(voice_app, name="voice")
 app.add_typer(images_app, name="images")
 app.add_typer(provider_app, name="provider")
@@ -468,24 +470,34 @@ def doctor():
 
 
 @pool_app.command("worker")
-def pool_worker(port: int | None = None, host: str = "0.0.0.0"):
-    """Offer this device's memory to other Datas nodes (ggml-rpc-server + mDNS)."""
+def pool_worker(port: int | None = None, host: str = "127.0.0.1"):
+    """Expert use: run llama.cpp's worker by hand (for your own VPN or SSH tunnel).
+
+    Linked devices (the Devices screen, or `datas link`) do this for you over an encrypted
+    link. A worker bound to anything but 127.0.0.1 accepts unencrypted, unauthenticated
+    connections from that network.
+    """
     from datas.pool.worker import run_worker
 
     core = _core()
     core.ensure_runtime()
+    if host not in ("127.0.0.1", "localhost"):
+        con.print(
+            "[yellow]Warning:[/] this worker will accept unencrypted connections from the network "
+            f"({host}). Use linked devices instead unless the network itself is private."
+        )
     raise typer.Exit(run_worker(core.cfg, core.spec(), port, host, log=con.print))
 
 
 @pool_app.command("discover")
 def pool_discover(seconds: float = 3.0):
-    """List pool workers on the LAN."""
+    """List devices whose memory can be added to this one (linked devices that are online)."""
     nodes = _core().pool_nodes(refresh=True, seconds=seconds)
     if not nodes:
-        con.print("no workers found")
+        con.print("no linked device is offering memory right now (see: datas link status)")
         return
     t = Table(box=None)
-    for c in ("host", "endpoint", "llama.cpp", "RAM", "VRAM", "backend"):
+    for c in ("device", "local endpoint", "llama.cpp", "RAM", "VRAM", "backend"):
         t.add_column(c)
     for n in nodes:
         t.add_row(
@@ -510,6 +522,98 @@ def pool_nodes(
             cfg.pool_nodes = set_
             cfg.save()
     con.print(f"manual workers: {cfg.pool_nodes or '(none)'}")
+
+
+# ---------------------------------------------------------------------------
+# linked devices (the app must be open: these commands talk to it)
+
+
+def _app_api(method: str, path: str, **kw):  # noqa: ANN202
+    import httpx
+
+    cfg = Config.load()
+    try:
+        r = httpx.request(
+            method, f"http://127.0.0.1:{cfg.ui_port}{path}", timeout=60, trust_env=False, **kw
+        )
+    except httpx.HTTPError:
+        con.print("Datas is not open on this device. Start it first (`datas` or `datas serve`).")
+        raise typer.Exit(1) from None
+    if r.status_code >= 400:
+        try:
+            msg = r.json().get("detail") or r.text
+        except ValueError:
+            msg = r.text
+        con.print(f"[red]{msg}[/]")
+        raise typer.Exit(1)
+    return r.json()
+
+
+def _print_link(st: dict) -> None:
+    d = st["device"]
+    con.print(
+        f"this device: [bold]{d['name']}[/]  id {d['short_id']}  link {'on' if st['enabled'] else 'off'}"
+    )
+    if st["enabled"]:
+        con.print("addresses: " + ", ".join(st["addresses"]))
+    for p in st["peers"]:
+        state = "[green]online[/]" if p["online"] else "[dim]offline[/]"
+        extra = []
+        if p["memory_gib"]:
+            extra.append(f"offers {p['memory_gib']} GB")
+        if p.get("ai", {}).get("available"):
+            extra.append(f"AI: {p['ai'].get('name') or 'yes'}")
+        con.print(f"  {p['name']}  {p['address']}  {state}  {'; '.join(extra)}")
+    if not st["peers"]:
+        con.print("  (no linked devices yet)")
+
+
+@link_app.command("status")
+def link_status():
+    """This device's link, and the devices linked to it."""
+    _print_link(_app_api("GET", "/api/link", params={"refresh": 1}))
+
+
+@link_app.command("code")
+def link_code():
+    """Show an address and a one-time code; type them on the other device within ten minutes."""
+    st = _app_api("POST", "/api/link/pairing")
+    pr = st["pairing"]
+    con.print("On the other device, open Datas → Devices → Link a device, and type:")
+    con.print(f"  address: [bold]{(pr['addresses'] or ['(no network address found)'])[0]}[/]")
+    con.print(
+        f"  code:    [bold]{pr['code']}[/]   (valid {pr['expires_in'] // 60} minutes, works once)"
+    )
+
+
+@link_app.command("pair")
+def link_pair(address: str, code: str):
+    """Link to a device that is showing ADDRESS and CODE."""
+    r = _app_api("POST", "/api/link/pair", json={"address": address, "code": code})
+    con.print(f"[green]Linked[/] with {r['peer']['name']} ({r['peer']['short_id']}).")
+
+
+@link_app.command("unlink")
+def link_unlink(name_or_id: str):
+    """Remove a linked device (by name or by the start of its id)."""
+    st = _app_api("GET", "/api/link")
+    key = name_or_id.lower().replace("-", "")
+    for p in st["peers"]:
+        if p["name"].lower() == name_or_id.lower() or p["id"].startswith(key):
+            _app_api("DELETE", f"/api/link/peers/{p['id']}")
+            con.print(f"unlinked {p['name']}")
+            return
+    con.print("no linked device matches")
+    raise typer.Exit(1)
+
+
+@link_app.command("sync")
+def link_sync():
+    """Bring chats in step with the linked devices that are online, now."""
+    r = _app_api("POST", "/api/link/sync")
+    con.print("synced with: " + (", ".join(r["synced_with"]) or "nobody online"))
+    for e in r["errors"]:
+        con.print(f"[yellow]{e}[/]")
 
 
 # ---------------------------------------------------------------------------

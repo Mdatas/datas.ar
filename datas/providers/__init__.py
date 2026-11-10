@@ -6,6 +6,9 @@ model, a pooled cluster and a paid API is a config change, not a code path.
 
     local  → llama-server on this machine (started by Datas)
     pool   → llama-server on this machine with --rpc workers (memory pooled)
+    linked → the AI running on another of the user's devices, through the encrypted link
+             (datas.link); the request goes to /link/<device>/v1 on this machine, which
+             forwards it over mutual TLS
     remote → any OpenAI-compatible HTTP API with your key (OpenAI, Groq, Mistral,
              OpenRouter, Together, a friend's Datas node, Ollama, LM Studio, …)
 
@@ -34,10 +37,13 @@ PRESETS: dict[str, str] = {
 }
 
 
+HTTP_PORT: int | None = None  # where this machine's local API listens (set by the server)
+
+
 @dataclass
 class Provider:
     name: str
-    kind: str  # local | pool | remote
+    kind: str  # local | pool | linked | remote
     base_url: str
     api_key: str = ""
     model: str = ""
@@ -98,9 +104,21 @@ def all_providers(cfg: Config, running: bool, rpc: list[str] | None = None) -> l
     return out
 
 
+def linked_provider(cfg: Config, device_id: str) -> Provider:
+    return Provider(
+        name=f"link:{device_id}",
+        kind="linked",
+        base_url=f"http://127.0.0.1:{HTTP_PORT or cfg.ui_port}/link/{device_id}/v1",
+        model="datas",
+        detail="the AI on a linked device",
+    )
+
+
 def active_provider(cfg: Config, running: bool, rpc: list[str] | None = None) -> Provider:
     if cfg.provider in ("local", "pool"):
         return local_provider(cfg, running, rpc=rpc)
+    if cfg.provider.startswith("link:"):
+        return linked_provider(cfg, cfg.provider[5:])
     r = cfg.remote(cfg.provider)
     if r is None:
         return local_provider(cfg, running, rpc=rpc)

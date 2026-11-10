@@ -24,7 +24,7 @@ from datas.config import Config, home, models_dir
 from datas.engines import images as image_engine
 from datas.engines import voice as voice_engine
 from datas.hardware.detect import DeviceSpec, detect
-from datas.pool.discovery import Node, discover, parse_manual
+from datas.pool.discovery import Node, parse_manual
 from datas.recommend.engine import (
     Budget,
     Candidate,
@@ -113,7 +113,7 @@ class Datas:
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
         self._pool_nodes: list[Node] = []
-        self._worker: subprocess.Popen | None = None
+        self.http_port = self.cfg.ui_port  # where the local API listens (set by the server)
         self._agent_windows: list[subprocess.Popen] = []
         self._lock = threading.Lock()
         # ---- sleeping when idle, waking on the next message ----
@@ -526,7 +526,11 @@ class Datas:
         elif self.server.proc is not None and not self.server.running():
             # the engine process ended on its own (crash, killed by the system for memory)
             tail = self.server.log_tail(8)
+            pooled = bool(self.server.state.rpc)
             self.server._clear()  # noqa: SLF001
+            if pooled:
+                self.fallback_local()
+                return
             self.asleep = True
             self.notice = {
                 "kind": "engine_stopped",
@@ -906,15 +910,74 @@ class Datas:
         return self._run_job(job, lambda j: self.bench())
 
     # ---- pool ---------------------------------------------------------------
+    def link_manager(self):  # noqa: ANN201 - datas.link.LinkManager
+        """The encrypted link to the user's other devices (created on first use)."""
+        with self._lock:
+            if self.link is None:
+                from datas.link import LinkManager
+
+                self.link = LinkManager(self)
+            return self.link
+
     def pool_nodes(self, refresh: bool = False, seconds: float = 3.0) -> list[Node]:
+        """Devices whose memory can be added to this one: the user's linked devices, reached
+        through the encrypted link. (Experts can also list raw llama.cpp workers by hand with
+        ``datas pool nodes --set`` — those connections are not encrypted by Datas.)"""
+        nodes: list[Node] = []
+        if self.link is not None or self.cfg.link_enabled:
+            try:
+                nodes = self.link_manager().pool_nodes(refresh=refresh)
+            except Exception:  # noqa: BLE001 - a link problem must not break a local run
+                nodes = []
         manual = getattr(self.cfg, "pool_nodes", "")
-        if refresh or not self._pool_nodes:
-            found = discover(seconds)
-            if manual:
-                known = {n.endpoint for n in found}
-                found += [n for n in parse_manual(manual) if n.endpoint not in known]
-            self._pool_nodes = found
+        if manual:
+            known = {n.endpoint for n in nodes}
+            nodes += [n for n in parse_manual(manual) if n.endpoint not in known]
+        self._pool_nodes = nodes
         return self._pool_nodes
+
+    def fallback_local(self, lost: str = "") -> dict:
+        """A device this AI was spread over went away (or the link dropped): carry on with the
+        best installed AI that fits this device alone, and tell the user."""
+        from datas import library
+
+        with self._wake_lock:
+            was = self.model_name(
+                self.server.state.model_id or (self.cfg.last_run or {}).get("model_id")
+            )
+            self.server.stop()
+            rec = self.recommendation(pool_nodes=None)
+            have = {i["model_id"] for i in library.installed() if not i["custom"]}
+            pick = None
+            for c in rec.fits:
+                if c.model_id not in have or c.role != "general":
+                    continue
+                m = self.catalog.get(c.model_id)
+                if downloader.is_downloaded(m, m.file(c.quant)):
+                    pick = c
+                    break
+            if pick is None:
+                self.cfg.last_run = {}
+                self.cfg.provider = "local"
+                self.cfg.save()
+                self.notice = {
+                    "kind": "fallback_none",
+                    "lost": lost,
+                    "was": was,
+                    "text": f"{lost or 'A linked device'} went offline, and none of the AIs installed "
+                    "here fits this device alone. Open My AIs to add a lighter one.",
+                }
+                return self.notice
+            self.run(pick.model_id, pick.quant)
+            self.notice = {
+                "kind": "fallback",
+                "lost": lost,
+                "was": was,
+                "now": pick.name,
+                "text": f"{lost or 'A linked device'} went offline. The chat continues on this "
+                f"device with {pick.name}.",
+            }
+            return self.notice
 
     # ---- background helpers ---------------------------------------------------
     def _self_cmd(self) -> list[str]:
@@ -924,24 +987,12 @@ class Datas:
         return [sys.executable, "-m", "datas"]
 
     def worker_running(self) -> bool:
-        return bool(self._worker and self._worker.poll() is None)
+        return bool(self.cfg.link_enabled and self.cfg.link_share_memory)
 
     def set_pool_offer(self, on: bool) -> dict:
-        """Offer this device's memory to the user's other devices (background worker)."""
-        if on and not self.worker_running():
-            self.ensure_runtime()
-            self._worker = subprocess.Popen(
-                self._self_cmd() + ["pool", "worker"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        elif not on and self.worker_running():
-            self._worker.terminate()
-            try:
-                self._worker.wait(5)
-            except Exception:
-                self._worker.kill()
-            self._worker = None
+        """Offer this device's memory to the user's linked devices (through the encrypted link;
+        the open, unencrypted worker of earlier versions is gone)."""
+        self.cfg.link_share_memory = on
         self.cfg.pool_offer = on
         self.cfg.save()
         return {"offering": self.worker_running()}
@@ -979,8 +1030,6 @@ class Datas:
             except Exception:  # noqa: BLE001
                 pass
         self.apps.stop_all()
-        if self.worker_running():
-            self.set_pool_offer(False)
         for p in self._agent_windows:
             if p.poll() is None:
                 p.terminate()

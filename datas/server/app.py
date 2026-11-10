@@ -94,6 +94,11 @@ def _start_background() -> None:
         core.start_watch()
     except Exception:  # noqa: BLE001
         pass
+    if core.cfg.link_enabled:  # be reachable by the user's linked devices from the start
+        try:
+            core.link_manager()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 @app.get("/api/status")
@@ -637,6 +642,175 @@ def providers_active(body: ActiveBody) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Linked devices (datas.link): pairing, presence, shared memory, chat sync
+# ---------------------------------------------------------------------------
+
+
+def _link():  # noqa: ANN202
+    from datas.link import LinkError
+
+    try:
+        return core.link_manager()
+    except LinkError as e:
+        raise HTTPException(400, str(e)) from e
+    except Exception as e:  # noqa: BLE001 - e.g. the cryptography package is missing
+        raise HTTPException(500, f"Device linking is not available on this copy: {e}") from e
+
+
+def _link_call(fn, *args):  # noqa: ANN001, ANN202
+    from datas.link import LinkError
+
+    try:
+        return fn(*args)
+    except LinkError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+class OnBody(BaseModel):
+    on: bool
+
+
+class PairBody(BaseModel):
+    address: str
+    code: str
+
+
+class LinkOptions(BaseModel):
+    share_memory: bool | None = None
+    sync_chats: bool | None = None
+    device_name: str | None = None
+
+
+@app.get("/api/link")
+def link_state(refresh: bool = False) -> dict:
+    lm = _link()
+    if refresh:
+        import threading
+
+        threading.Thread(target=lm.refresh, daemon=True).start()
+    return lm.state()
+
+
+@app.post("/api/link/enable")
+def link_enable(body: OnBody) -> dict:
+    return _link_call(_link().enable, body.on)
+
+
+@app.post("/api/link/pairing")
+def link_pairing_begin() -> dict:
+    """Show an address and a one-time code on this device (valid for ten minutes)."""
+    return _link_call(_link().begin_pairing)
+
+
+@app.delete("/api/link/pairing")
+def link_pairing_cancel() -> dict:
+    _link().cancel_pairing()
+    return _link().state()
+
+
+@app.post("/api/link/pair")
+def link_pair(body: PairBody) -> dict:
+    """Type here the address and the code shown on the other device."""
+    lm = _link()
+    peer = _link_call(lm.pair, body.address, body.code)
+    try:
+        lm.refresh()
+    except Exception:  # noqa: BLE001
+        pass
+    return {"peer": lm.peer_public(peer["id"]), "state": lm.state()}
+
+
+@app.delete("/api/link/peers/{pid}")
+def link_unpair(pid: str) -> dict:
+    return {"removed": _link().unpair(pid)}
+
+
+@app.post("/api/link/options")
+def link_options(body: LinkOptions) -> dict:
+    lm = _link()
+    if body.share_memory is not None:
+        core.cfg.link_share_memory = body.share_memory
+    if body.sync_chats is not None:
+        core.cfg.link_sync_chats = body.sync_chats
+        lm.chats_changed()
+    core.cfg.save()
+    if body.device_name:
+        lm.rename(body.device_name)
+    return lm.state()
+
+
+@app.post("/api/link/sync")
+def link_sync() -> dict:
+    lm = _link()
+    try:
+        lm.refresh()
+    except Exception:  # noqa: BLE001
+        pass
+    return _link_call(lm.sync_now)
+
+
+@app.get("/api/link/nearby")
+def link_nearby() -> dict:
+    """Devices on this network with Datas linking switched on (names only)."""
+    return {"devices": _link().nearby()}
+
+
+@app.post("/api/link/use/{pid}")
+def link_use(pid: str) -> dict:
+    """Chat with the AI that is running on a linked device."""
+    lm = _link()
+    if pid not in {p["id"] for p in lm.state()["peers"]}:
+        raise HTTPException(404, "that device is not linked")
+    core.cfg.provider = f"link:{pid}"
+    core.cfg.save()
+    return {"active": core.cfg.provider}
+
+
+@app.api_route("/link/{pid}/v1/{path:path}", methods=["GET", "POST"])
+async def link_v1(pid: str, path: str, request: Request):
+    """Local door to the AI on a linked device; the request travels over mutual TLS."""
+    from datas.link import LinkError
+
+    lm = _link()
+    body = None
+    if request.method == "POST":
+        try:
+            body = json.loads(await request.body() or b"{}")
+        except json.JSONDecodeError:
+            raise HTTPException(400, "bad request body") from None
+    try:
+        reader, writer, head = await lm.open_v1(pid, path, body)
+    except LinkError as e:
+        return JSONResponse({"error": {"message": str(e), "type": "datas_link"}}, status_code=502)
+    except Exception as e:  # noqa: BLE001 - unreachable, timed out, TLS refused
+        return JSONResponse(
+            {
+                "error": {
+                    "message": f"The linked device did not answer ({type(e).__name__}).",
+                    "type": "datas_link",
+                }
+            },
+            status_code=502,
+        )
+
+    async def gen():
+        try:
+            while True:
+                chunk = await reader.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            writer.close()
+
+    return StreamingResponse(
+        gen(),
+        status_code=int(head.get("status", 200)),
+        media_type=head.get("content_type") or "application/json",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Pool
 # ---------------------------------------------------------------------------
 
@@ -794,6 +968,9 @@ def _ctx_tokens(prov) -> int:  # noqa: ANN001 - Provider
                 except ValueError:
                     break
         return core.cfg.context
+    if prov.kind == "linked" and core.link is not None:
+        info = (core.link.status.get(prov.name[5:], {}).get("info") or {}).get("ai") or {}
+        return int(info.get("context") or 8192)
     return chat_engine.REMOTE_CONTEXT
 
 
@@ -1510,6 +1687,14 @@ async def v1_proxy(path: str, request: Request):
     )
 
 
+def set_http_port(port: int) -> None:
+    """Called by whoever starts the server, so internal links point at the right port."""
+    from datas import providers
+
+    core.http_port = port
+    providers.HTTP_PORT = port
+
+
 def serve(host: str = "127.0.0.1", port: int | None = None, open_browser: bool = True) -> None:
     import threading
     import webbrowser
@@ -1517,6 +1702,7 @@ def serve(host: str = "127.0.0.1", port: int | None = None, open_browser: bool =
     import uvicorn
 
     port = port or core.cfg.ui_port
+    set_http_port(port)
     if open_browser:
         threading.Timer(
             1.0,

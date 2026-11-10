@@ -270,6 +270,29 @@ def is_local_url(url: str) -> bool:
     return (urlsplit(url).hostname or "") in ("127.0.0.1", "localhost", "::1")
 
 
+def friendly_error(status: int, body: str) -> str:
+    """Turn an engine or service error into a sentence the user can act on."""
+    low = body.lower()
+    if "exceed_context_size" in low or "context size" in low or "context length" in low:
+        return (
+            "This chat (with its documents) is longer than this AI can keep in mind at once. "
+            "Start a new chat, attach fewer documents, or choose a longer memory in Add an AI → "
+            "Advanced options."
+        )
+    if status in (401, 403):
+        return "The service refused the key. Check the API key in Settings → Paid services."
+    if status == 404 and "model" in low:
+        return "The service does not know that model name. Check it in Settings → Paid services."
+    if status == 429:
+        return "The service says the limit was reached (too many requests or no credit). Try later."
+    if "image" in low and ("not support" in low or "mmproj" in low or "multimodal" in low):
+        return (
+            "This AI cannot see pictures. In My AIs, start one that understands pictures "
+            "(or add one in Add an AI → Understanding pictures)."
+        )
+    return f"The AI returned an error ({status}): {body[:300]}"
+
+
 def _sse(obj: dict) -> str:
     return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
 
@@ -331,7 +354,7 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
                     yield _sse(
                         {
                             "type": "error",
-                            "message": f"The AI returned an error ({r.status_code}): {r.text[:300]}",
+                            "message": friendly_error(r.status_code, r.text),
                         }
                     )
                     return
@@ -382,7 +405,7 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
                     yield _sse(
                         {
                             "type": "error",
-                            "message": f"The AI returned an error ({r.status_code}): {body[:300]}",
+                            "message": friendly_error(r.status_code, body),
                         }
                     )
                     return

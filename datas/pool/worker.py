@@ -18,7 +18,7 @@ from datas.runtime import llamacpp
 
 
 def worker_command(
-    cfg: Config, spec: DeviceSpec, port: int | None = None, host: str = "0.0.0.0"
+    cfg: Config, spec: DeviceSpec, port: int | None = None, host: str = "127.0.0.1"
 ) -> list[str]:
     exe = llamacpp.binary(cfg, "rpc-server")
     b = budget_for(spec, cfg.headroom, cfg.headroom_min_gib)
@@ -30,7 +30,7 @@ def run_worker(
     cfg: Config,
     spec: DeviceSpec,
     port: int | None = None,
-    host: str = "0.0.0.0",
+    host: str = "127.0.0.1",
     log: Callable[[str], None] = print,
 ) -> int:
     """Blocks until Ctrl-C. Returns the rpc-server exit code."""
@@ -49,13 +49,19 @@ def run_worker(
         + (f" + {b.vram_budget / 2**30:.1f} GiB VRAM" if b.vram_budget else "")
         + f" ({b.backend}), llama.cpp {cfg.llamacpp_tag}"
     )
+    local_only = host in ("127.0.0.1", "localhost")
     log(
-        "Workers accept unauthenticated connections — use only on a LAN/VPN you trust. Ctrl-C to stop."
+        "Reachable from this device only (use it through your own tunnel). Ctrl-C to stop."
+        if local_only
+        else "This worker accepts unencrypted, unauthenticated connections — use only on a "
+        "network you fully trust. Ctrl-C to stop."
     )
     proc = subprocess.Popen(cmd, env=env, cwd=exe_dir)
-    zc, info = advertise(
-        port, cfg.llamacpp_tag, b.backend, b.ram_budget, b.vram_budget, __version__
-    )
+    zc = info = None
+    if not local_only:
+        zc, info = advertise(
+            port, cfg.llamacpp_tag, b.backend, b.ram_budget, b.vram_budget, __version__
+        )
 
     def _stop(*_):
         proc.terminate()
@@ -67,8 +73,9 @@ def run_worker(
             time.sleep(0.5)
     finally:
         try:
-            zc.unregister_service(info)
-            zc.close()
+            if zc is not None:
+                zc.unregister_service(info)
+                zc.close()
         except Exception:
             pass
         if proc.poll() is None:

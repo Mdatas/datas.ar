@@ -72,8 +72,9 @@ def _serve(port: int) -> None:
     try:
         import uvicorn
 
-        from datas.server.app import app
+        from datas.server.app import app, set_http_port
 
+        set_http_port(port)
         config = uvicorn.Config(
             app, host="127.0.0.1", port=port, log_level="error", log_config=None
         )

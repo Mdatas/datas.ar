@@ -193,6 +193,61 @@ def delete_chat(chat_id: str) -> bool:
     return False
 
 
+# ---- keeping chats in step between linked devices (datas.link) ---------------------
+# Newest change wins, per chat. A deleted chat leaves a "tombstone" (its id and when it was
+# deleted) so that another device does not bring it back.
+
+
+def manifest() -> dict[str, float]:
+    """{chat id: when it last changed}."""
+    out = {}
+    for p in chats_dir().glob("*.json"):
+        d = _read(p)
+        if d and "id" in d:
+            out[str(d["id"])] = float(d.get("updated", 0))
+    return out
+
+
+def apply_tombstones(remote: dict) -> int:
+    """Delete local chats that another device deleted after their last change here."""
+    mine = tombstones()
+    n = 0
+    for cid, ts in (remote or {}).items():
+        try:
+            ts = float(ts)
+        except (TypeError, ValueError):
+            continue
+        cid = Path(str(cid)).name
+        p = chats_dir() / f"{cid}.json"
+        d = _read(p) if p.exists() else None
+        if d is not None and float(d.get("updated", 0)) <= ts:
+            p.unlink()
+            n += 1
+        if ts > mine.get(cid, 0) and (d is None or float(d.get("updated", 0)) <= ts):
+            mine[cid] = ts
+    _tombstones_path().write_text(json.dumps(mine), encoding="utf-8")
+    return n
+
+
+def apply_remote_chat(d: dict) -> bool:
+    """Store a chat received from a linked device if it is newer than what is here."""
+    try:
+        cid = Path(str(d["id"])).name
+        updated = float(d.get("updated", 0))
+    except (KeyError, TypeError, ValueError):
+        return False
+    if not cid or not isinstance(d.get("messages"), list):
+        return False
+    if updated <= tombstones().get(cid, 0):
+        return False  # deleted here after that version
+    p = chats_dir() / f"{cid}.json"
+    old = _read(p) if p.exists() else None
+    if old and float(old.get("updated", 0)) >= updated:
+        return False
+    _write_chat(p, d)
+    return True
+
+
 def wipe_everything() -> dict:
     """The 'forget me' button: chats, notes and context files."""
     n = 0
