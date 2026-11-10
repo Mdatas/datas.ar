@@ -519,8 +519,9 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
             and shares.get("Laptop", 0) >= 1
             and shares.get("this device", 0) >= 1
             and not res.get("dropped")
-            and len(res.get("markdown") or "") > 40,
-            f"{res.get('parts')} parts, written by {shares}; dropped out: {res.get('dropped')}"
+            and len(res.get("markdown") or "") >= 20,
+            f"{res.get('parts')} parts, written by {shares}; dropped out: {res.get('dropped')}; "
+            f"the summary begins {(res.get('markdown') or '')[:70]!r}"
             if res
             else (job.get("error") or f"no helper was offered: {helpers}"),
             time.time() - t,

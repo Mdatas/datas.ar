@@ -278,5 +278,6 @@ def test_the_ai_of_a_linked_device_is_read_as_it_writes(monkeypatch):
     assert tools._ask(core, "summarise this", provider=prov) == "- one point\n- another"
     url, body = asked[0]
     assert url.endswith(f"/link/{'ab' * 32}/v1/chat/completions") and body["stream"] is True
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}  # the answer, no musing
     with pytest.raises(RuntimeError):
         tools._ask(core, "fail please", provider=prov)

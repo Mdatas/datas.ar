@@ -252,6 +252,12 @@ def _ask(core, prompt: str, max_tokens: int | None = None, provider=None) -> str
     }
     if max_tokens:
         body["max_tokens"] = max_tokens
+    if prov.kind in ("local", "pool", "linked"):
+        # Piece work (summarise this part, translate that one) needs the answer, not the
+        # thinking aloud some AIs do first: a small one can think until its working memory
+        # is full and then answer nothing. llama.cpp's server takes this per request and
+        # AIs without that switch ignore it. Paid services are not sent an unknown field.
+        body["chat_template_kwargs"] = {"enable_thinking": False}
     from datas.chat_engine import friendly_error
 
     url = f"{prov.base_url}/chat/completions"
