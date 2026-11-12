@@ -309,6 +309,29 @@ def spec(refresh: bool = False) -> dict:
     return s.to_dict() | {"default_headroom": default_headroom(s)}
 
 
+@app.get("/api/suggest")
+def suggest(need: str = "faster", model: str = "") -> dict:
+    """ "Try this AI instead" (datas/recommend/suggest.py): need=faster, or a capability the
+    current AI lacks (vision, tools, reasoning, coding). Only AIs that fit this device."""
+    from datas.recommend import suggest as S
+    from datas.runtime.downloader import installed_models
+
+    have = installed_models()
+    installed = {i["model_id"] for i in have}
+    if need == "faster":
+        cur = next((i for i in have if i["model_id"] == model), None)
+        if not cur:
+            return {"none": "Unknown AI."}
+        rec = core.recommendation()
+        return S.faster(rec, model, cur["bytes"], installed)
+    if need not in S.NEEDS:
+        raise HTTPException(400, "Unknown need.")
+    m = core.catalog.get(model) if model else None
+    if m and need in m.capabilities:
+        return {"ok": True}
+    return S.able(core.recommendation(want=[need]), need, installed)
+
+
 @app.get("/api/recommend")
 def recommend(
     headroom: float | None = None,
@@ -629,6 +652,7 @@ class Settings(BaseModel):
     image_backend: str | None = None
     theme: str | None = None
     auto_update: bool | None = None
+    model_mirror: str | None = None
     idle_sleep_min: int | None = None
     allow_local_fetch: bool | None = None
 
@@ -655,6 +679,7 @@ def settings_get() -> dict:
         "idle_sleep_min": c.idle_sleep_min,
         "allow_local_fetch": c.allow_local_fetch,
         "auto_update": c.auto_update,
+        "model_mirror": c.model_mirror,
     }
 
 
@@ -694,6 +719,11 @@ def settings_set(body: Settings) -> dict:
         c.allow_local_fetch = body.allow_local_fetch
     if body.auto_update is not None:
         c.auto_update = body.auto_update
+    if body.model_mirror is not None:
+        m = body.model_mirror.strip().rstrip("/")
+        if m and not m.startswith("https://"):
+            raise HTTPException(400, "A mirror address must start with https://")
+        c.model_mirror = m
     c.save()
     return settings_get()
 

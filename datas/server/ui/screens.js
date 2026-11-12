@@ -747,8 +747,12 @@ SCREENS.settings = async view => {
     switchRow(t("voice_speak"), t("voice_speak_hint"), voice.speak_answers, v => post("/api/settings", { voice_speak_answers: v }))));
   // --- updates
   const upd = h("div", {}, spinner());
+  // where AI files come from: Hugging Face, or a mirror (checked byte for byte either way)
+  const mirrorIn = h("input", { type: "url", placeholder: "https://…", value: (await api("/api/settings")).model_mirror || "", style: "flex:1;min-width:200px" });
+  const mirrorRow = h("div", { class: "item" }, h("div", { class: "name", text: t("mirror_title") }), h("div", { class: "small muted", text: t("mirror_hint") }),
+    h("div", { class: "row" }, mirrorIn, h("button", { class: "btn small", onclick: guard(async () => { await post("/api/settings", { model_mirror: mirrorIn.value }); toast(t("saved")); }) }, t("save"))));
   const autoUpd = switchRow(t("upd_auto"), t("upd_auto_hint"), S.status.auto_update !== false, v => post("/api/settings", { auto_update: v }));
-  wrap.append(sec(t("upd_title"), t("upd_sub"), autoUpd, upd),
+  wrap.append(sec(t("upd_title"), t("upd_sub"), autoUpd, upd, mirrorRow),
     sec(t("nav_about"), null, h("div", { class: "row" }, h("button", { class: "btn", onclick: () => go("about") }, icon("info", 18), t("about_open")),
       h("button", { class: "btn", onclick: () => go("learn") }, icon("book", 18), t("nav_learn")))));
   const drawUpd = (u, checked) => {
@@ -845,7 +849,8 @@ SCREENS.about = async view => {
   const s = await api("/api/sources");
   const wrap = page(view, "Datas", s.project.summary);
   const logs = h("pre", { class: "small", style: "white-space:pre-wrap;max-height:260px;overflow:auto" });
-  wrap.append(
+  wrap.append(localPromise(),
+    h("p", {}, extLink(t("local_more"), s.project.repo + "/blob/main/docs/PRIVACY.md#what-datas-never-does")),
     kv([[t("about_version"), S.status.version], [t("f_licence"), s.project.license], [t("about_code"), extLink(s.project.repo, s.project.repo)],
       [t("about_privacy"), extLink(t("about_privacy_link"), s.project.repo + "/blob/main/docs/PRIVACY.md")],
       [t("about_folder"), S.status.home]]),

@@ -6,6 +6,13 @@ Datas puts an AI (Artificial Intelligence) assistant — the kind you know from 
 your own computer. It runs there, offline, for free. Nothing you type leaves your device
 unless *you* switch the internet on for a chat or choose a paid online service.
 
+> **Everything runs on your device. There is no Datas server** — no account, no statistics,
+> no tracking; nothing about you or what you write is sent to the project. Datas goes online
+> only to download open AI models (Hugging Face), open-source parts and updates (GitHub and
+> the projects that make them), and library documents from their publishers when you ask.
+> The AI reads the web only in a chat or agent task where **you** switch Internet on — off by
+> default, every time. The full list: [docs/PRIVACY.md](docs/PRIVACY.md#what-datas-never-does).
+
 It is made for people who have never heard the words "model", "GPU" or "quantization".
 Datas looks at your device, picks the best open AI it can carry **without slowing everything
 else down**, downloads it and opens a chat. It stays neutral: it tells you plainly what your
@@ -20,8 +27,9 @@ device can and cannot do, and the choices are yours.
    with files and the web, talk and listen, make pictures and video — and how much of the
    device the AI may use. It shows one recommendation in plain words: why this one, what it
    cannot do, who made it, how big the download is. Every other AI that fits is listed too.
-3. **Chat.** A small AI (about 0.4 GB) starts first, so you can talk while the chosen one
-   downloads. Even before that, the built-in guide answers questions about your device.
+3. **Chat.** A small AI (Qwen3 0.6B, about 0.4 GB) comes inside the installer and starts by
+   itself, so you can ask questions — about AI, about Datas, about the survival guides — before
+   anything is downloaded. It runs even on a Raspberry Pi or an old phone. Even before that, the built-in guide answers questions about your device.
 
 ## What is in the window
 

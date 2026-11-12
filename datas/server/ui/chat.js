@@ -165,6 +165,20 @@ const Chat = {
     if (st.server.running) items.push({ label: t("ai_sleep_now"), icon: "moon", fn: async () => { try { await api("/api/stop", { method: "POST" }); await refreshStatus(); } catch (e) { oops(e); } } });
     openMenu(anchor, items);
   },
+  /* "Try this AI instead": a faster one, or one that can do what this one cannot — always one
+     that fits this device (/api/suggest); or a plain "none fits" */
+  async offerAI(need) {
+    try {
+      const r = await api("/api/suggest?" + new URLSearchParams({ need, model: S.status.model_id || "" }));
+      if (r.ok) return;
+      const v = { name: r.name, size: r.gib ? gb(r.gib) : "" };
+      const say = r.none
+        ? { faster: () => t("sug_none_faster"), vision: () => t("sug_none_vision"), tools: () => t("sug_none_tools") }
+        : { faster: () => t("sug_faster", v), vision: () => t("sug_vision", v), tools: () => t("sug_tools", v) };
+      const go = { model_id: r.model_id, quant: r.quant, name: r.name, capabilities: need === "vision" ? ["vision"] : [] };
+      toast((say[need] || say.faster)(), { ms: 20000, actions: r.none ? [] : [{ label: r.installed ? t("sug_switch") : t("sug_get", v), fn: () => Chat.runModel(go) }] });
+    } catch (e) { /* a suggestion is never worth an error */ }
+  },
   async runModel(it) {
     try {
       const st = S.status;
@@ -412,7 +426,7 @@ const Chat = {
     list.append(asked, node);
     Chat.toBottom(true);
     Chat.setSending(true);
-    let full = "", thinking = "", failed = "", raf = 0;
+    let full = "", thinking = "", failed = "", raf = 0, firstAt = 0;
     const paint = () => { raf = 0; body.replaceChildren(md(full)); Chat.toBottom(); };
     Chat.abort = new AbortController();
     if (st.state === "asleep") notes.append(h("div", { class: "toolnote" }, t("waking")));
@@ -438,7 +452,7 @@ const Chat = {
             if (!line) continue;
             let ev;
             try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
-            if (ev.type === "token") { full += ev.text; if (!raf) raf = requestAnimationFrame(paint); }
+            if (ev.type === "token") { if (!firstAt) firstAt = performance.now(); full += ev.text; if (!raf) raf = requestAnimationFrame(paint); }
             else if (ev.type === "thinking") { thinking += ev.text; think.classList.remove("hidden"); think.textContent = thinking.slice(-320); }
             else if (ev.type === "tool") notes.append(h("div", { class: "toolnote" }, icon("globe", 16), t("looking_up") + " " + ((ev.args && (ev.args.query || ev.args.url)) || "")));
             else if (ev.type === "error") failed = ev.message;
@@ -452,6 +466,9 @@ const Chat = {
     Chat.setSending(false);
     if (Chat.cur !== c) return;                 // the person moved to another chat meanwhile
     if (full) {
+      // slow answers (under ~2 words a second over a real answer): offer a faster AI, once
+      const secs = firstAt ? (performance.now() - firstAt) / 1000 : 0, words = full.split(/\s+/).length;
+      if (secs > 6 && words / secs < 2 && !S.offeredFaster && !aiState().remote) { S.offeredFaster = true; Chat.offerAI("faster"); }
       c.msgs.push({ role: "assistant", content: full });
       node.replaceChild(sunMark("awake", 26), node.firstChild);
       body.replaceChildren(md(full));
@@ -467,6 +484,7 @@ const Chat = {
       if (typeof content === "string") { box.value = content; Chat.grow(); } else { Chat.pendingImages = imgs; box.value = text; Chat.drawChips(); }
       if (!c.msgs.length) Chat.draw();
       if (failed) toast(failed, { bad: true, ms: 10000 });
+      if (/memory|memoria|out of mem|alloc/i.test(failed || "") && !aiState().remote) Chat.offerAI("faster");
     }
     Chat.toBottom();
     refreshStatus();
@@ -506,7 +524,7 @@ const Chat = {
       try {
         if (f.type.startsWith("image/")) {
           const st = aiState();
-          if (!st.vision && !st.remote) { toast(t("no_vision")); continue; }
+          if (!st.vision && !st.remote) { toast(t("no_vision")); Chat.offerAI("vision"); continue; }
           Chat.pendingImages.push(await Chat.shrink(f));
         } else {
           const r = await api("/api/docs/extract", { body: { name: f.name, content_base64: await fileBase64(f) } });
@@ -528,7 +546,7 @@ const Chat = {
   },
   async snap(kind) {
     const st = aiState(), btn = $("#camBtn");
-    if (!st.vision && !st.remote) { toast(t("no_vision")); return; }
+    if (!st.vision && !st.remote) { toast(t("no_vision")); Chat.offerAI("vision"); return; }
     if (btn) btn.disabled = true;
     try {
       const r = kind === "camera" ? await Things.photo() : await Things.screen(true);

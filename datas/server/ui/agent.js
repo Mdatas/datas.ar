@@ -59,3 +59,16 @@ fetch("/api/status").then(r => r.json()).then(s => {
   document.documentElement.dataset.theme = dark ? "night" : "day";
   if (s.lang === "es" && lang !== "es") { lang = "es"; document.documentElement.lang = "es"; applyLang(); }
 }).catch(() => {});
+
+/* the AI that is running cannot use tools: say which AI that fits this device can (or that none can) */
+async function checkTools(){ try{
+  const st = await (await fetch("/api/status")).json(); if(!st.model_id) return;
+  const r = await (await fetch("/api/suggest?"+new URLSearchParams({need:"tools", model:st.model_id}))).json();
+  if(r.ok) return;
+  const es = lang==="es", el=$("toolsHint");
+  el.textContent = r.none
+    ? (es ? "La IA que está corriendo no fue hecha para usar herramientas, y ninguna que sí lo sea entra en este dispositivo. El agente igual lo intenta, describiéndole las herramientas en texto: más lento y menos seguro." : "The AI that is running was not made to use tools, and none that is fits this device. The agent still tries, describing its tools in plain text: slower and less reliable.")
+    : (es ? `La IA que está corriendo no fue hecha para usar herramientas. ${r.name} sí, y entra en este dispositivo (${r.gib} GB${r.installed?", ya está acá":""}). Elegila arriba, en la ventana principal, para mejores resultados.` : `The AI that is running was not made to use tools. ${r.name} is, and fits this device (${r.gib} GB${r.installed?", already here":""}). Choose it in the main window for better results.`);
+  el.classList.remove("hidden");
+}catch(e){} }
+checkTools();

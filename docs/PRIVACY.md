@@ -73,13 +73,15 @@ control.
 
 ## What Datas never does
 
-No usage statistics, no analytics, no account, and nothing updates by itself. The outbound
-connections are:
+There is no Datas server. No usage statistics, no analytics, no account. The outbound
+connections are all to third parties, and these are all of them:
 
 | To | When | What is sent |
 |---|---|---|
 | Hugging Face | you add an AI, voice or picture model | the request for that file (your internet address, like any download) |
 | GitHub | the AI engine is downloaded; about twice a day while Datas runs, if *Keep Datas up to date by itself* is on (Settings → Updates); you press *Check for updates* or *Get ArtCraft*; FFmpeg is fetched because a camera or a recording needs it and the computer has none | the request for the file or for the public list of versions |
+| Hugging Face, or the mirror you typed in Settings → Updates | as above, when you set a mirror; every file is checked against the SHA-256 Datas keeps for it | the request for that file |
+| The publishers of the library documents (FEMA, CDC, WHO, Hesperian, Project Gutenberg…) | you ask for them in *Offline survival* | the request for that document |
 | A paid service | you added its key and chat through it | the conversation |
 | The web | you switched internet on in a chat or for the agent | search words and page addresses |
 | Your other devices | you linked them | see above |

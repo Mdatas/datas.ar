@@ -561,6 +561,11 @@ const Jobs = {
 };
 
 /* ---------- first run and start ---------- */
+/* the plain statement every person should see: Datas runs here and has no servers */
+function localPromise() {
+  return h("div", { class: "note" }, h("strong", { text: t("local_title") }),
+    h("ul", {}, h("li", { text: t("local_1") }), h("li", { text: t("local_2") }), h("li", { text: t("local_3") })));
+}
 function welcome() {
   let mode = "remember";
   const pick = h("div", { class: "stack" });
@@ -572,7 +577,7 @@ function welcome() {
     h("button", { "aria-pressed": String(S.lang === code), onclick: async () => { S.lang = code; document.documentElement.lang = code; closeWelcome(); welcome(); } }, name)));
   const closeWelcome = openDialog({
     title: t("welcome_title"),
-    body: [h("p", { text: t("welcome_text") }), langs, h("h3", { text: t("welcome_memory") }), pick,
+    body: [h("p", { text: t("welcome_text") }), localPromise(), langs, h("h3", { text: t("welcome_memory") }), pick,
       h("p", { class: "small muted", text: t("welcome_change_later") })],
     actions: close => h("button", { class: "btn primary", onclick: async () => {
       try { S.priv = await api("/api/privacy", { body: { memory_mode: mode, onboarded: true, lang: S.lang } }); } catch (e) { oops(e); }

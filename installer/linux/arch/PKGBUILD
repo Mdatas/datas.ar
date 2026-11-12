@@ -2,7 +2,7 @@
 # Builds the Arch package from the Linux tarball produced by CI (datas-<ver>-linux-x64.tar.gz).
 # Local build: `makepkg -si` (downloads the tarball from the GitHub release).
 pkgname=datas-bin
-pkgver=0.6.1
+pkgver=0.7.0
 pkgrel=1
 pkgdesc="Local AI for everyone — picks and runs the best open AI your device can handle"
 arch=('x86_64')

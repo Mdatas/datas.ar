@@ -68,7 +68,15 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.6 (this release) — up to date by itself, configure my PC
+## 0.7 (this release) — an AI inside, the right AI for the job, checked files
+
+- [x] **A small AI comes inside the installers and the phone app** (Qwen3 0.6B, about 0.4 GB): questions from the first minute, no download; runs on a Raspberry Pi or an old phone
+- [x] **"Try this AI instead"**: slow answers or a memory failure → a smaller, faster AI that fits; a picture for an AI that cannot see, or the agent with an AI not made for tools → one that can and fits this device — or a plain "none fits"
+- [x] **Every AI file's SHA-256 is kept in the list of AIs** (read from Hugging Face by the `pin-models` workflow) and checked on download
+- [x] **Optional mirror** for AI files (Settings → Updates); used only with those checksums, falls back to Hugging Face
+- [x] **"Everything runs on this device — there is no Datas server"**, in the welcome, About, every chat and the README
+
+## 0.6 — up to date by itself, configure my PC
 
 - [x] **Up to date by itself**: Datas downloads a newer version, checks it, and on Windows installs it when you close Datas (or now) — Settings → Updates, on by default; the list of AIs refreshes too — docs/UPDATES.md
 - [x] **Configure my PC** in the agent: list and open apps, open pages of the system settings, change everyday settings with undo; sign-ins are always typed by you — docs/AGENTS.md
