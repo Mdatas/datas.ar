@@ -1,0 +1,33 @@
+# Reads, from the Hugging Face API, the size and SHA-256 of every AI file in the catalog and
+# offers the updated list as an artifact (models.json). Datas pins these checksums so a
+# download can be checked byte for byte, also when it comes from a mirror. Run by hand; the
+# result is reviewed and committed.
+name: pin-models
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python scripts/refresh_catalog.py --write
+      - name: every file has a checksum
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open("datas/catalog/models.json"))
+          missing = [(m["id"], f["path"]) for m in d["models"] for f in m["files"] if not f.get("sha256")]
+          missing += [(m["id"], x["path"]) for m in d["models"] for x in m.get("extras", {}).values() if not x.get("sha256")]
+          print("missing:", missing)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: models-json
+          path: datas/catalog/models.json

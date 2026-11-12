@@ -974,6 +974,11 @@ def catalog_refresh(
             except Exception as e:  # noqa: BLE001
                 con.print(f"[yellow]{m.id} {f.quant}: {e}[/]")
                 continue
+            if info.sha256 and info.sha256 != f.sha256:
+                if f.sha256:
+                    drift += 1
+                    con.print(f"[yellow]{m.id} {f.quant}: the file changed on Hugging Face[/]")
+                f.sha256 = info.sha256
             if info.size and info.size != f.bytes:
                 drift += 1
                 con.print(f"[yellow]{m.id} {f.quant}: catalog {f.bytes} → hub {info.size}[/]")
@@ -981,7 +986,17 @@ def catalog_refresh(
                 f.verified = time.strftime("%Y-%m-%d")
             elif info.size:
                 f.verified = time.strftime("%Y-%m-%d")
-    con.print(f"checked; {drift} size change(s)")
+        for x in m.extras.values():
+            try:
+                info = remote_info(m.hf_repo, x.path)
+            except Exception as e:  # noqa: BLE001
+                con.print(f"[yellow]{m.id} {x.path}: {e}[/]")
+                continue
+            if info.sha256:
+                x.sha256 = info.sha256
+            if info.size:
+                x.bytes = info.size
+    con.print(f"checked; {drift} change(s)")
     if write:
         data = json.loads(bundled_path().read_text())
         by_id = {m.id: m for m in cat.models}
@@ -989,6 +1004,10 @@ def catalog_refresh(
             m = by_id.get(entry["id"])
             if m:
                 entry["files"] = [f.model_dump(exclude_none=True) for f in m.files]
+                if m.extras:
+                    entry["extras"] = {
+                        k: v.model_dump(exclude_none=True) for k, v in m.extras.items()
+                    }
         data["generated"] = time.strftime("%Y-%m-%d")
         bundled_path().write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         con.print(f"wrote {bundled_path()}")

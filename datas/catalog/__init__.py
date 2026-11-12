@@ -72,6 +72,7 @@ class KVHint(BaseModel):
 class ExtraFile(BaseModel):
     path: str
     bytes: int
+    sha256: str | None = None  # as published by Hugging Face; pinned so any mirror can be checked
 
 
 class ModelFile(BaseModel):
@@ -79,6 +80,7 @@ class ModelFile(BaseModel):
     path: str
     bytes: int
     verified: str | None = None  # ISO date the size was read from the HF API
+    sha256: str | None = None  # as published by Hugging Face; pinned so any mirror can be checked
 
     @property
     def gib(self) -> float:

@@ -3,8 +3,13 @@
 Reuses ``huggingface_hub`` for URL resolution, auth (HF_TOKEN for gated repos) and file
 metadata (the LFS sha256 the Hub publishes for every large file). The transfer itself is
 a plain HTTP range download so the UI can show progress and resume after a dropped
-connection. Verification is against the Hub's own hash — a corrupted or tampered file is
-deleted, never loaded.
+connection. Verification is against the SHA-256 pinned in the catalog (read from the Hub
+by ``datas catalog refresh``), else the Hub's own published hash — a corrupted or tampered file
+is deleted, never loaded.
+
+A mirror (Settings → Downloads, ``Config.model_mirror``: an address laid out like Hugging Face,
+``<mirror>/<repo>/resolve/main/<file>``) is used only for files whose SHA-256 is pinned, so the
+mirror cannot change a single byte unnoticed; if it fails, the download comes from Hugging Face.
 """
 
 from __future__ import annotations
@@ -75,6 +80,10 @@ def sha256_of(path: Path, progress: ProgressCB | None = None) -> str:
     return h.hexdigest()
 
 
+def mirror_url(mirror: str, repo: str, path: str) -> str:
+    return f"{mirror.rstrip('/')}/{repo}/resolve/main/{path}"
+
+
 def download_file(
     repo: str,
     path: str,
@@ -83,14 +92,49 @@ def download_file(
     progress: ProgressCB | None = None,
     verify: bool = True,
     log: Callable[[str], None] = print,
+    pinned_sha256: str | None = None,
+    mirror: str | None = None,
 ) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    part = dest.with_suffix(dest.suffix + ".part")
+    if mirror and pinned_sha256:
+        try:
+            return _download_from(
+                RemoteFile(mirror_url(mirror, repo, path), expected_size, pinned_sha256),
+                path,
+                dest,
+                expected_size,
+                progress,
+                verify,
+                log,
+            )
+        except Exception as e:  # noqa: BLE001 - the mirror is a convenience, Hugging Face the source
+            log(f"The mirror did not work ({e}); downloading from Hugging Face instead.")
+            dest.with_suffix(dest.suffix + ".part").unlink(missing_ok=True)
     try:
         meta = remote_info(repo, path)
     except Exception as e:  # offline metadata is not fatal; we can still try the download
-        log(f"Could not read Hub metadata ({e}); continuing without hash verification.")
+        log(f"Could not read Hub metadata ({e}); continuing with the pinned checksum.")
         meta = RemoteFile(hf_hub_url(repo, path), expected_size, None)
+    if pinned_sha256:
+        if meta.sha256 and meta.sha256 != pinned_sha256:
+            raise ValueError(
+                f"{path} changed on Hugging Face since Datas checked it (its SHA-256 is "
+                "different). Not downloaded. An update of the list of AIs fixes this."
+            )
+        meta = RemoteFile(meta.url, meta.size or expected_size, pinned_sha256)
+    return _download_from(meta, path, dest, expected_size, progress, verify, log)
+
+
+def _download_from(
+    meta: RemoteFile,
+    path: str,
+    dest: Path,
+    expected_size: int | None,
+    progress: ProgressCB | None,
+    verify: bool,
+    log: Callable[[str], None],
+) -> Path:
+    part = dest.with_suffix(dest.suffix + ".part")
     total = meta.size or expected_size
     if dest.exists() and total and dest.stat().st_size == total:
         log(f"Already downloaded: {dest.name}")
@@ -143,12 +187,31 @@ def download_model(
     with_vision: bool = False,
     log: Callable[[str], None] = print,
 ) -> Path:
+    from datas.config import Config
+
+    mirror = (Config.load().model_mirror or "").strip() or None
     dest = local_path(model, f)
-    out = download_file(model.hf_repo, f.path, dest, f.bytes, progress, log=log)
+    out = download_file(
+        model.hf_repo,
+        f.path,
+        dest,
+        f.bytes,
+        progress,
+        log=log,
+        pinned_sha256=f.sha256,
+        mirror=mirror,
+    )
     if with_vision and "mmproj" in model.extras:
         mp = model.extras["mmproj"]
         download_file(
-            model.hf_repo, mp.path, local_path(model, mp.path), mp.bytes, progress, log=log
+            model.hf_repo,
+            mp.path,
+            local_path(model, mp.path),
+            mp.bytes,
+            progress,
+            log=log,
+            pinned_sha256=mp.sha256,
+            mirror=mirror,
         )
     return out
 

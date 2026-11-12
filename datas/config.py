@@ -193,6 +193,9 @@ class Config:
     telemetry: bool = False
     # keep Datas, the list of AIs and the engine up to date by itself (datas/updates.py)
     auto_update: bool = True
+    # optional mirror for AI files, laid out like Hugging Face; used only for files whose SHA-256
+    # is pinned in the catalog (datas/runtime/downloader.py). Empty: Hugging Face only.
+    model_mirror: str = ""
 
     @classmethod
     def load(cls) -> Config:
