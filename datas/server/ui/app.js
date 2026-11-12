@@ -6,6 +6,7 @@
 const NS = "http://www.w3.org/2000/svg";
 const $ = (sel, root = document) => root.querySelector(sel);
 const S = {
+  closedBanners: {},
   lang: "en", theme: "auto", status: null, priv: null, screen: "chat", cleanup: null,
   helpers: null, library: null, pool: false, starterTold: false, getting: null,
 };
@@ -475,7 +476,7 @@ function aiState() {
 async function refreshStatus() {
   try { S.status = await api("/api/status"); } catch (e) { return S.status; }
   S.priv = S.status.privacy;
-  if (S.screen === "chat") Chat.syncTop();
+  if (S.screen === "chat") { Chat.syncTop(); Chat.drawBanner(); }
   renderFoot();
   return S.status;
 }
@@ -506,7 +507,7 @@ const Jobs = {
         const bytes = cur.total && cur.total > 5e6;
         add(clear(el),
           h("div", { class: "row nowrap" }, h("b", { class: "grow", text: opts.title || cur.title || "" }),
-            finished() && h("button", { class: "icon-btn", "aria-label": t("close"), onclick: () => el.remove() }, icon("close", 16))),
+            h("button", { class: "icon-btn", "aria-label": finished() ? t("close") : t("job_hide"), title: finished() ? t("close") : t("job_hide"), onclick: () => { el.remove(); if (!finished()) toast(t("job_hidden")); } }, icon("close", 16))),
           h("div", { class: "small muted", text: cur.state === "error" ? t("job_failed") + " " + (cur.error || "")
             : cur.state === "done" ? t("job_done")
             : [phase, cur.percent != null ? Math.round(cur.percent) + "%" : "", bytes ? gb(cur.done / 2 ** 30) + " / " + gb(cur.total / 2 ** 30) : ""].filter(Boolean).join("  ") || t("working") }),
@@ -527,6 +528,7 @@ const Jobs = {
         if (finished()) {
           clearInterval(timer);
           S.starterTold = false;
+          if (!el.isConnected) toast((opts.title || cur.title || "") + ": " + (cur.state === "done" ? t("job_done") : t("job_failed") + " " + (cur.error || "")), { bad: cur.state === "error", ms: 9000 });
           if (cur.state === "done") setTimeout(() => el.remove(), 3500);
           await refreshStatus();
           resolve(cur);

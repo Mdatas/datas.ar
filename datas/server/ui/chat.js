@@ -310,15 +310,23 @@ const Chat = {
     const b = $("#chatBanner");
     if (!b) return;
     clear(b);
-    const c = Chat.cur, st = S.status;
-    if (!c.id || !c.model || (c.provider || "local") !== "local" || st.provider !== "local" || !st.server.running || st.server.model_id === c.model) return;
+    const c = Chat.cur, st = S.status, box = $("#box");
+    const closer = key => h("button", { class: "icon-btn", "aria-label": t("close"), title: t("close"), onclick: () => { S.closedBanners[key] = true; clear(b); } }, icon("close", 16));
+    const asleep = aiState().state === "asleep";
+    if (box) box.placeholder = asleep ? t("box_placeholder_wake") : t("box_placeholder");
+    if (asleep && !S.closedBanners.wake) {
+      b.append(h("div", { class: "banner note row" }, sunMark("asleep", 18),
+        h("span", { class: "grow", text: t("banner_wake", { name: aiState().name || t("the_ai") }) }), closer("wake")));
+      return;
+    }
+    if (S.closedBanners["other:" + c.id] || !c.id || !c.model || (c.provider || "local") !== "local" || st.provider !== "local" || !st.server.running || st.server.model_id === c.model) return;
     let lib;
     try { lib = await Chat.library(); } catch (e) { return; }
     const it = lib.installed.find(x => x.model_id === c.model);
     if (!it || Chat.cur !== c) return;
     b.append(h("div", { class: "banner note row" },
       h("span", { class: "grow", text: t("banner_other_ai", { name: c.modelName || it.name, now: st.server.model_name }) }),
-      h("button", { class: "btn small", onclick: async () => { await Chat.runModel(it); Chat.drawBanner(); } }, t("banner_switch", { name: it.name }))));
+      h("button", { class: "btn small", onclick: async () => { await Chat.runModel(it); Chat.drawBanner(); } }, t("banner_switch", { name: it.name })), closer("other:" + c.id)));
   },
   async drawEmpty(list) {
     const cur = Chat.cur, st = aiState(), helper = cur.helper;
