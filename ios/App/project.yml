@@ -23,7 +23,7 @@ targets:
       path: Datas/Info.plist
       properties:
         CFBundleDisplayName: Datas
-        CFBundleShortVersionString: "0.5.1"
+        CFBundleShortVersionString: "0.6.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
@@ -46,7 +46,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ar.datas.app
-        MARKETING_VERSION: "0.5.1"
+        MARKETING_VERSION: "0.6.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"

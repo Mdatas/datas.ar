@@ -68,7 +68,13 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.5 (this release) — offline survival, start with the computer everywhere, one place for how Datas works
+## 0.6 (this release) — up to date by itself, configure my PC
+
+- [x] **Up to date by itself**: Datas downloads a newer version, checks it, and on Windows installs it when you close Datas (or now) — Settings → Updates, on by default; the list of AIs refreshes too — docs/UPDATES.md
+- [x] **Configure my PC** in the agent: list and open apps, open pages of the system settings, change everyday settings with undo; sign-ins are always typed by you — docs/AGENTS.md
+- [x] An X on every notice and progress card; "chat to wake the AI" when it sleeps
+
+## 0.5 — offline survival, start with the computer everywhere, one place for how Datas works
 
 - [x] **Offline survival**: Datas' own guides (EN/ES, sourced figures, community in every section), a library of 27 checked documents from FEMA, CDC, CPSC, WHO, Hesperian and Project Gutenberg, a helper that answers from them with no internet — docs/SURVIVAL.md
 - [x] A weekly check that every library document still downloads and matches its checksum

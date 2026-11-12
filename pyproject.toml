@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datas-ar"
-version = "0.5.1"
+version = "0.6.0"
 description = "Datas.ar — download, hit run, get the best open AI your device can carry. Local-first, open source, pools your devices."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }

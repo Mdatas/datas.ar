@@ -10,6 +10,7 @@ if not os.environ.get("DATAS_HOME"):
 
 # The test client calls the app as "testserver"; the app answers only to local names.
 os.environ.setdefault("DATAS_ALLOW_HOSTS", "testserver")
+os.environ.setdefault("DATAS_NO_AUTO_UPDATE", "1")  # tests never reach the releases page
 
 from datas.hardware.detect import GPU, DeviceSpec  # noqa: E402
 

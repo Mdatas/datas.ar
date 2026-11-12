@@ -4,10 +4,10 @@
 ;     installs into the user's Programs folder (no admin password needed), Desktop + Start Menu
 ;     icons, then shows what was kept (AIs, chats, notes) — no other questions asked
 ;   * Uninstall: "delete everything" or "keep my AIs, chats and notes"
-;   iscc /DAppVersion=0.5.1 installer\windows\datas.iss
+;   iscc /DAppVersion=0.6.0 installer\windows\datas.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.5.1"
+  #define AppVersion "0.6.0"
 #endif
 #define AppName "Datas.ar"
 #define AppExe "Datas.exe"
@@ -65,6 +65,8 @@ Name: "PATH"; Value: "{app}"; Flags: uninsdeletevalue; Check: NeedsAddPath(Expan
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; an automatic update started by Datas itself ("Install now") opens Datas again when done
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: Relaunch
 
 [UninstallRun]
 Filename: "taskkill"; Parameters: "/F /IM llama-server.exe"; Flags: runhidden; RunOnceId: "killllama"
@@ -458,6 +460,11 @@ begin
   finally
     F.Free;
   end;
+end;
+
+function Relaunch: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:relaunch|0}') = '1');
 end;
 
 function InitializeSetup: Boolean;

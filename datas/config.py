@@ -191,6 +191,8 @@ class Config:
     remotes: list[RemoteProviderConfig] = field(default_factory=list)
     # Telemetry: none. This flag exists so it can never be flipped on silently.
     telemetry: bool = False
+    # keep Datas, the list of AIs and the engine up to date by itself (datas/updates.py)
+    auto_update: bool = True
 
     @classmethod
     def load(cls) -> Config:

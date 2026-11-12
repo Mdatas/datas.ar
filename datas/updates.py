@@ -14,8 +14,13 @@ repair:
     tools     third-party tools are reinstalled at the version their recipe names; their
               downloaded models are kept
 
-Nothing here runs on its own: Datas looks for updates only when the user presses
-"Check for updates" (it makes no network request otherwise).
+Keeping up to date by itself (Settings → Updates, on unless switched off): while Datas runs it
+asks the project's releases page at most every 12 hours. A newer Datas installer is downloaded
+and checked against the checksum published with the release, then installed when Datas is
+closed (Windows; elsewhere Datas offers to open it) — or at once with "Install now". The list of
+AIs is refreshed. The AI engine is not changed by itself (llama.cpp publishes new builds several
+times a day): Settings → Updates offers the newest, with a way back. Switched off, Datas makes no
+update request unless the user presses "Check for updates".
 """
 
 from __future__ import annotations
@@ -153,11 +158,11 @@ def downloads_dir() -> Path:
     return d
 
 
-def download_installer(asset: dict, job=None) -> Path:  # noqa: ANN001
+def download_installer(asset: dict, job=None, folder: Path | None = None) -> Path:  # noqa: ANN001
     """Fetch an installer into Downloads (resumable name, verified size and checksum)."""
     import hashlib
 
-    dest = downloads_dir() / Path(asset["name"]).name
+    dest = (folder or downloads_dir()) / Path(asset["name"]).name
     part = dest.with_suffix(dest.suffix + ".part")
     if job:
         job.phase = "app-download"
@@ -565,3 +570,81 @@ def check(core) -> dict:  # noqa: ANN001
     _save(d)
     out["checked"] = d["checked"]
     return out
+
+
+# ---------------------------------------------------------------------------
+# keeping up to date by itself
+# ---------------------------------------------------------------------------
+
+AUTO_EVERY = 12 * 3600
+
+
+def updates_dir() -> Path:
+    d = home() / "updates"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def ready() -> dict | None:
+    """The downloaded, checked installer of a newer Datas, if there is one."""
+    r = state().get("ready")
+    if not isinstance(r, dict) or not r.get("path"):
+        return None
+    if (
+        version_tuple(str(r.get("version", ""))) <= version_tuple(__version__)
+        or not Path(r["path"]).is_file()
+    ):
+        return None
+    return r
+
+
+def auto_run(core, force: bool = False) -> dict:  # noqa: ANN001
+    """One round of keeping up to date; does nothing if switched off or done recently."""
+    if not getattr(core.cfg, "auto_update", True):
+        return {"skipped": "off"}
+    d = state()
+    if not force and time.time() - float(d.get("auto_checked") or 0) < AUTO_EVERY:
+        return {"skipped": "recent"}
+    d["auto_checked"] = time.time()
+    _save(d)
+    out: dict = {}
+    with httpx.Client(timeout=30, follow_redirects=True, headers=_headers()) as c:
+        try:
+            latest = check_app(c)["latest"]
+            asset = latest and latest["asset"]
+            # unattended: only an installer whose checksum the release publishes
+            if asset and str(asset.get("digest") or "").startswith("sha256:") and not ready():
+                path = download_installer(asset, folder=updates_dir())
+                d = state()
+                d["ready"] = {
+                    "version": latest["version"],
+                    "path": str(path),
+                    "page": latest["page"],
+                }
+                _save(d)
+                _record("app", action="downloaded", to=latest["version"], result="ok")
+            out["app"] = latest["version"] if latest else None
+        except Exception as e:  # noqa: BLE001
+            out["app_error"] = str(e)
+        try:
+            out["catalog"] = update_catalog()["changed"]
+        except Exception as e:  # noqa: BLE001
+            out["catalog_error"] = str(e)
+    return out
+
+
+def install_ready(relaunch: bool) -> str:
+    """Start the downloaded installer. On Windows it runs without questions and, with
+    ``relaunch``, opens Datas again when it is done; the caller then closes Datas."""
+    r = ready()
+    if not r:
+        raise FileNotFoundError("No downloaded update is waiting.")
+    path = Path(r["path"])
+    if platform.system() == "Windows":
+        args = [str(path), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"]
+        if relaunch:
+            args.append("/relaunch=1")
+        subprocess.Popen(args, creationflags=0x00000008 | 0x00000200, close_fds=True)
+        _record("app", action="install", to=r["version"], result="started")
+        return "started"
+    return open_installer(path)

@@ -747,7 +747,8 @@ SCREENS.settings = async view => {
     switchRow(t("voice_speak"), t("voice_speak_hint"), voice.speak_answers, v => post("/api/settings", { voice_speak_answers: v }))));
   // --- updates
   const upd = h("div", {}, spinner());
-  wrap.append(sec(t("upd_title"), t("upd_sub"), upd),
+  const autoUpd = switchRow(t("upd_auto"), t("upd_auto_hint"), S.status.auto_update !== false, v => post("/api/settings", { auto_update: v }));
+  wrap.append(sec(t("upd_title"), t("upd_sub"), autoUpd, upd),
     sec(t("nav_about"), null, h("div", { class: "row" }, h("button", { class: "btn", onclick: () => go("about") }, icon("info", 18), t("about_open")),
       h("button", { class: "btn", onclick: () => go("learn") }, icon("book", 18), t("nav_learn")))));
   const drawUpd = (u, checked) => {

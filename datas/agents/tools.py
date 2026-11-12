@@ -23,7 +23,7 @@ from urllib.parse import quote_plus, unquote, urlparse, urlsplit
 import httpx
 
 from datas import netguard
-from datas.agents import things_tools
+from datas.agents import pc_tools, things_tools
 
 MAX_READ = 200_000  # chars
 MAX_FETCH = 200_000
@@ -65,12 +65,17 @@ class ToolContext:
     vision: bool = False  # the AI that is running understands pictures
     images: list[dict] = field(default_factory=list)  # pictures waiting to be shown to the AI
     screen_picture: tuple[int, int] | None = None  # size of the last picture of the screen
+    # "configure my PC" (datas/agents/pc_tools.py): apps, settings pages, a few settings
+    allow_setup: bool = False
+    sign_in_wait: Callable[[str], bool] | None = None  # waits while the person signs in
 
     def is_risky(self, name: str, args: dict) -> bool:
         """Risky = commands, programs, opening things, tools inside other programs, and
         writes/moves/deletes that touch a granted folder (inside the agent's own workspace
         everything is reversible via _trash)."""
         if name in ("run_command", "run_program", "open_path") or name in things_tools.ACTS:
+            return True
+        if name in pc_tools.ACTS:
             return True
         if self.mcp is not None and self.mcp.has(name):
             return True
@@ -622,6 +627,7 @@ def schemas(ctx: ToolContext) -> list[dict]:
             continue
         out.append(schema)
     out += things_tools.schemas(ctx)
+    out += pc_tools.schemas(ctx)
     if ctx.mcp is not None:
         out += ctx.mcp.schemas()
     return out
@@ -630,8 +636,9 @@ def schemas(ctx: ToolContext) -> list[dict]:
 def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
     fn = TOOLS.get(name)
     is_thing = name in things_tools.TOOLS
+    is_pc = name in pc_tools.TOOLS and ctx.allow_setup
     is_mcp = ctx.mcp is not None and ctx.mcp.has(name)
-    if not fn and not is_mcp and not is_thing:
+    if not fn and not is_mcp and not is_thing and not is_pc:
         return f"unknown tool {name}"
     try:
         args: dict[str, Any] = (
@@ -645,7 +652,13 @@ def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
         return result
     if ctx.confirm and (ctx.ask == "all" or (ctx.ask == "risky" and ctx.is_risky(name, args))):
         pretty = ", ".join(f"{k}={str(v)[:120]}" for k, v in args.items())
-        plain = things_tools.confirm_text(name, args, ctx.lang) if is_thing else None
+        plain = (
+            things_tools.confirm_text(name, args, ctx.lang)
+            if is_thing
+            else pc_tools.confirm_text(name, args, ctx.lang)
+            if is_pc
+            else None
+        )
         if not ctx.confirm(plain or f"{name}({pretty})"):
             result = "DENIED by user."
             ctx.events.append({"tool": name, "args": args, "result": result})
@@ -653,6 +666,8 @@ def call(ctx: ToolContext, name: str, arguments: str | dict) -> str:
     try:
         if is_thing:
             result = things_tools.run(ctx, name, args)
+        elif is_pc:
+            result = pc_tools.TOOLS[name][0](ctx, **args)
         else:
             result = ctx.mcp.call(name, args) if is_mcp else fn[0](ctx, **args)
     except TypeError as e:

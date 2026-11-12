@@ -5,7 +5,7 @@ carry without freezing the machine, downloads it, and runs it through llama.cpp.
 Later: switch models, plug in an API key, pool several devices, run agents.
 """
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 __app_name__ = "Datas.ar"
 
 from datas import nowindow as _nowindow  # noqa: E402

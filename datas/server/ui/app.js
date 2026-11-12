@@ -480,8 +480,23 @@ async function refreshStatus() {
   renderFoot();
   return S.status;
 }
+/* a newer Datas was downloaded and checked: say so once, with the way to install it now */
+async function installUpdateNow() {
+  try {
+    const r = await api("/api/updates/install-now", { method: "POST" });
+    toast(r.restarting ? t("upd_restarting") : t("upd_opened"), { ms: 15000 });
+  } catch (e) { oops(e); }
+}
+function tellUpdate() {
+  const u = S.status && S.status.update_ready;
+  if (!u || isRemote() || S.updateTold === u.version) return;
+  S.updateTold = u.version;
+  toast(t(S.status.system === "Windows" ? "upd_ready_win" : "upd_ready", { v: u.version }),
+    { ms: 30000, actions: [{ label: t("upd_install_now"), fn: installUpdateNow }] });
+}
 async function tick() {
   await refreshStatus();
+  tellUpdate();
   try {
     const n = (await api("/api/notice")).notice;
     if (n) {

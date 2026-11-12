@@ -16,6 +16,8 @@ from __future__ import annotations
 import base64
 import json
 import os
+import threading
+import time
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -92,6 +94,7 @@ REMOTE_REFUSED: tuple[tuple[str, str], ...] = (
     ("WRITE", "/api/service"),
     ("WRITE", "/api/mcp"),
     ("WRITE", "/api/updates/app"),
+    ("WRITE", "/api/updates/install-now"),
     ("WRITE", "/api/privacy/wipe"),
     ("WRITE", "/api/programs/"),
     ("WRITE", "/api/apps/"),
@@ -224,6 +227,22 @@ def ui_file(path: str):
 # ---------------------------------------------------------------------------
 
 
+def _keep_up_to_date() -> None:
+    """Datas keeps itself up to date while it runs (datas/updates.py). The first look waits a
+    little so starting Datas stays quick; then once an hour it sees whether 12 hours passed."""
+    from datas import updates
+
+    if os.environ.get("DATAS_NO_AUTO_UPDATE"):
+        return
+    time.sleep(90)
+    while True:
+        try:
+            updates.auto_run(core)
+        except Exception:  # noqa: BLE001 - never a reason to disturb the person
+            pass
+        time.sleep(3600)
+
+
 @app.on_event("startup")
 def _start_background() -> None:
     try:
@@ -234,6 +253,7 @@ def _start_background() -> None:
         core.start_watch()
     except Exception:  # noqa: BLE001
         pass
+    threading.Thread(target=_keep_up_to_date, daemon=True, name="datas-updates").start()
     if core.cfg.link_enabled:  # be reachable by the user's linked devices from the start
         try:
             core.link_manager()
@@ -244,6 +264,12 @@ def _start_background() -> None:
 @app.get("/api/status")
 def status(request: Request) -> dict:
     st = core.status()
+    from datas import updates
+
+    r = updates.ready()
+    st["update_ready"] = {"version": r["version"]} if r else None
+    st["auto_update"] = core.cfg.auto_update
+    st["system"] = __import__("platform").system()
     pid = remote_peer(request)
     if pid:  # the window is being shown on a linked device: it adapts (no "open this file"…)
         peer = core.link_manager().peer_public(pid)
@@ -582,6 +608,7 @@ class Settings(BaseModel):
     voice_speak_answers: bool | None = None
     image_backend: str | None = None
     theme: str | None = None
+    auto_update: bool | None = None
     idle_sleep_min: int | None = None
     allow_local_fetch: bool | None = None
 
@@ -607,6 +634,7 @@ def settings_get() -> dict:
         "theme": c.theme,
         "idle_sleep_min": c.idle_sleep_min,
         "allow_local_fetch": c.allow_local_fetch,
+        "auto_update": c.auto_update,
     }
 
 
@@ -644,6 +672,8 @@ def settings_set(body: Settings) -> dict:
         c.idle_sleep_min = max(0, min(24 * 60, body.idle_sleep_min))
     if body.allow_local_fetch is not None:
         c.allow_local_fetch = body.allow_local_fetch
+    if body.auto_update is not None:
+        c.auto_update = body.auto_update
     c.save()
     return settings_get()
 
@@ -2248,6 +2278,7 @@ class AgentBody(BaseModel):
     ask: str = "risky"  # all | risky | none
     devices: bool = False  # may use cameras, printers, boards, home and industrial devices
     control: bool = False  # may use the mouse and keyboard (experimental; needs devices)
+    setup: bool = False  # "configure my PC": open apps and settings, change a few settings
 
 
 @app.post("/api/agent/run")
@@ -2255,7 +2286,7 @@ def agent_run(body: AgentBody, request: Request):
     from datas.agents import AgentConfig, run_agent
     from datas.agents.folders import resolve_grant
 
-    if remote_peer(request) and (body.allow_shell or body.devices or body.control):
+    if remote_peer(request) and (body.allow_shell or body.devices or body.control or body.setup):
         raise HTTPException(
             403,
             "From a linked device the agent cannot run commands or use the computer's devices. "
@@ -2282,6 +2313,8 @@ def agent_run(body: AgentBody, request: Request):
         allow_things=body.devices,
         allow_control=body.devices and body.control,
         vision=core.ai_sees(),
+        allow_setup=body.setup,
+        sign_in_wait=core.ask_user,
     )
 
     def gen():
@@ -2536,8 +2569,47 @@ def shutdown() -> dict:
     import threading
 
     core.shutdown()
+    _install_waiting_update(relaunch=False)
     threading.Timer(0.5, lambda: os._exit(0)).start()
     return {"ok": True}
+
+
+def _install_waiting_update(relaunch: bool) -> bool:
+    """On Windows a downloaded, checked update installs when Datas closes (no questions)."""
+    import platform
+
+    from datas import updates
+
+    if platform.system() != "Windows" or not (relaunch or core.cfg.auto_update):
+        return False
+    try:
+        return updates.install_ready(relaunch) == "started"
+    except Exception:  # noqa: BLE001
+        return False
+
+
+@app.post("/api/updates/install-now")
+def updates_install_now() -> dict:
+    """Install the waiting update now. On Windows Datas closes, updates and opens again; on
+    other systems the installer or disk image is opened for the person."""
+    import os
+    import platform
+    import threading
+
+    from datas import updates
+
+    if platform.system() != "Windows":
+        try:
+            return {"opened": updates.install_ready(False)}
+        except FileNotFoundError as e:
+            raise HTTPException(404, str(e)) from e
+    if not updates.ready():
+        raise HTTPException(404, "No downloaded update is waiting.")
+    core.shutdown()
+    if not _install_waiting_update(relaunch=True):
+        raise HTTPException(500, "The update could not be started.")
+    threading.Timer(0.8, lambda: os._exit(0)).start()
+    return {"restarting": True}
 
 
 # ---------------------------------------------------------------------------

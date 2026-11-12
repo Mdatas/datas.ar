@@ -48,6 +48,8 @@ class AgentConfig:
     use_programs: bool = True  # connect the programs that offer their own tools (MCP)
     allow_things: bool = False  # cameras, printers, boards, home and industrial devices
     allow_control: bool = False  # the mouse and keyboard (experimental)
+    allow_setup: bool = False  # "configure my PC": apps, settings pages, a few settings
+    sign_in_wait: Callable[[str], bool] | None = None  # waits while the person signs in
     vision: bool = False  # the AI understands pictures: photos and screen pictures are shown to it
 
 
@@ -67,6 +69,8 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         allow_things=cfg.allow_things,
         allow_control=cfg.allow_things and cfg.allow_control,
         vision=cfg.vision,
+        allow_setup=cfg.allow_setup,
+        sign_in_wait=cfg.sign_in_wait or cfg.confirm,
     )
     cfg.workspace.mkdir(parents=True, exist_ok=True)
     session = None
@@ -118,7 +122,8 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
             "one step at a time, and say what happened."
             if ctx.allow_things
             else ""
-        ),
+        )
+        + (T.pc_tools.SYSTEM_HINT if ctx.allow_setup else ""),
     )
     messages: list[dict] = [
         {"role": "system", "content": sys_msg},

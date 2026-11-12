@@ -484,5 +484,7 @@ ES: dict[str, str] = {
     "Could not download it from {site} ({why}). Check the internet connection, or open its page: {page}": "No se pudo descargar de {site} ({why}). Revisá la conexión a internet, o abrí su página: {page}",
     "That document is not on this device yet.": "Ese documento todavía no está en este dispositivo.",
     "Datas starts when you log in to this Mac.": "Datas arranca cuando iniciás sesión en esta Mac.",
+    "No downloaded update is waiting.": "No hay ninguna actualización descargada esperando.",
+    "The update could not be started.": "No se pudo iniciar la actualización.",
     "Datas starts when you log in to Windows.": "Datas arranca cuando iniciás sesión en Windows.",
 }

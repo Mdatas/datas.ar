@@ -16,10 +16,12 @@
     <p id="t_lead" style="margin:0 0 8px">An agent is an AI that works step by step on a task using tools: it can find, read, write, sort and move files, open things for you, and — if you allow it — search the internet, use your camera, printer and other hardware, or run commands. It only touches the folders you tick here; anything it "deletes" goes to a trash folder you can restore from. Everything it does is shown below.</p>
     <p class="fine" id="t_folder"></p>
     <div class="row" style="margin:6px 0"><b id="t_grant">It may work in:</b><div class="chips" id="folderChips"></div><input type="text" id="customFolder" placeholder="C:\Users\me\Projects …" style="min-width:220px"><button class="small" id="addFolder">+</button></div>
+    <div class="row" style="margin:6px 0"><button class="small" id="pcBtn"><span id="t_pc">Configure my PC</span></button><span class="fine" id="t_pc_d">Ask it to open your apps so you can sign in, or to set things the way you like: dark mode, file endings, the taskbar, Wi-Fi, printers, default apps… It asks before each change, and every change can be undone. It never sees or types your passwords: you type them yourself.</span></div>
     <textarea id="task" placeholder="Example: read all the text files in my folder and write a one-page summary called SUMMARY.md"></textarea>
     <div class="row" style="margin-top:10px">
       <label class="switch on" id="netSw"><i></i><span id="t_net">May search and read the internet</span></label>
       <label class="switch" id="devSw"><i></i><span id="t_dev">May use my camera, screen, printer and other hardware</span></label>
+      <label class="switch" id="setupSw"><i></i><span id="t_setup">May configure this computer: open my apps and settings, change everyday settings (asks first)</span></label>
       <label class="switch danger" id="ctlSw"><i></i><span id="t_ctl">May use the mouse and keyboard (experimental — risky)</span></label>
       <label class="switch danger" id="shellSw"><i></i><span id="t_shell">May run commands on this computer (advanced — risky)</span></label>
       <label><span id="t_ask">Ask me</span> <select id="askSel"><option value="risky">before anything that touches my folders, runs commands, opens things or uses my hardware</option><option value="all">before every single action</option><option value="none">never — just do it, I'm watching</option></select></label>

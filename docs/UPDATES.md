@@ -1,12 +1,28 @@
 # Updates, and going back
 
 Datas is made of pieces that change at different speeds. Each one updates on its own, and
-each one can go back to the version before if something breaks. Nothing updates by itself:
-you press **Settings → Updates → Check for updates**.
+each one can go back to the version before if something breaks.
+
+## Up to date by itself
+
+**Settings → Updates → Keep Datas up to date by itself** is on unless you switch it off. While
+Datas runs it asks the project's Releases page at most every 12 hours (the first look waits a
+minute and a half after Datas starts):
+
+- **Datas.** A newer installer is downloaded into `<data>/updates/` and checked against the
+  SHA-256 GitHub publishes for it; a release without a published checksum is never installed
+  unattended. On **Windows** it installs, without questions, when you close Datas — or at once
+  with **Install now** in the notice (Datas closes, updates and opens again). On macOS and Linux
+  the notice offers to open the disk image or package, because installing there needs you.
+- **List of AIs.** Refreshed the same way as the button below; going back is one click.
+- **AI engine.** *Not* changed by itself: llama.cpp publishes new builds several times a day.
+  The newest is offered below, with a way back.
+
+With the switch off nothing is asked unless you press **Check for updates**.
 
 | Piece | Update | Go back | What is kept |
 |---|---|---|---|
-| **Datas** (the app) | Downloads the installer of the new version from the project's Releases page, checks its size and SHA-256, and opens it. | *Go back* lists earlier versions and installs the one you pick the same way. | AIs, chats, notes, settings. A copy of the settings is saved once per version in `backups/`. |
+| **Datas** (the app) | By itself (above), or: downloads the installer of the new version from the project's Releases page, checks its size and SHA-256, and opens it. | *Go back* lists earlier versions and installs the one you pick the same way. | AIs, chats, notes, settings. A copy of the settings is saved once per version in `backups/`. |
 | **AI engine** (llama.cpp) | The new build is downloaded **beside** the current one (`llamacpp/<version>/`), tested, and only then used. If the test or the next start of your AI fails, Datas returns to the previous build by itself and says so. | *Go back to <version>* switches to the build that was in use before. *Delete old copies* frees the space. | Every AI you installed. |
 | **Picture engine** (stable-diffusion.cpp) | Same idea: versions live side by side in `sdcpp/<version>/`. | *Go back to <version>*. | Picture models. |
 | **List of AIs** (the catalog) | Downloads the newest list from the repository into `catalog.update.json` after checking it is well-formed and not older. | *Go back to the built-in list* deletes that file; the list shipped with the app is used again. | Installed AIs are not touched. |

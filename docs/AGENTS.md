@@ -52,6 +52,12 @@ that a tool took: the window shows it, and an AI that understands pictures recei
 | `home_list(domain)`, `home_do(service, entity)` | what your Home Assistant knows; ask it to do something | hardware switch; doing asks |
 | `modbus_read(…)`, `modbus_write(…)` | values of industrial devices (PLC, inverter, meter) | hardware switch; writing asks |
 | `mouse_keyboard(action, …)` | move, click, type, press keys (experimental) | its own switch on top; every action asks |
+| `list_apps(search)` | the apps installed on this computer (Start menu on Windows, Applications on macOS, the app menu on Linux) | **Configure this computer** switch |
+| `open_app(name)` | open one of them | same; asks |
+| `open_settings(page)` | open a page of the system settings: display, sound, Bluetooth, Wi-Fi, printers, mouse, keyboard, default apps, apps, start-up apps, accounts, sign-in options, date and time, language, privacy, updates, power, notifications, colours, background, backup | same; asks |
+| `pc_settings()`, `change_pc_setting(name, on)` | read / change a short list of everyday settings: dark mode, file name endings, hidden files, taskbar on the left (Windows 11). Per user, no administrator rights; the earlier value is kept | same; changing asks |
+| `undo_pc_changes()` | put every setting the agent changed back | same; asks |
+| `sign_in_by_you(app, account)` | open the app and wait while **you** sign in | same; it always waits for you |
 
 The hardware tools are explained for everyone in [HARDWARE.md](HARDWARE.md).
 
@@ -81,6 +87,24 @@ Approving every click exists in every serious agent product and is useful as a l
 — but as a permanent setting it fails in practice: after a dozen "OK"s people stop reading
 and rubber-stamp, which is less safe than a good default. Hence the risk-based default plus a
 stop key.
+
+### Configure my PC
+
+The **Configure my PC** button in the agent window switches on *May configure this computer*
+and starts the task with "Configure my PC: ". Ask, for example: *open Outlook, Spotify and
+WhatsApp so I can sign in*, *dark mode and show file endings*, *open the printer settings*.
+
+- **Sign-ins are yours.** The agent never asks for, reads, stores or types a password, code
+  or card number. It opens the app and shows a card: "Please sign in to Spotify yourself…";
+  you type, then press Allow (done) or Deny (skip). A password given to an AI would stay in
+  its conversation and logs, and text on screen can try to mislead it.
+- **Only listed settings are changed directly** (`datas/agents/pc_tools.py`, `SETTINGS`): per
+  user, reversible, the earlier value kept in `<data>/agent/pc-changes.json`; *undo* puts all
+  back. Anything else: the agent opens the right page of the settings, and you change it — or,
+  with the mouse-and-keyboard switch, it does it on screen, asking before every click.
+- **Not for tasks that run by themselves**, and not from a linked phone.
+- macOS: System Settings has no stable public address per page, so it opens at the start and
+  the agent says where to look. Linux: GNOME Settings panels.
 
 ### Tasks it does by itself (scheduled)
 

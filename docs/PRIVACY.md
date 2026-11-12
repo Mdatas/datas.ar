@@ -79,7 +79,7 @@ connections are:
 | To | When | What is sent |
 |---|---|---|
 | Hugging Face | you add an AI, voice or picture model | the request for that file (your internet address, like any download) |
-| GitHub | the AI engine is downloaded; you press *Check for updates* or *Get ArtCraft*; FFmpeg is fetched because a camera or a recording needs it and the computer has none | the request for the file or for the public list of versions |
+| GitHub | the AI engine is downloaded; about twice a day while Datas runs, if *Keep Datas up to date by itself* is on (Settings → Updates); you press *Check for updates* or *Get ArtCraft*; FFmpeg is fetched because a camera or a recording needs it and the computer has none | the request for the file or for the public list of versions |
 | A paid service | you added its key and chat through it | the conversation |
 | The web | you switched internet on in a chat or for the agent | search words and page addresses |
 | Your other devices | you linked them | see above |
