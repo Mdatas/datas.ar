@@ -95,6 +95,7 @@ REMOTE_REFUSED: tuple[tuple[str, str], ...] = (
     ("WRITE", "/api/mcp"),
     ("WRITE", "/api/updates/app"),
     ("WRITE", "/api/updates/install-now"),
+    ("WRITE", "/api/updates/artcraft"),
     ("WRITE", "/api/privacy/wipe"),
     ("WRITE", "/api/programs/"),
     ("WRITE", "/api/apps/"),
@@ -268,6 +269,8 @@ def status(request: Request) -> dict:
 
     r = updates.ready()
     st["update_ready"] = {"version": r["version"]} if r else None
+    ac = updates.artcraft_ready()
+    st["artcraft_ready"] = {"version": ac["version"]} if ac else None
     st["auto_update"] = core.cfg.auto_update
     st["system"] = __import__("platform").system()
     pid = remote_peer(request)
@@ -945,6 +948,7 @@ def programs_get_artcraft() -> dict:
     def run(j) -> dict:  # noqa: ANN001
         asset = programs.artcraft_launcher_asset()
         path = updates.download_installer(asset, j)
+        updates.artcraft_got(asset.get("version") or "")
         return {
             "path": str(path),
             "opened": updates.open_installer(path),
@@ -2586,6 +2590,17 @@ def _install_waiting_update(relaunch: bool) -> bool:
         return updates.install_ready(relaunch) == "started"
     except Exception:  # noqa: BLE001
         return False
+
+
+@app.post("/api/updates/artcraft")
+def updates_artcraft_open() -> dict:
+    """Open the downloaded, checked installer of a newer ArtCraft Launcher."""
+    from datas import updates
+
+    try:
+        return {"opened": updates.open_artcraft_ready()}
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
 
 
 @app.post("/api/updates/install-now")

@@ -488,6 +488,11 @@ async function installUpdateNow() {
   } catch (e) { oops(e); }
 }
 function tellUpdate() {
+  const a = S.status && S.status.artcraft_ready;
+  if (a && !isRemote() && S.artcraftTold !== a.version) {
+    S.artcraftTold = a.version;
+    toast(t("upd_artcraft_ready", { v: a.version }), { ms: 30000, actions: [{ label: t("upd_artcraft_open"), fn: async () => { try { await api("/api/updates/artcraft", { method: "POST" }); toast(t("upd_opened")); } catch (e) { oops(e); } } }] });
+  }
   const u = S.status && S.status.update_ready;
   if (!u || isRemote() || S.updateTold === u.version) return;
   S.updateTold = u.version;

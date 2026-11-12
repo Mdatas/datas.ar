@@ -15,6 +15,9 @@ minute and a half after Datas starts):
   with **Install now** in the notice (Datas closes, updates and opens again). On macOS and Linux
   the notice offers to open the disk image or package, because installing there needs you.
 - **List of AIs.** Refreshed the same way as the button below; going back is one click.
+- **ArtCraft.** If you got the ArtCraft Launcher through Datas, a newer launcher is downloaded
+  and checked against the checksums ArtCraft publishes, and a notice offers **Update ArtCraft**
+  (its installer opens for you). The launcher itself keeps the Craft apps up to date.
 - **AI engine.** *Not* changed by itself: llama.cpp publishes new builds several times a day.
   The newest is offered below, with a way back.
 

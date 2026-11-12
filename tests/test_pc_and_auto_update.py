@@ -129,3 +129,30 @@ def test_an_older_or_missing_installer_is_not_offered(tmp_path, monkeypatch):
     assert updates.ready() is None
     updates._save({"ready": {"version": "99.0.0", "path": str(tmp_path / "gone.exe")}})  # noqa: SLF001
     assert updates.ready() is None
+
+
+def test_artcraft_launcher_is_kept_current_once_got(tmp_path, monkeypatch):
+    from datas import programs
+
+    monkeypatch.setattr(updates, "home", lambda: tmp_path)
+    asset = {
+        "name": "artcraft-launcher-2.0.0-windows-x64.msi",
+        "url": "u",
+        "version": "2.0.0",
+        "digest": "sha256:ab",
+    }
+    monkeypatch.setattr(programs, "artcraft_launcher_asset", lambda: asset)
+
+    def fake_download(a, job=None, folder=None):  # noqa: ANN001
+        p = folder / a["name"]
+        p.write_bytes(b"msi")
+        return p
+
+    monkeypatch.setattr(updates, "download_installer", fake_download)
+    assert updates._auto_artcraft() is None  # never got through Datas: left alone  # noqa: SLF001
+    updates.artcraft_got("1.0.0")
+    assert updates._auto_artcraft() == "2.0.0"  # noqa: SLF001
+    assert updates.artcraft_ready()["version"] == "2.0.0"
+    monkeypatch.setattr(updates, "open_installer", lambda p: "started")
+    assert updates.open_artcraft_ready() == "started"
+    assert updates.artcraft_ready() is None

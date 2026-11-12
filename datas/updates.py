@@ -627,6 +627,10 @@ def auto_run(core, force: bool = False) -> dict:  # noqa: ANN001
         except Exception as e:  # noqa: BLE001
             out["app_error"] = str(e)
         try:
+            out["artcraft"] = _auto_artcraft()
+        except Exception as e:  # noqa: BLE001
+            out["artcraft_error"] = str(e)
+        try:
             out["catalog"] = update_catalog()["changed"]
         except Exception as e:  # noqa: BLE001
             out["catalog_error"] = str(e)
@@ -648,3 +652,53 @@ def install_ready(relaunch: bool) -> str:
         _record("app", action="install", to=r["version"], result="started")
         return "started"
     return open_installer(path)
+
+
+# The ArtCraft Launcher (getartcraft.com) installs and updates the Craft apps itself; Datas keeps
+# the launcher current: once Datas has fetched it, a newer launcher is downloaded and checked
+# here, and the person is offered to open its installer (another project's installer is never
+# run without them).
+
+
+def artcraft_got(version: str) -> None:
+    d = state()
+    d["artcraft"] = {"version": version}
+    d.pop("artcraft_ready", None)
+    _save(d)
+
+
+def artcraft_ready() -> dict | None:
+    d = state()
+    r, have = d.get("artcraft_ready"), (d.get("artcraft") or {}).get("version", "")
+    if not isinstance(r, dict) or not Path(str(r.get("path", ""))).is_file():
+        return None
+    return r if version_tuple(str(r.get("version", ""))) > version_tuple(have) else None
+
+
+def _auto_artcraft() -> str | None:
+    from datas import programs
+
+    have = (state().get("artcraft") or {}).get("version")
+    if not have:  # the person never got it through Datas
+        return None
+    asset = programs.artcraft_launcher_asset()
+    new = asset.get("version") or ""
+    if version_tuple(new) <= version_tuple(have) or artcraft_ready():
+        return None
+    if not str(asset.get("digest") or "").startswith("sha256:"):
+        return None
+    path = download_installer(asset, folder=updates_dir())
+    d = state()
+    d["artcraft_ready"] = {"version": new, "path": str(path)}
+    _save(d)
+    _record("artcraft", action="downloaded", to=new, result="ok")
+    return new
+
+
+def open_artcraft_ready() -> str:
+    r = artcraft_ready()
+    if not r:
+        raise FileNotFoundError("No downloaded ArtCraft update is waiting.")
+    how = open_installer(Path(r["path"]))
+    artcraft_got(r["version"])
+    return how

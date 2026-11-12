@@ -485,6 +485,7 @@ ES: dict[str, str] = {
     "That document is not on this device yet.": "Ese documento todavía no está en este dispositivo.",
     "Datas starts when you log in to this Mac.": "Datas arranca cuando iniciás sesión en esta Mac.",
     "No downloaded update is waiting.": "No hay ninguna actualización descargada esperando.",
+    "No downloaded ArtCraft update is waiting.": "No hay ninguna actualización de ArtCraft descargada esperando.",
     "The update could not be started.": "No se pudo iniciar la actualización.",
     "Datas starts when you log in to Windows.": "Datas arranca cuando iniciás sesión en Windows.",
 }
