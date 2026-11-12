@@ -29,3 +29,7 @@ android/app/src/main/jniLibs/arm64-v8a/*.so
 android/app/src/main/jniLibs/LICENSE.llama.cpp
 installer/macos/datas.icns
 installer/macos/datas.iconset/
+
+# the starter AI is fetched at build time (scripts/fetch_starter.py)
+datas/starter/
+android/app/src/main/assets/starter/

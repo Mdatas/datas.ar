@@ -228,6 +228,22 @@ def ui_file(path: str):
 # ---------------------------------------------------------------------------
 
 
+def _starter_out_of_the_box() -> None:
+    """The starter AI shipped inside the installer (datas/starter.py): put it among the AIs and,
+    when it is the only one and nothing runs, start it — questions work from the first minute."""
+    from datas import starter
+    from datas.runtime.downloader import installed_models
+
+    try:
+        if not starter.install_bundled(core.catalog):
+            return
+        others = [i for i in installed_models() if i["model_id"] != starter.ID]
+        if not others and not core.server.running() and not os.environ.get("DATAS_NO_STARTER"):
+            core.start_run_job(starter.ID, starter.QUANT, 4096, 16, False, False, False, False)
+    except Exception:  # noqa: BLE001 - the starter is a convenience; never block Datas
+        pass
+
+
 def _keep_up_to_date() -> None:
     """Datas keeps itself up to date while it runs (datas/updates.py). The first look waits a
     little so starting Datas stays quick; then once an hour it sees whether 12 hours passed."""
@@ -255,6 +271,7 @@ def _start_background() -> None:
     except Exception:  # noqa: BLE001
         pass
     threading.Thread(target=_keep_up_to_date, daemon=True, name="datas-updates").start()
+    threading.Thread(target=_starter_out_of_the_box, daemon=True, name="datas-starter").start()
     if core.cfg.link_enabled:  # be reachable by the user's linked devices from the start
         try:
             core.link_manager()

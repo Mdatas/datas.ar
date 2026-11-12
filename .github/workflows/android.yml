@@ -35,6 +35,13 @@ jobs:
         run: scripts/android-fetch-llamacpp.sh
       - name: sync catalog into assets
         run: cp datas/catalog/models.json android/app/src/main/assets/models.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: the starter AI, shipped inside (checked against its SHA-256)
+        run: |
+          pip install -e . >/dev/null
+          python scripts/fetch_starter.py android/app/src/main/assets/starter
       - name: decode release keystore (optional)
         if: env.HAS_KEYSTORE == 'true'
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/release.keystore

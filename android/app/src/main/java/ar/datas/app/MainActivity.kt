@@ -123,6 +123,8 @@ class MainActivity : AppCompatActivity() {
             recompute()
         }
         ui.post(statusPoller)
+        // the starter AI shipped inside the APK: put it among the phone's AIs (once, ~0.4 GB copy)
+        Thread { if (Starter.placeShipped(this, models)) ui.post { recompute() } }.start()
     }
 
     private fun headroom(): Double = headroomSteps[headroomSeek.progress.coerceIn(0, headroomSteps.size - 1)] / 100.0

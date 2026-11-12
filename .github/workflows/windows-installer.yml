@@ -30,6 +30,8 @@ jobs:
         id: v
         shell: bash
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: the starter AI, shipped inside (checked against its SHA-256)
+        run: python scripts/fetch_starter.py
       - name: pyinstaller
         run: pyinstaller --noconfirm installer/datas.spec
       - name: smoke test the frozen app

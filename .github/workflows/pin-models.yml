@@ -6,7 +6,7 @@ name: pin-models
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write  # only to push the result to the side branch bot/pin-models
 jobs:
   pin:
     runs-on: ubuntu-latest
@@ -27,7 +27,11 @@ jobs:
           missing += [(m["id"], x["path"]) for m in d["models"] for x in m.get("extras", {}).values() if not x.get("sha256")]
           print("missing:", missing)
           PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: models-json
-          path: datas/catalog/models.json
+      - name: offer the result on the side branch bot/pin-models (reviewed and committed by hand)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B bot/pin-models
+          git add datas/catalog/models.json
+          git commit -m "Checksums and sizes of the AI files, read from Hugging Face" || echo "nothing changed"
+          git push -f origin bot/pin-models

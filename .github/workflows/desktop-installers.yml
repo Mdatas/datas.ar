@@ -30,6 +30,8 @@ jobs:
       - name: version
         id: v
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: the starter AI, shipped inside (checked against its SHA-256)
+        run: python scripts/fetch_starter.py
       - name: pyinstaller
         run: pyinstaller --noconfirm installer/datas.spec
       - name: smoke test the frozen app
@@ -148,6 +150,8 @@ jobs:
       - name: version
         id: v
         run: echo "version=$(python -c 'import datas;print(datas.__version__)')" >> "$GITHUB_OUTPUT"
+      - name: the starter AI, shipped inside (checked against its SHA-256)
+        run: python scripts/fetch_starter.py
       - name: pyinstaller
         run: pyinstaller --noconfirm installer/datas.spec
       - name: smoke test the frozen app
@@ -260,6 +264,8 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KC" >/dev/null
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
           rm -f "$RUNNER_TEMP/cert.p12"
+      - name: the starter AI, shipped inside (checked against its SHA-256)
+        run: python scripts/fetch_starter.py
       - name: pyinstaller
         env:
           DATAS_VERSION: ${{ steps.v.outputs.version }}

@@ -1,3 +1,4 @@
+import glob
 # PyInstaller spec for every desktop OS — one folder (or .app), two executables:
 #   Datas      windowed: opens the Datas window (what the Desktop icon launches)
 #   datas-cli  console:  the full command line for advanced users
@@ -61,6 +62,10 @@ for pkg in ("gguf", "zeroconf", "huggingface_hub", "rich", "typer", "fastapi", "
         hiddenimports += h
     except Exception:
         pass
+
+# the starter AI, shipped inside (scripts/fetch_starter.py puts it here before the build)
+for gguf in glob.glob(os.path.join(ROOT, "datas", "starter", "*.gguf")):
+    datas.append((gguf, "datas/starter"))
 
 a = Analysis(
     [os.path.join(ROOT, "datas", "__main__.py")],

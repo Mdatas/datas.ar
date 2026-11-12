@@ -48,6 +48,11 @@ android {
 
     // llama-server is an executable shipped as lib<name>.so; Android only allows exec of
     // files in the app's native library dir, which requires extraction (legacy packaging).
+    // the shipped starter AI is stored as is: compressing 0.4 GB of model weights gains nothing
+    androidResources {
+        noCompress += listOf("gguf")
+    }
+
     packaging {
         jniLibs {
             useLegacyPackaging = true
