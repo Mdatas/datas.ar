@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -133,8 +134,11 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
     local = cfg.base_url.startswith(("http://127.0.0.1", "http://localhost"))
+    written = False  # tools described in the text instead of the AI's own tool format
     with httpx.Client(timeout=httpx.Timeout(600, connect=30), trust_env=not local) as client:
-        for step in range(cfg.max_steps):
+        step = -1
+        while step + 1 < cfg.max_steps:
+            step += 1
             if cfg.should_stop and cfg.should_stop():
                 yield {
                     "type": "error",
@@ -143,15 +147,35 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
                     "events": ctx.events,
                 }
                 return
-            payload = {
-                "model": cfg.model,
-                "messages": messages,
-                "tools": T.schemas(ctx),
-                "tool_choice": "auto",
-                "temperature": cfg.temperature,
-            }
+            if written:
+                payload = {
+                    "model": cfg.model,
+                    "messages": written_messages(messages, T.schemas(ctx)),
+                    "temperature": cfg.temperature,
+                }
+            else:
+                payload = {
+                    "model": cfg.model,
+                    "messages": messages,
+                    "tools": T.schemas(ctx),
+                    "tool_choice": "auto",
+                    "temperature": cfg.temperature,
+                }
             try:
                 r = client.post(f"{cfg.base_url}/chat/completions", json=payload, headers=headers)
+                if r.status_code >= 400 and not written and template_trouble(r.text):
+                    # the engine cannot write this AI's own tool format (for example Gemma 4 on
+                    # llama.cpp: "map: filter-mapping not implemented"): describe the tools in
+                    # plain text instead, which every AI can follow, and try the step again
+                    written = True
+                    yield {
+                        "type": "assistant",
+                        "step": step,
+                        "content": "(This AI's own tool format is not supported by the engine; "
+                        "the agent describes its tools in plain text instead.)",
+                    }
+                    step -= 1
+                    continue
                 if r.status_code >= 400:
                     yield {
                         "type": "error",
@@ -165,6 +189,8 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
                 return
             calls = msg.get("tool_calls") or []
             content = msg.get("content") or ""
+            if written and not calls:
+                calls, content = read_written_calls(content)
             messages.append(
                 {"role": "assistant", "content": content, "tool_calls": calls}
                 if calls
@@ -233,3 +259,107 @@ def _forget_old_pictures(messages: list[dict], keep: int) -> None:
 
 def summarize_events(events: list[dict]) -> str:
     return "\n".join(f"- {e['tool']}({json.dumps(e['args'])[:80]})" for e in events)
+
+
+# ---------------------------------------------------------------------------
+# tools written in the text — for AIs whose own tool format the engine cannot write
+# ---------------------------------------------------------------------------
+
+_TROUBLE = ("notimplemented", "not implemented", "template", "jinja", "filter")
+
+
+def template_trouble(body: str) -> bool:
+    low = body.lower()
+    return any(t in low for t in _TROUBLE)
+
+
+WRITTEN_RULES = (
+    "\n\nTools. You can use these tools:\n{tools}\n\nTo use one, reply with only this, and "
+    'nothing else:\n<tool_call>{{"name": "tool_name", "arguments": {{...}}}}</tool_call>\n'
+    "One tool per reply. You will then get its result. When the task is done, reply normally "
+    "without <tool_call>."
+)
+
+
+def written_messages(messages: list[dict], schemas: list[dict] | None) -> list[dict]:
+    """The conversation with the tools described in the first message and every tool call and
+    result as plain text, so the engine never has to write a tool format."""
+    lines = []
+    for s in schemas:
+        f = s.get("function", {})
+        params = json.dumps(f.get("parameters", {}).get("properties", {}), ensure_ascii=False)
+        lines.append(f"- {f.get('name')}: {f.get('description', '')} Arguments: {params}")
+    out: list[dict] = []
+    for m in messages:
+        role = m.get("role")
+        if role == "system" and schemas:
+            out.append(
+                {
+                    "role": "system",
+                    "content": m["content"] + WRITTEN_RULES.format(tools="\n".join(lines)),
+                }
+            )
+        elif role == "assistant" and m.get("tool_calls"):
+            text = m.get("content") or ""
+            for c in m["tool_calls"]:
+                f = c.get("function", {})
+                args = f.get("arguments", "{}")
+                if not isinstance(args, str):
+                    args = json.dumps(args, ensure_ascii=False)
+                text += (
+                    f'\n<tool_call>{{"name": "{f.get("name")}", "arguments": {args}}}</tool_call>'
+                )
+            out.append({"role": "assistant", "content": text.strip()})
+        elif role == "tool":
+            out.append({"role": "user", "content": f"Result of {m.get('name')}:\n{m['content']}"})
+        else:
+            out.append(m)
+    # some templates need user and assistant to take turns: join two in a row
+    merged: list[dict] = []
+    for m in out:
+        if (
+            merged
+            and m["role"] == merged[-1]["role"]
+            and m["role"] in ("user", "assistant")
+            and isinstance(m["content"], str)
+            and isinstance(merged[-1]["content"], str)
+        ):
+            merged[-1] = {**merged[-1], "content": merged[-1]["content"] + "\n\n" + m["content"]}
+        else:
+            merged.append(m)
+    return merged
+
+
+_CALL = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.S)
+_BARE = re.compile(r"^\s*(?:```(?:json)?\s*)?(\{.*\})\s*(?:```)?\s*$", re.S)
+
+
+def read_written_calls(content: str) -> tuple[list[dict], str]:
+    """Tool calls the AI wrote as text, in the shape the rest of the loop uses."""
+    found = _CALL.findall(content)
+    if not found:
+        m = _BARE.match(content)
+        found = [m.group(1)] if m and '"name"' in m.group(1) else []
+    calls = []
+    for k, raw in enumerate(found):
+        try:
+            d = json.loads(raw)
+        except ValueError:
+            continue
+        if not isinstance(d, dict) or not d.get("name"):
+            continue
+        args = d.get("arguments", {})
+        calls.append(
+            {
+                "id": f"written-{k}",
+                "type": "function",
+                "function": {
+                    "name": str(d["name"]),
+                    "arguments": args if isinstance(args, str) else json.dumps(args),
+                },
+            }
+        )
+    if not calls:
+        return [], content
+    text = _CALL.sub("", content).strip() if _CALL.search(content) else ""
+    return calls, text

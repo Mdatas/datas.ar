@@ -181,6 +181,12 @@ browses — no add-on changes that.
 
 ### Which models can do this
 
+When the engine cannot write an AI's own tool format — for example Gemma 4 on llama.cpp
+answers "map: filter-mapping not implemented" (llama.cpp issue #21547) — the agent, and a chat
+with internet on, switch by themselves to describing the tools in plain text and reading the
+AI's `<tool_call>{…}</tool_call>` replies. Slower and a little less reliable, but it works with
+any AI.
+
 Tool calling needs a model whose chat template emits tool calls and a llama-server
 started with `--jinja` (Datas always does). In the catalog, every entry with `tools` in
 `capabilities` is suitable; the stronger the model, the more reliably it plans. On small

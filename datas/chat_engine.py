@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from datas import assistants, docs, netguard
+from datas.agents.runner import read_written_calls, template_trouble, written_messages
 from datas.chats import LEARN_PROMPT, context_docs, read_memory
 from datas.config import Config
 from datas.providers import Provider
@@ -337,23 +338,26 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
         httpx.AsyncClient(timeout=httpx.Timeout(40, connect=15)) as web,
     ):
         # 1) tool steps (non-streaming) while the model asks for tools
+        written = False  # tools described in plain text (see datas/agents/runner.py)
         if req.internet:
             for _ in range(MAX_TOOL_STEPS):
+                body = (
+                    {"messages": written_messages(messages, TOOL_SCHEMAS)}
+                    if written
+                    else {"messages": messages, "tools": TOOL_SCHEMAS, "tool_choice": "auto"}
+                )
                 try:
                     r = await client.post(
                         f"{prov.base_url}/chat/completions",
                         headers=prov.headers(),
-                        json={
-                            "model": model,
-                            "messages": messages,
-                            "tools": TOOL_SCHEMAS,
-                            "tool_choice": "auto",
-                            "temperature": req.temperature,
-                        },
+                        json={"model": model, "temperature": req.temperature, **body},
                     )
                 except httpx.HTTPError as e:
                     yield _sse({"type": "error", "message": f"The AI did not answer: {e}"})
                     return
+                if r.status_code >= 400 and not written and template_trouble(r.text):
+                    written = True  # this AI's tool format is not supported by the engine
+                    continue
                 if r.status_code >= 400:
                     yield _sse(
                         {
@@ -364,6 +368,8 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
                     return
                 msg = r.json()["choices"][0]["message"]
                 calls = msg.get("tool_calls") or []
+                if written and not calls:
+                    calls, _ = read_written_calls(msg.get("content") or "")
                 if not calls:
                     # no tools wanted → stream the final answer below
                     break
@@ -396,7 +402,7 @@ async def stream_chat(cfg: Config, prov: Provider, req: ChatRequest) -> AsyncIte
         # 2) final answer, streamed
         payload = {
             "model": model,
-            "messages": messages,
+            "messages": written_messages(messages, None) if written else messages,
             "stream": True,
             "temperature": req.temperature,
         }
