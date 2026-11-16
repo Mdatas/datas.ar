@@ -54,3 +54,9 @@ def test_one_already_here_is_preferred_when_nearly_as_good():
 
 
 _ = GPU  # the device above has no graphics card
+
+
+def test_agent_work_asks_for_an_ai_big_enough():
+    rec = recommend(_spec(16), load(), want=["tools"])
+    out = S.able(rec, "tools", set(), min_params_b=S.AGENT_MIN_PARAMS_B)
+    assert load().get(out["model_id"]).params_b >= S.AGENT_MIN_PARAMS_B

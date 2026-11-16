@@ -54,3 +54,11 @@ def test_agent_switches_to_written_tools_and_finishes(tmp_path, monkeypatch):
     system = seen[1]["messages"][0]["content"]
     assert "<tool_call>" in system and "list_dir" in system
     assert all(m["role"] in ("system", "user", "assistant") for m in seen[-1]["messages"])
+
+
+def test_what_really_happened_comes_from_the_tools():
+    assert runner.result_ok("wrote hello.txt (11 characters)")
+    assert not runner.result_ok("DENIED: running commands is off")
+    assert not runner.result_ok("exit 1 · now in C:\\x\nerror")
+    assert runner.result_ok("exit 0 · now in /tmp\nok")
+    assert not runner.result_ok("error: [Errno 2] No such file")

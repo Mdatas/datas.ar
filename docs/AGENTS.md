@@ -191,6 +191,19 @@ connection.
 
 ### Which models can do this
 
+Measured, not guessed: `scripts/e2e_real.py --agent` gives the agent five real tasks (write a
+file, rename it, make a folder and move it there, write a Word document, read a file and write
+what it says) and checks the result **on disk**. November 2026, on GitHub's computers:
+
+| AI | Linux | Windows |
+|---|---|---|
+| Qwen3 0.6B (the one shipped inside Datas) | 4 of 5 | 1 of 5 — and it said "done" when it was not |
+| Qwen3 4B | 5 of 5 | 5 of 5 |
+
+So the agent window warns when the running AI is under 3 billion parameters and names one
+that fits the device, and after every task it lists what the tools *really* did — from their
+own answers, not from the AI's summary.
+
 When the engine cannot write an AI's own tool format — for example Gemma 4 on llama.cpp
 answers "map: filter-mapping not implemented" (llama.cpp issue #21547) — the agent, and a chat
 with internet on, switch by themselves to describing the tools in plain text and reading the

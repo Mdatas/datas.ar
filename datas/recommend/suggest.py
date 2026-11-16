@@ -16,6 +16,10 @@ NEEDS = {
 
 _SPEED = {"fast": 0, "ok": 1, "slow": 2, "crawl": 3}
 
+# below this size the agent's real tasks mostly fail (scripts/e2e_real.py: 0.6B 1-4 of 5,
+# 4B 5 of 5 on Linux and Windows)
+AGENT_MIN_PARAMS_B = 3.0
+
 
 def _pick(cands: list[Candidate], installed: set[str]) -> Candidate | None:
     if not cands:
@@ -37,11 +41,16 @@ def faster(rec: Recommendation, current_id: str, current_bytes: int, installed: 
     return _out(c, installed)
 
 
-def able(rec: Recommendation, need: str, installed: set[str]) -> dict:
+def able(rec: Recommendation, need: str, installed: set[str], min_params_b: float = 0) -> dict:
     """The best AI that can do ``need`` and fits this device (rec was made with want=[need])."""
-    c = rec.default or _pick(rec.fits, installed)
+    fits = [x for x in rec.fits if _params(x) >= min_params_b]
+    c = (
+        rec.default
+        if rec.default and _params(rec.default) >= min_params_b
+        else _pick(fits, installed)
+    )
     if c and c.model_id not in installed:
-        here = [x for x in rec.fits if x.model_id in installed]
+        here = [x for x in fits if x.model_id in installed]
         if here and here[0].effective_tier >= c.effective_tier - 1:
             c = here[0]  # nearly as good and already here
     if not c:
@@ -63,3 +72,10 @@ def _out(c: Candidate, installed: set[str]) -> dict:
         "gib": round(c.need.weights / 2**30, 1),
         "speed": c.speed_class,
     }
+
+
+def _params(c: Candidate) -> float:
+    from datas.catalog import load
+
+    m = load().get(c.model_id)
+    return float(m.params_b or 0) if m else 0.0

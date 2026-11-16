@@ -327,9 +327,18 @@ def suggest(need: str = "faster", model: str = "") -> dict:
     if need not in S.NEEDS:
         raise HTTPException(400, "Unknown need.")
     m = core.catalog.get(model) if model else None
-    if m and need in m.capabilities:
+    # agent work: in Datas' own tests (scripts/e2e_real.py) AIs under ~3 billion parameters got
+    # most real tasks wrong while saying they were done; 4 billion got them all right
+    small = need == "tools" and m is not None and (m.params_b or 0) < S.AGENT_MIN_PARAMS_B
+    if m and need in m.capabilities and not small:
         return {"ok": True}
-    return S.able(core.recommendation(want=[need]), need, installed)
+    out = S.able(
+        core.recommendation(want=[need]),
+        need,
+        installed,
+        min_params_b=S.AGENT_MIN_PARAMS_B if need == "tools" else 0,
+    )
+    return {**out, "small": small, "current": m.name if m else None}
 
 
 @app.get("/api/recommend")

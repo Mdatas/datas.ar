@@ -48,7 +48,7 @@ $("run").onclick=async()=>{
     if(!r.ok){ step("error","⚠ "+((await r.json()).detail||r.status)); $("run").disabled=false; return; }
     const rd=r.body.getReader(), dec=new TextDecoder(); let buf="";
     while(true){ const {value,done}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i; while((i=buf.indexOf("\n\n"))>=0){ const chunk=buf.slice(0,i); buf=buf.slice(i+2); const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue; let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
-      if(ev.type==="assistant") step("", ev.content); else if(ev.type==="tool_call") step("tool", `→ ${ev.name} ${typeof ev.arguments==="string"?ev.arguments:JSON.stringify(ev.arguments)}`); else if(ev.type==="tool_result") step(ev.result.startsWith("DENIED")||ev.result.startsWith("STOPPED")?"error":"result", ev.result); else if(ev.type==="picture") picture(ev); else if(ev.type==="final") step("final", (lang==="es"?"Listo. ":"Done. ")+(ev.content||"")); else if(ev.type==="error") step("error", "⚠ "+ev.error); } }
+      if(ev.type==="assistant") step("", ev.content); else if(ev.type==="tool_call") step("tool", `→ ${ev.name} ${typeof ev.arguments==="string"?ev.arguments:JSON.stringify(ev.arguments)}`); else if(ev.type==="tool_result") step(ev.result.startsWith("DENIED")||ev.result.startsWith("STOPPED")?"error":"result", ev.result); else if(ev.type==="picture") picture(ev); else if(ev.type==="final"){ step("final", (lang==="es"?"La IA dice: ":"The AI says: ")+(ev.content||"")); really(ev.really||[]); } else if(ev.type==="error") step("error", "⚠ "+ev.error); } }
   }catch(e){ step("error","⚠ "+e.message); }
   $("run").disabled=false; clearInterval(askPoll); $("askCard").classList.add("hidden"); $("stop").classList.add("hidden"); loadFiles(); loadInbox();
 };
@@ -67,6 +67,8 @@ async function checkTools(){ try{
   const r = await (await fetch("/api/suggest?"+new URLSearchParams({need:"tools", model:st.model_id}))).json();
   if(r.ok) return;
   const es = lang==="es", el=$("toolsHint");
+  const small = r.small ? (es ? `La IA que está corriendo (${r.current}) es muy chica para trabajo de agente: suele fallar las tareas y decir que las hizo. ` : `The AI that is running (${r.current}) is too small for agent work: it often fails tasks and says it did them. `) : "";
+  if(small){ el.textContent = small + (r.none ? (es ? "Ninguna más grande entra en este dispositivo; abajo, después de cada tarea, se muestra qué se hizo de verdad." : "No bigger one fits this device; after each task, the list below shows what was really done.") : (es ? `${r.name} las hace bien y entra en este dispositivo (${r.gib} GB${r.installed?", ya está acá":""}). Elegila en la ventana principal.` : `${r.name} does them well and fits this device (${r.gib} GB${r.installed?", already here":""}). Choose it in the main window.`)); el.classList.remove("hidden"); return; }
   el.textContent = r.none
     ? (es ? "La IA que está corriendo no fue hecha para usar herramientas, y ninguna que sí lo sea entra en este dispositivo. El agente igual lo intenta, describiéndole las herramientas en texto: más lento y menos seguro." : "The AI that is running was not made to use tools, and none that is fits this device. The agent still tries, describing its tools in plain text: slower and less reliable.")
     : (es ? `La IA que está corriendo no fue hecha para usar herramientas. ${r.name} sí, y entra en este dispositivo (${r.gib} GB${r.installed?", ya está acá":""}). Elegila arriba, en la ventana principal, para mejores resultados.` : `The AI that is running was not made to use tools. ${r.name} is, and fits this device (${r.gib} GB${r.installed?", already here":""}). Choose it in the main window for better results.`);
@@ -86,3 +88,13 @@ async function bgNote(){ try{
   el.appendChild(b);
 }catch(e){} }
 bgNote();
+
+/* what really happened, from the tools' own answers: an AI can say "done" when nothing was done */
+function really(list){
+  const es = lang==="es", ok = list.filter(x=>x.ok), bad = list.filter(x=>!x.ok);
+  let t;
+  if(!list.length) t = es ? "Comprobado: la IA no usó ninguna herramienta, así que no hizo nada en la computadora." : "Checked: the AI used no tool, so nothing was done on the computer.";
+  else t = (es ? `Comprobado: ${ok.length} acción(es) hechas` : `Checked: ${ok.length} action(s) done`) + (ok.length ? " ("+ok.map(x=>x.name).join(", ")+")" : "")
+     + (bad.length ? (es ? `; ${bad.length} no se pudieron: ` : `; ${bad.length} did not work: `) + bad.map(x=>`${x.name} — ${x.said}`).join(" · ") : "") + ".";
+  step(bad.length || !list.length ? "error" : "result", t);
+}

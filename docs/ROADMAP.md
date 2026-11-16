@@ -68,7 +68,15 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.7 (this release) — an AI inside, the right AI for the job, checked files
+## 0.8 (this release) — an agent that really does things
+
+- [x] **Tested for real**: the agent with real AIs does five tasks checked on disk, on Linux and Windows (`scripts/e2e_real.py --agent`)
+- [x] **Its own terminal**: a real shell (PowerShell / bash) that remembers `cd` — before, most Windows commands failed
+- [x] **Its own browser**: a separate, visible Edge/Chrome window with its own profile; you type passwords there yourself
+- [x] **"What really happened"** after each task, from the tools' own answers; a warning when the AI is too small for agent work
+- [x] **Tasks run with the window closed** on Windows, macOS and Linux (background Datas takes over at once)
+
+## 0.7 — an AI inside, the right AI for the job, checked files
 
 - [x] **A small AI comes inside the installers and the phone app** (Qwen3 0.6B, about 0.4 GB): questions from the first minute, no download; runs on a Raspberry Pi or an old phone
 - [x] **"Try this AI instead"**: slow answers or a memory failure → a smaller, faster AI that fits; a picture for an AI that cannot see, or the agent with an AI not made for tools → one that can and fits this device — or a plain "none fits"

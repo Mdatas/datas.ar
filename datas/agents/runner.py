@@ -116,6 +116,7 @@ def _run_agent(task: str, cfg: AgentConfig, held: dict) -> Iterator[dict]:
 
 
 def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
+    really: list[dict] = []  # what the tools themselves reported, not what the AI says
     sys_msg = SYSTEM.format(
         shell=", run shell commands" if cfg.allow_shell else "",
         net=", search the web and open web pages" if cfg.allow_network else "",
@@ -212,13 +213,20 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
             if content:
                 yield {"type": "assistant", "step": step, "content": content}
             if not calls:
-                yield {"type": "final", "step": step, "content": content, "events": ctx.events}
+                yield {
+                    "type": "final",
+                    "step": step,
+                    "content": content,
+                    "events": ctx.events,
+                    "really": really,
+                }
                 return
             for c in calls:
                 fn = c.get("function", {})
                 name, args = fn.get("name", ""), fn.get("arguments", "{}")
                 yield {"type": "tool_call", "step": step, "name": name, "arguments": args}
                 result = T.call(ctx, name, args)
+                really.append({"name": name, "ok": result_ok(result), "said": result[:160]})
                 yield {"type": "tool_result", "step": step, "name": name, "result": result[:4000]}
                 messages.append(
                     {
@@ -376,3 +384,28 @@ def read_written_calls(content: str) -> tuple[list[dict], str]:
         return [], content
     text = _CALL.sub("", content).strip() if _CALL.search(content) else ""
     return calls, text
+
+
+_FAILED = (
+    "denied",
+    "refused",
+    "error",
+    "stopped",
+    "unknown tool",
+    "no such",
+    "not found",
+    "there is no",
+    "cannot",
+    "could not",
+    "failed",
+    "timeout",
+    "stopped after",
+)
+
+
+def result_ok(result: str) -> bool:
+    """Did the tool itself report success? (The AI's own summary is not trusted for this.)"""
+    head = result.strip()[:80].lower()
+    if head.startswith("exit ") and not head.startswith("exit 0"):
+        return False
+    return not head.startswith(_FAILED)
