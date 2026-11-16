@@ -117,9 +117,17 @@ class Browser:
             )
         prof = profile_dir()
         (prof / "DevToolsActivePort").unlink(missing_ok=True)
+        # no screen (a Raspberry Pi or server without one): the same browser, without a window
+        unseen = SYSTEM == "Linux" and not (
+            os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")
+        )
+        extra = ["--headless=new"] if unseen else []
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            extra.append("--no-sandbox")  # Chromium refuses to run as root otherwise
         self.proc = subprocess.Popen(
             [
                 exe,
+                *extra,
                 f"--user-data-dir={prof}",
                 "--remote-debugging-port=0",
                 "--remote-debugging-address=127.0.0.1",

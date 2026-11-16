@@ -180,7 +180,8 @@ on the computer (nothing is downloaded), started with its own empty profile in
 through the browser's built-in debugging interface (Chrome DevTools Protocol) over a local
 connection.
 
-- **Visible.** The window is on screen: the person watches every step and can take over.
+- **Visible.** The window is on screen: the person watches every step and can take over. On a
+  computer with no screen (a Raspberry Pi or server) it runs without a window.
 - **Passwords are typed by the person**, in that window; the agent refuses to type into a
   password field.
 - **Pages are text plus numbered elements** — `[3] button: Send` — so even small AIs can act.
