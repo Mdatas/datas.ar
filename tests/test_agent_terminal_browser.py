@@ -1,6 +1,7 @@
 """The agent's own terminal (a real shell that remembers its folder) and its own browser."""
 
 import http.server
+import os
 import platform
 import threading
 from functools import partial
@@ -64,7 +65,14 @@ def test_browser_reads_types_submits_and_refuses_passwords(tmp_path, monkeypatch
     base = f"http://127.0.0.1:{srv.server_address[1]}"
     b = Browser(allow_local=True)
     try:
-        page = b.open(f"{base}/page.html")
+        try:
+            page = b.open(f"{base}/page.html")
+        except RuntimeError as e:
+            # GitHub's Ubuntu 24.04 machines do not let Chrome start its sandbox; the browser is
+            # never started without it, so there is nothing to test there
+            if os.environ.get("CI") and platform.system() == "Linux" and "debugging port" in str(e):
+                pytest.skip(f"this machine does not start Chrome: {e}")
+            raise
         assert "Made by JavaScript" in page and "[1] link: Next page" in page
         assert b.type_text(3, "secret").startswith("REFUSED: that is a password field")
         assert "not a field" in b.type_text(1, "x")

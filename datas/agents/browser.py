@@ -138,7 +138,7 @@ class Browser:
                 "about:blank",
             ],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=(prof.parent / "browser.log").open("wb"),
         )
         port = None
         for _ in range(100):  # the browser writes its debugging port into the profile
@@ -151,7 +151,15 @@ class Browser:
             time.sleep(0.2)
         if not port:
             self.close()
-            raise RuntimeError("The browser did not open its debugging port.")
+            why = ""
+            try:  # the browser's own last words, e.g. a sandbox the system does not allow
+                lines = (
+                    (prof.parent / "browser.log").read_text("utf-8", "replace").strip().splitlines()
+                )
+                why = (" It said: " + lines[-1][:300]) if lines else ""
+            except OSError:
+                pass
+            raise RuntimeError("The browser did not open its debugging port." + why)
         pages = []
         for _ in range(50):
             try:
