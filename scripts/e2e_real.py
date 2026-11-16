@@ -17,6 +17,7 @@ import argparse
 import json
 import sys
 import time
+from pathlib import Path
 
 import httpx
 
@@ -101,6 +102,11 @@ def main() -> int:
         "--link",
         action="store_true",
         help="also start a second Datas here and test linking, sharing work and opening its window",
+    )
+    ap.add_argument(
+        "--agent",
+        default="",
+        help="also give the agent real tasks with these AIs, e.g. qwen3-0.6b:Q4_0,qwen3-4b:Q4_K_M",
     )
     ap.add_argument("--report", default="")
     ap.add_argument("--serve", action="store_true", help="start `datas serve` here, stop it after")
@@ -287,6 +293,10 @@ def run(a: argparse.Namespace) -> int:
     # 6. hardware: FFmpeg fetched and checked, a recording read through it, camera and screen
     if a.hardware:
         hardware(c, a)
+    if a.agent:
+        for spec in a.agent.split(","):
+            mid, _, quant = spec.partition(":")
+            agent_tasks(c, mid, quant or "Q4_K_M")
 
     # 7. a second real Datas on this machine stands in for another computer of the person
     if a.link:
@@ -299,6 +309,97 @@ def run(a: argparse.Namespace) -> int:
     st = c.get("/api/status").json()
     step("the AI stops when asked", not st.get("server", {}).get("running"), "", time.time() - t)
     return finish(a, 0 if all(s["ok"] for s in STEPS) else 1)
+
+
+# real things the agent must get done, checked on disk — not what the AI says it did
+AGENT_TASKS = [
+    (
+        "write a file",
+        "Create a text file called hello.txt in your folder containing exactly: Datas works",
+        lambda ws: (
+            (ws / "hello.txt").is_file()
+            and "datas works" in (ws / "hello.txt").read_text("utf-8", "replace").lower()
+        ),
+    ),
+    (
+        "rename a file",
+        "Rename the file hello.txt in your folder to greeting.txt.",
+        lambda ws: (ws / "greeting.txt").is_file() and not (ws / "hello.txt").exists(),
+    ),
+    (
+        "make a folder and sort",
+        "Make a folder called notes in your folder and move greeting.txt into it.",
+        lambda ws: (ws / "notes" / "greeting.txt").is_file(),
+    ),
+    (
+        "write a document",
+        "Write a short Word document called list.docx in your folder with three ways to save "
+        "water at home, one per line.",
+        lambda ws: (ws / "list.docx").is_file() and (ws / "list.docx").stat().st_size > 1000,
+    ),
+    (
+        "read and summarise",
+        "Read notes/greeting.txt and write what it says into a new file summary.txt.",
+        lambda ws: (
+            (ws / "summary.txt").is_file()
+            and "datas" in (ws / "summary.txt").read_text("utf-8", "replace").lower()
+        ),
+    ),
+]
+
+
+def agent_tasks(c: httpx.Client, model: str, quant: str) -> None:
+    """The agent with a real AI does real things; each result is checked in its folder."""
+    t = time.time()
+    job = c.post("/api/run", json={"model_id": model, "quant": quant, "context": 8192}).json()
+    j = wait_job(c, job, 1800)
+    if not step(
+        f"agent AI {model} {quant} running",
+        j["state"] == "done",
+        j.get("error") or "",
+        time.time() - t,
+    ):
+        return
+    ws = Path(c.get("/api/agent/workspace").json()["path"])
+    for p in sorted(ws.glob("*"), reverse=True):  # a clean folder for each AI
+        if p.is_dir():
+            import shutil
+
+            shutil.rmtree(p, ignore_errors=True)
+        else:
+            p.unlink(missing_ok=True)
+    done = 0
+    for name, task, check in AGENT_TASKS:
+        t = time.time()
+        calls, final, errors = [], "", []
+        try:
+            with c.stream(
+                "POST",
+                "/api/agent/run",
+                json={"task": task, "ask": "none"},
+                timeout=httpx.Timeout(900, connect=30),
+            ) as r:
+                for line in r.iter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    ev = json.loads(line[6:])
+                    if ev.get("type") == "tool_call":
+                        calls.append(ev.get("name") or ev.get("tool") or "?")
+                    elif ev.get("type") == "final":
+                        final = ev.get("content") or ""
+                    elif ev.get("type") == "error":
+                        errors.append(str(ev.get("error"))[:200])
+        except httpx.HTTPError as e:
+            errors.append(f"{type(e).__name__}: {e}")
+        ok = bool(check(ws))
+        done += ok
+        step(
+            f"agent ({model}): {name}",
+            ok,
+            f"tools={calls} final={final[:100]!r}" + (f" errors={errors}" if errors else ""),
+            time.time() - t,
+        )
+    print(f"       agent with {model}: {done}/{len(AGENT_TASKS)} tasks really done")
 
 
 def hardware(c: httpx.Client, a: argparse.Namespace) -> None:

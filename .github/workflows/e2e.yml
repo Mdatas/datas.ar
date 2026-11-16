@@ -23,7 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 50
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,7 +39,9 @@ jobs:
         run: |
           export DATAS_HOME="$RUNNER_TEMP/datas-e2e"
           VOICE=""; python -c "import pywhispercpp, kokoro_onnx" 2>/dev/null && VOICE="--voice"
-          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" $VOICE --hardware --link --report "$RUNNER_TEMP/e2e.json"
+          # the agent with real AIs, real tasks checked on disk (not on the slower Mac runner)
+          AGENT=""; [ "${{ matrix.os }}" != "macos-latest" ] && AGENT="--agent qwen3-0.6b:Q4_0,qwen3-4b:Q4_K_M"
+          python scripts/e2e_real.py --serve --serve-log "$RUNNER_TEMP/serve.log" $VOICE --hardware --link $AGENT --report "$RUNNER_TEMP/e2e.json"
       - name: logs
         if: always()
         shell: bash
