@@ -238,3 +238,23 @@ def test_the_window_switch_and_a_phone_cannot_use_it(tmp_path, monkeypatch):
     c.post("/api/service", json={"on": False})
     assert asked == ["on", ("off", False)]  # off keeps the Datas showing the window running
     assert ("WRITE", "/api/service") in server.REMOTE_REFUSED
+
+
+def test_closing_the_window_hands_tasks_to_a_background_datas(tmp_path, monkeypatch):
+    import json
+
+    from datas import service
+    from datas.agents import schedule
+
+    started = []
+    monkeypatch.setattr(schedule, "tasks_file", lambda: tmp_path / "tasks.json")
+    monkeypatch.setattr(service, "status", lambda run=None: {"installed": True})
+    monkeypatch.setattr(service.subprocess, "Popen", lambda cmd, **kw: started.append(cmd))
+    assert service.continue_in_background() is False  # no tasks: nothing to keep alive
+    (tmp_path / "tasks.json").write_text(json.dumps([{"id": "a", "enabled": False}]))
+    assert service.continue_in_background() is False  # a paused task does not count
+    (tmp_path / "tasks.json").write_text(json.dumps([{"id": "a", "enabled": True}]))
+    assert service.continue_in_background() is True
+    assert started[0][-1] == "--wait-free" and "serve" in started[0]
+    monkeypatch.setattr(service, "status", lambda run=None: {"installed": False})
+    assert service.continue_in_background() is False  # background switched off: respected

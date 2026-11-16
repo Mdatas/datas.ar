@@ -51,6 +51,9 @@ class ToolContext:
     allow_network: bool = True
     allow_local: bool = False  # web tools may open addresses inside the user's own network
     shell_timeout: int = 60
+    shell_cwd: Path | None = None  # where the agent's terminal is now (it remembers `cd`)
+    allow_browser: bool = False  # the agent's own browser (datas/agents/browser.py); needs internet
+    browser: object | None = None
     # ask = "all" (approve every action) | "risky" (only what touches your folders, runs commands,
     # opens things) | "none" (just do it, I'm watching). confirm(text) -> True/False blocks until answered.
     ask: str = "risky"
@@ -73,7 +76,10 @@ class ToolContext:
         """Risky = commands, programs, opening things, tools inside other programs, and
         writes/moves/deletes that touch a granted folder (inside the agent's own workspace
         everything is reversible via _trash)."""
-        if name in ("run_command", "run_program", "open_path") or name in things_tools.ACTS:
+        if (
+            name in ("run_command", "run_program", "open_path", "browser_click", "browser_type")
+            or name in things_tools.ACTS
+        ):
             return True
         if name in pc_tools.ACTS:
             return True
@@ -385,23 +391,56 @@ def open_path(ctx: ToolContext, target: str, program: str = "") -> str:
     return f"opened {what}"
 
 
-def run_command(ctx: ToolContext, command: str) -> str:
+_CWD_MARK = "__DATAS_CWD__"
+
+
+def shell_name() -> str:
+    return "PowerShell" if platform.system() == "Windows" else "bash"
+
+
+def _shell_argv(command: str) -> list[str]:
+    """The agent's terminal: a real shell (pipes, redirection, variables, cd), which then
+    prints the folder it ended in so the next command starts there."""
+    if platform.system() == "Windows":
+        line = (
+            f"{command}\n$__ok = $?; $__code = $LASTEXITCODE\n"
+            f'"`n{_CWD_MARK}$((Get-Location).Path)"\n'
+            "if ($__code) { exit $__code } elseif (-not $__ok) { exit 1 }"
+        )
+        return ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", line]
+    sh = shutil.which("bash") or "/bin/sh"
+    return [sh, "-c", f'{command}\n__s=$?; printf "\\n{_CWD_MARK}%s" "$PWD"; exit $__s']
+
+
+def run_command(ctx: ToolContext, command: str, timeout: int | None = None) -> str:
     if not ctx.allow_shell:
         return "DENIED: running commands is off. The user can allow it with the switch in the agent window."
+    cwd = ctx.shell_cwd if ctx.shell_cwd and ctx.shell_cwd.is_dir() else ctx.workspace
+    limit = max(5, min(int(timeout or ctx.shell_timeout), 900))
     try:
         out = subprocess.run(
-            shlex.split(command, posix=platform.system() != "Windows"),
-            cwd=ctx.workspace,
+            _shell_argv(command),
+            cwd=cwd,
             capture_output=True,
             text=True,
-            timeout=ctx.shell_timeout,
+            encoding="utf-8",
+            errors="replace",
+            timeout=limit,
         )
     except subprocess.TimeoutExpired:
-        return f"timeout after {ctx.shell_timeout}s"
-    except (OSError, ValueError) as e:
+        return f"stopped after {limit} s (give a larger timeout, up to 900, if it needs longer)"
+    except OSError as e:
         return f"error: {e}"
-    text = (out.stdout + ("\n[stderr]\n" + out.stderr if out.stderr else "")).strip()
-    return f"exit {out.returncode}\n{text[:MAX_READ]}"
+    stdout = out.stdout or ""
+    if _CWD_MARK in stdout:
+        stdout, _, where = stdout.rpartition(_CWD_MARK)
+        here = Path(where.strip())
+        if here.is_dir():
+            ctx.shell_cwd = here
+    text = (
+        stdout.rstrip() + ("\n[errors]\n" + out.stderr.strip() if out.stderr.strip() else "")
+    ).strip()
+    return f"exit {out.returncode} · now in {ctx.shell_cwd or cwd}\n{text[:MAX_READ]}"
 
 
 # ---------------------------------------------------------------------------
@@ -595,8 +634,10 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
         run_command,
         _schema(
             "run_command",
-            "Run a shell command inside the workspace (only when the user allowed it).",
-            {"command": S},
+            f"Run a command in the agent's own terminal ({shell_name()}); it starts in the "
+            "agent's folder and remembers `cd` between commands. Optional timeout in seconds "
+            "(default 60, at most 900).",
+            {"command": S, "timeout": {"type": "integer"}},
             ["command"],
         ),
     ),
@@ -618,12 +659,107 @@ TOOLS: dict[str, tuple[Callable[..., str], dict]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# the agent's own browser (datas/agents/browser.py)
+# ---------------------------------------------------------------------------
+
+BROWSER_TOOLS = ("browser_open", "browser_read", "browser_click", "browser_type", "browser_back")
+
+
+def _browser(ctx: ToolContext):  # noqa: ANN202
+    if not (ctx.allow_browser and ctx.allow_network):
+        raise PermissionError("the agent's own browser is off (it needs its switch and internet)")
+    if ctx.browser is None:
+        from datas.agents.browser import Browser
+        from datas.config import Config
+
+        ctx.browser = Browser(ctx.allow_local, forget=Config.load().memory_mode == "forget")
+    return ctx.browser
+
+
+def _browse(ctx: ToolContext, do: Callable[[Any], str]) -> str:
+    try:
+        return do(_browser(ctx))[:MAX_READ]
+    except (PermissionError, netguard.Blocked) as e:
+        return f"DENIED: {e}"
+    except Exception as e:  # noqa: BLE001
+        return f"error: {e}"
+
+
+def browser_open(ctx: ToolContext, url: str) -> str:
+    return _browse(ctx, lambda b: b.open(url))
+
+
+def browser_read(ctx: ToolContext) -> str:
+    return _browse(ctx, lambda b: b.read())
+
+
+def browser_click(ctx: ToolContext, number: int) -> str:
+    return _browse(ctx, lambda b: b.click(int(number)))
+
+
+def browser_type(ctx: ToolContext, number: int, text: str, submit: bool = False) -> str:
+    return _browse(ctx, lambda b: b.type_text(int(number), text, bool(submit)))
+
+
+def browser_back(ctx: ToolContext) -> str:
+    return _browse(ctx, lambda b: b.back())
+
+
+TOOLS.update(
+    {
+        "browser_open": (
+            browser_open,
+            _schema(
+                "browser_open",
+                "Open a web address in the agent's own browser (a separate window the "
+                "person can watch; works with sites that need JavaScript). Returns the page's text and "
+                "its links, buttons and fields, numbered.",
+                {"url": S},
+                ["url"],
+            ),
+        ),
+        "browser_read": (
+            browser_read,
+            _schema(
+                "browser_read", "Read the page that is open in the agent's browser again.", {}, []
+            ),
+        ),
+        "browser_click": (
+            browser_click,
+            _schema(
+                "browser_click",
+                "Click a numbered link or button of the page.",
+                {"number": {"type": "integer"}},
+                ["number"],
+            ),
+        ),
+        "browser_type": (
+            browser_type,
+            _schema(
+                "browser_type",
+                "Type text into a numbered field; submit=true presses Enter. Never for "
+                "passwords: the person types those in the browser window.",
+                {"number": {"type": "integer"}, "text": S, "submit": {"type": "boolean"}},
+                ["number", "text"],
+            ),
+        ),
+        "browser_back": (
+            browser_back,
+            _schema("browser_back", "Go back to the previous page.", {}, []),
+        ),
+    }
+)
+
+
 def schemas(ctx: ToolContext) -> list[dict]:
     out = []
     for name, (_, schema) in TOOLS.items():
         if name == "run_command" and not ctx.allow_shell:
             continue
         if name in ("fetch_url", "web_search") and not ctx.allow_network:
+            continue
+        if name in BROWSER_TOOLS and not (ctx.allow_browser and ctx.allow_network):
             continue
         out.append(schema)
     out += things_tools.schemas(ctx)

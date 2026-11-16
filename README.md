@@ -6,8 +6,10 @@ Datas puts an AI (Artificial Intelligence) assistant — the kind you know from 
 your own computer. It runs there, offline, for free. Nothing you type leaves your device
 unless *you* switch the internet on for a chat or choose a paid online service.
 
-> **Everything runs on your device. There is no Datas server** — no account, no statistics,
-> no tracking; nothing about you or what you write is sent to the project. Datas goes online
+> **A local app that runs 100% on your device. Datas has no server to talk to** — it is just
+> code in a public repository under an open-source licence (GPL-3.0): anyone may use and change
+> it, as long as whoever shares a changed version shares its code under the same rules, for
+> others to enjoy too. No account, no statistics, no tracking. Datas goes online
 > only to download open AI models (Hugging Face), open-source parts and updates (GitHub and
 > the projects that make them), and library documents from their publishers when you ask.
 > The AI reads the web only in a chat or agent task where **you** switch Internet on — off by

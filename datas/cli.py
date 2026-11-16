@@ -393,12 +393,20 @@ def serve(
     port: int | None = None,
     no_browser: bool = False,
     home: str | None = typer.Option(None, help="keep Datas' data in this folder (DATAS_HOME)"),
+    wait_free: bool = typer.Option(
+        False, help="first wait up to 20 s for a closing Datas to let go of the port"
+    ),
 ):
     """Start the web UI + API (default: http://127.0.0.1:8420)."""
     import os
+    import time
 
     if home:  # the background service of a copy that keeps its data in a folder of its own
         os.environ["DATAS_HOME"] = home
+    if wait_free:  # taking over from the window that is closing (datas/service.py)
+        deadline = time.time() + 20
+        while time.time() < deadline and _datas_is_open(port):
+            time.sleep(0.5)
     if _datas_is_open(port):
         # already running (the window, or the service started twice): nothing to do, and a
         # clean exit, so the system does not keep starting it again

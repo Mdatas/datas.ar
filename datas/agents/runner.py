@@ -50,6 +50,7 @@ class AgentConfig:
     allow_things: bool = False  # cameras, printers, boards, home and industrial devices
     allow_control: bool = False  # the mouse and keyboard (experimental)
     allow_setup: bool = False  # "configure my PC": apps, settings pages, a few settings
+    allow_browser: bool = False  # its own browser window (datas/agents/browser.py); needs network
     sign_in_wait: Callable[[str], bool] | None = None  # waits while the person signs in
     vision: bool = False  # the AI understands pictures: photos and screen pictures are shown to it
 
@@ -57,6 +58,16 @@ class AgentConfig:
 def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
     """Yield events: {'type': 'assistant'|'tool_call'|'tool_result'|'picture'|'final'|'error',
     ...}. A 'picture' is a photo or a picture of the screen a tool took, as a data: address."""
+    held: dict = {}
+    try:
+        yield from _run_agent(task, cfg, held)
+    finally:  # the agent's own browser closes with its task
+        b = getattr(held.get("ctx"), "browser", None)
+        if b is not None:
+            b.close()
+
+
+def _run_agent(task: str, cfg: AgentConfig, held: dict) -> Iterator[dict]:
     ctx = T.ToolContext(
         workspace=cfg.workspace,
         roots=[Path(r) for r in cfg.roots],
@@ -72,7 +83,9 @@ def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
         vision=cfg.vision,
         allow_setup=cfg.allow_setup,
         sign_in_wait=cfg.sign_in_wait or cfg.confirm,
+        allow_browser=cfg.allow_browser,
     )
+    held["ctx"] = ctx
     cfg.workspace.mkdir(parents=True, exist_ok=True)
     session = None
     if cfg.use_programs:

@@ -2330,6 +2330,7 @@ class AgentBody(BaseModel):
     devices: bool = False  # may use cameras, printers, boards, home and industrial devices
     control: bool = False  # may use the mouse and keyboard (experimental; needs devices)
     setup: bool = False  # "configure my PC": open apps and settings, change a few settings
+    browser: bool = False  # its own browser window (needs internet)
 
 
 @app.post("/api/agent/run")
@@ -2337,7 +2338,9 @@ def agent_run(body: AgentBody, request: Request):
     from datas.agents import AgentConfig, run_agent
     from datas.agents.folders import resolve_grant
 
-    if remote_peer(request) and (body.allow_shell or body.devices or body.control or body.setup):
+    if remote_peer(request) and (
+        body.allow_shell or body.devices or body.control or body.setup or body.browser
+    ):
         raise HTTPException(
             403,
             "From a linked device the agent cannot run commands or use the computer's devices. "
@@ -2366,6 +2369,7 @@ def agent_run(body: AgentBody, request: Request):
         vision=core.ai_sees(),
         allow_setup=body.setup,
         sign_in_wait=core.ask_user,
+        allow_browser=body.browser and body.internet,
     )
 
     def gen():

@@ -283,6 +283,13 @@ def open_window(
 
         def on_closed():
             if started_here and path == "/" and state["ok"]:
+                try:  # scheduled tasks go on in a background Datas (if that is switched on)
+                    from datas import service, updates
+
+                    if not updates.ready():  # a waiting update installs now instead
+                        _log(f"background takes over: {service.continue_in_background()}")
+                except Exception as e:  # noqa: BLE001
+                    _log(f"background not started: {e}")
                 try:
                     httpx.post(f"http://127.0.0.1:{port}/api/shutdown", timeout=5, trust_env=False)
                 except httpx.HTTPError:

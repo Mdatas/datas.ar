@@ -425,3 +425,41 @@ def remove(run=subprocess.run, stop: bool = True) -> dict:  # noqa: ANN001
 def status(run=subprocess.run) -> dict:  # noqa: ANN001
     """{"installed", "running", "at_boot", "file"}"""
     return _pick("status")(run=run)
+
+
+def has_tasks() -> bool:
+    """Scheduled agent tasks that are switched on — the reason to keep running unseen."""
+    try:
+        import json
+
+        from datas.agents.schedule import tasks_file
+
+        data = json.loads(tasks_file().read_text("utf-8"))
+        items = data.get("tasks", data) if isinstance(data, dict) else data
+        return any(isinstance(t, dict) and t.get("enabled", True) for t in items)
+    except (OSError, ValueError):
+        return False
+
+
+def continue_in_background() -> bool:
+    """The window is closing and the scheduled tasks must go on: start the background Datas
+    now (not only at the next login). It waits for this one to let go of the port. Only when
+    "Start Datas with the computer" is on and there are tasks; returns whether it started."""
+    try:
+        if not status().get("installed") or not has_tasks():
+            return False
+    except Exception:  # noqa: BLE001 - not supported here
+        return False
+    cmd = [*command(), "--wait-free"]
+    if platform.system() == "Windows":
+        subprocess.Popen(cmd, creationflags=0x00000008 | 0x00000200 | 0x08000000, close_fds=True)
+    else:
+        subprocess.Popen(
+            cmd,
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+    return True

@@ -22,6 +22,7 @@
     <div class="row" style="margin-top:10px">
       <label class="switch on" id="netSw"><i></i><span id="t_net">May search and read the internet</span></label>
       <label class="switch" id="devSw"><i></i><span id="t_dev">May use my camera, screen, printer and other hardware</span></label>
+      <label class="switch" id="brSw"><i></i><span id="t_br">May use its own browser window (needs internet; you can watch it and type passwords there yourself)</span></label>
       <label class="switch" id="setupSw"><i></i><span id="t_setup">May configure this computer: open my apps and settings, change everyday settings (asks first)</span></label>
       <label class="switch danger" id="ctlSw"><i></i><span id="t_ctl">May use the mouse and keyboard (experimental — risky)</span></label>
       <label class="switch danger" id="shellSw"><i></i><span id="t_shell">May run commands on this computer (advanced — risky)</span></label>
@@ -46,6 +47,7 @@
       <input type="time" id="tAt" value="09:00">
       <button class="primary small" id="tAdd"><span id="t_add">Add</span></button>
     </div>
+    <p class="fine" id="bgNote"></p>
     <p class="fine" id="t_sched_f">The new task uses the folders and switches ticked above. It runs by itself, so it does not stop to ask before each step: those folders and switches are its limits. A task that runs by itself never uses the mouse or keyboard.</p>
   </div>
   <div class="card"><b id="t_inbox">Inbox — what it did</b><div id="inbox"></div></div>

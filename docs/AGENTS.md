@@ -42,7 +42,8 @@ that a tool took: the window shows it, and an AI that understands pictures recei
 | `open_path(target, program?)` | open a file, folder or web address with your usual program, or with a chosen one | asks; web addresses need internet on |
 | `web_search(query)` | DuckDuckGo results: title, link, snippet | internet switch |
 | `fetch_url(url)` | read a page; HTML reduced to text (200k at most); addresses inside your own network are refused | internet switch |
-| `run_command(command)` | a command in the agent's folder, 60 s at most | **off by default**; switch in the window / `--allow-shell` |
+| `run_command(command, timeout)` | the agent's own terminal: a real shell (PowerShell on Windows, bash elsewhere) with pipes, redirection and variables; starts in the agent's folder and remembers `cd`; 60 s unless the AI asks for more (900 at most) | **off by default**; switch in the window / `--allow-shell`; asks before each command |
+| `browser_open(url)`, `browser_read()`, `browser_click(n)`, `browser_type(n, text, submit)`, `browser_back()` | the agent's own browser window (below): pages that need JavaScript, forms, clicking through | its own switch **and** internet; clicking and typing ask; never types into a password field |
 | `connection__function(…)` | functions offered by programs that speak the Model Context Protocol (MCP), such as the ArtCraft apps | always asks; see [PROGRAMS.md](PROGRAMS.md) |
 | `list_devices()`, `network_devices()` | what is plugged into this computer; what announces itself on the network | hardware switch |
 | `take_photo()`, `look_at_screen()` | one picture from a camera / of the screen, saved in the agent's folder and shown to an AI that understands pictures | hardware switch; asks |
@@ -114,10 +115,11 @@ WhatsApp so I can sign in*, *dark mode and show file endings*, *open the printer
 A background thread in the server checks every 30 s and runs due tasks one at a time through the
 same runner; a task missed while the computer was off runs at the next start. Each run writes
 `<data>/agent/results/<task>-<time>.md` (summary + the list of tool calls), shown in the window's
-inbox. They run while Datas is running: with its window open, or — on Linux — as a background
-service that starts with the computer (`datas-cli service install`,
-[SMALL_COMPUTERS.md](SMALL_COMPUTERS.md)). On Windows and macOS the window has to stay open
-for now.
+inbox. They run while Datas is running: with its window open, or — with *Start Datas with the
+computer* on (Settings, or the button in the agent window) — in the background on Windows, macOS
+and Linux. Closing the window then hands the tasks to a background Datas at once
+(`service.continue_in_background`, `datas-cli serve --wait-free`), not only at the next login.
+From the command line: `datas-cli service install` ([SMALL_COMPUTERS.md](SMALL_COMPUTERS.md)).
 
 ### What "do tasks on my computer by itself" means today
 
@@ -169,15 +171,23 @@ Still to come:
 - For the mouse and keyboard: limiting it to one chosen window, a dry-run mode that only says
   what it would do, and a visible marker where it is about to click.
 
-### Planned: the agent's own browser
+### The agent's own browser
 
-For sites that need JavaScript, forms or a login, the plan is a browser that belongs to the
-agent — Playwright's bundled **Firefox** (Mozilla's open-source build, downloaded on first use,
-~90 MB), isolated profile, no sign-ins, no telemetry, tracker blocking and fingerprint
-resistance on, wiped per session in Forget mode; optional Tor routing with the warning that it
-is slower and some sites refuse it. Off by default behind one switch. The user's own browser is
-never driven. Without Tor a website still sees the home IP address, exactly as when the user
-browses — no add-on changes that.
+`datas/agents/browser.py`. For sites that need JavaScript, forms or clicking through, the agent
+opens **a separate browser window of its own**: a copy of Edge, Chrome, Chromium or Brave found
+on the computer (nothing is downloaded), started with its own empty profile in
+`<data>/agent/browser` — never the person's browser, sign-ins, cookies or history. It is driven
+through the browser's built-in debugging interface (Chrome DevTools Protocol) over a local
+connection.
+
+- **Visible.** The window is on screen: the person watches every step and can take over.
+- **Passwords are typed by the person**, in that window; the agent refuses to type into a
+  password field.
+- **Pages are text plus numbered elements** — `[3] button: Send` — so even small AIs can act.
+- **Internet must be on**, and the browser switch too. Addresses inside the person's own network
+  are refused (also after a click leads there) unless allowed in Settings.
+- **Clicking and typing ask first** under the default approval level; reading does not.
+- The window closes with the task; in Forget mode its profile is wiped.
 
 ### Which models can do this
 
@@ -248,9 +258,9 @@ The full picture, including what Datas does *not* protect against: [SECURITY.md]
 - [x] Hardware: camera, screen, printer, boards on serial ports, MQTT, Home Assistant,
       Modbus, devices on the network ([HARDWARE.md](HARDWARE.md)).
 - [x] "Look at my screen and help" (chat); mouse and keyboard, experimental (agent).
-- [ ] The agent's own browser (above).
+- [x] The agent's own browser (above), and its own terminal: a real shell that remembers `cd`.
 - [ ] The system's automation hooks; one-window limit and dry run for the mouse and keyboard.
 - [ ] Per-tool allowlists in the settings (for example commands allowed only for `git` and
       `pytest`), and a kept record of every tool call.
-- [x] Running scheduled tasks with the window closed — on Linux, with the background
-      service. Not yet on Windows and macOS.
+- [x] Running scheduled tasks with the window closed — Windows, macOS and Linux, with the
+      background service; closing the window hands over at once.
