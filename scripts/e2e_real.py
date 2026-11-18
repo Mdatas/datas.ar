@@ -373,22 +373,24 @@ def agent_tasks(c: httpx.Client, model: str, quant: str) -> None:
         t = time.time()
         calls, final, errors = [], "", []
         try:
+            # the way people use it: the chat, with "work with files" on
+            body = {
+                "messages": [{"role": "user", "content": task}],
+                "hands": {"files": True, "ask": "none"},
+            }
             with c.stream(
-                "POST",
-                "/api/agent/run",
-                json={"task": task, "ask": "none"},
-                timeout=httpx.Timeout(900, connect=30),
+                "POST", "/api/chat", json=body, timeout=httpx.Timeout(900, connect=30)
             ) as r:
                 for line in r.iter_lines():
                     if not line.startswith("data: "):
                         continue
                     ev = json.loads(line[6:])
-                    if ev.get("type") == "tool_call":
-                        calls.append(ev.get("name") or ev.get("tool") or "?")
-                    elif ev.get("type") == "final":
-                        final = ev.get("content") or ""
+                    if ev.get("type") == "step" and ev.get("kind") == "tool_call":
+                        calls.append(ev.get("name") or "?")
+                    elif ev.get("type") == "token":
+                        final += ev.get("text") or ""
                     elif ev.get("type") == "error":
-                        errors.append(str(ev.get("error"))[:200])
+                        errors.append(str(ev.get("message"))[:200])
         except httpx.HTTPError as e:
             errors.append(f"{type(e).__name__}: {e}")
         ok = bool(check(ws))
