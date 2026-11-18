@@ -340,9 +340,9 @@ AGENT_TASKS = [
     (
         "read and summarise",
         "Read notes/greeting.txt and write what it says into a new file summary.txt.",
-        lambda ws: (
-            (ws / "summary.txt").is_file()
-            and "datas" in (ws / "summary.txt").read_text("utf-8", "replace").lower()
+        # next to the file it read, or in the main folder: both are fair readings of the task
+        lambda ws: any(
+            "datas" in f.read_text("utf-8", "replace").lower() for f in ws.rglob("summary.txt")
         ),
     ),
 ]
