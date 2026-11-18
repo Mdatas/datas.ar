@@ -10,7 +10,7 @@
 | **Arch Linux, Manjaro, EndeavourOS** (64-bit Intel/AMD) | `datas-bin-{version}-1-x86_64.pkg.tar.zst` | `sudo pacman -U datas-bin-{version}-1-x86_64.pkg.tar.zst` |
 | **Any other Linux** (64-bit Intel/AMD) | `datas-{version}-linux-x64.tar.gz` | Unpack it and run `Datas/Datas`. |
 | **Any other ARM Linux** (64-bit ARM) | `datas-{version}-linux-arm64.tar.gz` | Unpack it and run `Datas/datas-cli serve`. |
-| **iPhone or iPad** | — (no file) | Apple only allows apps signed with an Apple account; see `ios/README.md`. |
+| **iPhone or iPad** | — (no file) | Apple only allows apps signed with a paid Apple developer account. |
 
 Each file has a `.sha256` file next to it with its checksum, and a public record of where it
 was built (`gh attestation verify <file> --repo Mdatas/datas.ar`). You do not need either to

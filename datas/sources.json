@@ -575,23 +575,6 @@
       "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
-      "name": "SwiftUI, Network.framework, CryptoKit, WebKit",
-      "role": "Apple's own frameworks the iPhone app is built on: screens, the encrypted link, the window that shows a computer's Datas.",
-      "by": "Apple",
-      "license": "Apple SDK terms (part of iOS)",
-      "url": "https://developer.apple.com/documentation/",
-      "group": "phones"
-    },
-    {
-      "name": "XcodeGen",
-      "role": "Generates the Xcode project of the iPhone app from a short text file.",
-      "by": "Yonas Kolb and contributors",
-      "license": "MIT",
-      "url": "https://github.com/yonaskolb/XcodeGen",
-      "group": "phones",
-      "license_url": "https://spdx.org/licenses/MIT.html"
-    },
-    {
       "name": "Hatchling",
       "role": "Builds the Python package.",
       "by": "The Hatch project (PyPA)",

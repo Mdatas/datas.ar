@@ -220,4 +220,3 @@ class Config:
         # private: it holds API keys (no effect on Windows). Several parts of Datas save the
         # settings, sometimes at the same moment: write_text_safely keeps them apart.
         return write_text_safely(p, json.dumps(asdict(self), indent=2), private=True, backup=True)
-

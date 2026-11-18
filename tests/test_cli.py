@@ -130,7 +130,6 @@ def test_every_file_that_states_the_version_states_the_same_one():
         "installer/linux/arch/PKGBUILD": r"(?m)^pkgver=(\S+)",
         "installer/windows/datas.iss": r'#define AppVersion "(.+?)"',
         "android/app/build.gradle.kts": r'versionName = "(.+?)"',
-        "ios/App/project.yml": r'MARKETING_VERSION: "(.+?)"',
     }
     found = {}
     for name, pattern in places.items():

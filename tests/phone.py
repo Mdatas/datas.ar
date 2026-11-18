@@ -1,6 +1,6 @@
 """A phone, as far as the link is concerned — written out in plain Python.
 
-This is the reference for the Android (Java) and iPhone (Swift) clients: the same messages,
+This is the reference for the Android (Java) client: the same messages,
 in the same order. See the top of datas/link/__init__.py for why it is safe.
 """
 

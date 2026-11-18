@@ -194,7 +194,7 @@ def java(tmp_path_factory):
 
 
 def a_phone_program_links_and_is_treated_like_a_phone(a, phone_app) -> None:
-    """The same walk for every phone app's link code (Java for Android, Swift for iPhone),
+    """The same walk for every phone app's link code (Java for Android),
     through its small command-line program, against a real running Datas ``a``."""
     code = a.http.post("/api/link/pairing").json()["pairing"]["code"]
     wrong = phone_app("pair", "127.0.0.1", str(a.link), "AAAA-BBBB-CCCC", "Test phone")
@@ -244,34 +244,3 @@ def a_phone_program_links_and_is_treated_like_a_phone(a, phone_app) -> None:
 
 def test_the_android_link_code_talks_to_a_real_datas(computer, java):
     a_phone_program_links_and_is_treated_like_a_phone(computer, java)
-
-
-# ---- the iPhone app's own link code (Swift), against a real Datas ------------------------
-
-
-@pytest.fixture(scope="module")
-def swift():
-    """The command-line program around the iPhone's link library (ios/DatasLink). It uses
-    Apple's own network and security libraries, so it is built and run on a Mac only."""
-    import sys
-
-    if sys.platform != "darwin" or not shutil.which("swift"):
-        pytest.skip("the iPhone link code is built on a Mac with Xcode")
-    package = ROOT / "ios" / "DatasLink"
-    build = ["swift", "build", "-c", "release", "--package-path", str(package)]
-    r = subprocess.run(
-        [*build, "--product", "datas-link"], capture_output=True, text=True, timeout=1200
-    )
-    assert r.returncode == 0, r.stdout[-4000:] + r.stderr[-4000:]
-    where = subprocess.run([*build, "--show-bin-path"], capture_output=True, text=True, timeout=300)
-    program = Path(where.stdout.strip()) / "datas-link"
-    assert program.is_file(), where.stdout + where.stderr
-
-    def run(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run([str(program), *args], capture_output=True, text=True, timeout=180)
-
-    return run
-
-
-def test_the_iphone_link_code_talks_to_a_real_datas(computer, swift):
-    a_phone_program_links_and_is_treated_like_a_phone(computer, swift)

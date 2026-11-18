@@ -65,7 +65,7 @@ device can and cannot do, and the choices are yours.
 
 Link the computers you own with a one-time code. They can then keep the same chats, and a
 small one can use the AI running on a strong one — only the words travel, so it is as quick
-as the strong one. A phone (Android, iPhone) links the same way and shows the
+as the strong one. An Android phone links the same way and shows the
 computer's Datas, so a small phone uses the big AI at home; a computer can show the Datas of
 another one of yours too — handy for one without a screen. The link is encrypted with the
 web's standard (TLS 1.3) and only devices you paired can connect — no account, no server in
@@ -125,7 +125,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 | **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
 | **Android** | `Datas-<version>-android.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
-| **iPhone, iPad** (iOS 15+) | No file to download: Apple only allows apps signed with an Apple account. The app in [`ios/`](ios/README.md) links to your computers and uses their Datas; with a Mac and your own Apple ID you can put it on your phone. |
+| **iPhone, iPad** | Not available: Apple only allows apps signed with a paid Apple developer account, and the project has none. The iPhone app (it linked to your computers and used their Datas) was removed in 0.9; its code is in the project history (version 0.8.1) and comes back with an account. |
 | **Anything with Python 3.10+** | `pip install datas-ar && datas` |
 
 Needs a 64-bit computer (or an arm64 phone). No account. The first start downloads the AI
@@ -141,11 +141,9 @@ running with no window after you log in (scheduled tasks, phones and other devic
 - **The installers carry no paid certificate.** Windows and macOS show a warning on first
   start. Every release file does have a checksum and a signed record of where it was built;
   what the paid certificates need is in [docs/SIGNING.md](docs/SIGNING.md).
-- **Phones have not been tried on a physical phone by the project.** The Android app is
-  built on every change and its link code is tested against a real Datas; the iPhone app is
-  built and tested in Apple's iPhone simulator against a real Datas. Reaching a real iPhone
-  needs an Apple account ([docs/MOBILE.md](docs/MOBILE.md)). Neither phone runs voice
-  through a linked computer yet, and the iPhone runs no AI of its own.
+- **The phone app has not been tried on a physical phone by the project.** The Android app
+  is built on every change and its link code is tested against a real Datas. It does not
+  run voice through a linked computer yet. There is no iPhone app ([docs/MOBILE.md](docs/MOBILE.md)).
 - **Linked devices make a bigger AI fit, not a faster one** — except long documents, whose
   parts can be shared out between your devices. Sharing out several chats or agent tasks at
   once is not there yet.

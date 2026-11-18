@@ -31,8 +31,8 @@ From the command line: `datas-cli link status | code | pair <address> <code> | u
 
 ## Phones and tablets
 
-The Datas app for Android has a card called **My computers**; the app for iPhone and iPad
-does the same and nothing else (see [MOBILE.md](MOBILE.md)).
+The Datas app for Android has a card called **My computers** (see [MOBILE.md](MOBILE.md)).
+There is no iPhone app.
 
 1. On the computer: *Devices → Show a code*.
 2. On the phone: *My computers → Link a computer*. Computers on the same Wi-Fi are listed;
@@ -128,8 +128,7 @@ secret in the app's private storage.
 ## Limits, stated plainly
 
 - **Phones are a window, not a full member yet.** A linked phone shows and uses a computer's
-  Datas; it does not share the chats of its own small AI. Android 10 or
-  newer; iPhone and iPad with iOS 15 or newer.
+  Datas; it does not share the chats of its own small AI. Android 10 or newer.
 - **One answer cannot be split and written in parallel — a long document can.** *Tools →
   Long documents → Share the work with my linked devices* gives each part to whichever
   device is free: this one and every linked computer that has an AI of its own ready. It
@@ -170,10 +169,8 @@ Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_
   only ask for `info` and `window`. The service learns which of its connections come from a
   phone (`core.remote_clients`) and applies `remote_refusal()` in `datas/server/app.py`.
 - The phone's side: [`android/…/ar/datas/link/LinkClient.java`](../android/app/src/main/java/ar/datas/link/LinkClient.java)
-  (plain Java, standard library only), [`ios/DatasLink`](../ios/DatasLink) (Swift, Apple's
-  own libraries) and the same in Python, [`tests/phone.py`](../tests/phone.py).
-  `tests/test_phone_link.py` compiles the Java (and, on a Mac, the Swift) and runs it against
-  a real Datas.
+  (plain Java, standard library only) and the same in Python, [`tests/phone.py`](../tests/phone.py).
+  `tests/test_phone_link.py` compiles the Java and runs it against a real Datas.
 - A computer showing another's Datas: `LinkManager.open_window()` makes a door on
   `127.0.0.1` whose connections are each joined to a `window` request on the link
   (`tests/test_link.py` runs it between two real Datas).

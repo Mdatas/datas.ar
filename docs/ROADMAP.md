@@ -110,7 +110,7 @@ Status:
 - [x] **FFmpeg fetched once and checked** (fixed commit, size, SHA-256) when the computer has none — this also makes *Recording to text* read MP3, M4A and video in the installed app
 - [x] **Backend messages in Spanish**: hardware problems and refusals are said in the language Datas is set to (`datas/words.py`)
 - [x] A linked phone cannot give a scheduled task commands or hardware, nor change a task that has them
-- [x] **iPhone and iPad app** (`ios/`): link with the one-time code and use a computer's Datas; built for iPhone and tested in Apple's simulator against a real Datas on every change (`ios` workflow); the link code has the same known answers as the computer's — docs/MOBILE.md
+- [x] ~~**iPhone and iPad app**~~ (removed in 0.9 until there is an Apple developer account): link with the one-time code and use a computer's Datas; built for iPhone and tested in Apple's simulator against a real Datas on every change (`ios` workflow); the link code has the same known answers as the computer's — docs/MOBILE.md
 - [x] **Small computers without a screen**: packages for 64-bit ARM Linux (Raspberry Pi, NAS, ARM servers), `datas-cli service install` (starts with the computer, no window) — docs/SMALL_COMPUTERS.md
 - [x] **Open the Datas of another computer of yours** through the link, once that computer allows it; held to a phone's limits — docs/DEVICES.md
 - [x] **Long documents shared out between linked devices**: each takes the next part as soon as it is free; one that drops out gives its part back — docs/DEVICES.md
@@ -127,8 +127,8 @@ Status:
 - [~] Android app (WebView + foreground service + bundled engine) — code in `android/`, APK built by CI
 - [x] Android: linking with computers (*My computers*)
 - [ ] Android: the Datas window for the phone's own AI too; voice from the phone in a linked computer's Datas; saving files to the phone; file picker for model files, pictures, Snapdragon flavour
-- [x] iPhone companion app (link to your computers) — `ios/`, tested in the simulator
-- [ ] Both phone apps tried on physical phones; the iPhone app signed with an Apple Developer account (TestFlight / App Store)
+- [ ] iPhone app — needs an Apple developer account (the earlier one is in version 0.8.1)
+- [ ] The Android app tried on physical phones
 - [ ] Linking devices in different places: a setup helper for WireGuard / Tailscale
 - [~] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split) — done for long documents (each device takes parts); not yet for several chats or agent tasks
 - [ ] iOS app on the llama.cpp xcframework — needs an Apple Developer account (US$99/yr); iOS cannot run a downloaded engine binary like Android does

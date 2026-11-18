@@ -91,8 +91,10 @@ Publishing on Google Play additionally needs a Play Console account (US$25 once)
 
 ## 5. iPhone
 
-Any app on a real iPhone must be signed with an Apple Developer account (the same one as in
-section 3) and distributed through TestFlight or the App Store. See [MOBILE.md](MOBILE.md).
+There is no iPhone app: any app on a real iPhone must be signed with an Apple Developer
+account (the same one as in section 3) and distributed through TestFlight or the App Store.
+The project has no such account, so the iPhone app was removed in 0.9; its code is in the
+project history (version 0.8.1).
 
 ## 6. The catalog and the AI files
 
