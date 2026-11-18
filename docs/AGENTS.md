@@ -16,7 +16,7 @@ datas agent --devices --control "…"                                         # 
 ```
 
 `datas/agents/runner.py` is a plain tool-calling loop over the active provider's
-`/v1/chat/completions` (local model, pool, or API key — identical code):
+`/v1/chat/completions` (local model, another of your devices, or API key — identical code):
 
 1. system prompt + task → model
 2. if the reply contains `tool_calls`, run each tool, append results, go to 1

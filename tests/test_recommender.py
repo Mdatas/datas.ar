@@ -7,7 +7,6 @@ from datas.recommend.engine import (
     evaluate,
     llama_server_args,
     memory_need,
-    pool_budget,
     recommend,
 )
 
@@ -94,15 +93,6 @@ def test_does_not_fit_has_fallbacks(vm8):
 def test_comfortable_margin_rule():
     assert comfortable_margin(4 * GiB) == 512 * 2**20
     assert comfortable_margin(64 * GiB) == int(6.4 * GiB)
-
-
-def test_pool_budget_sums_memory(vm8):
-    b = budget_for(vm8)
-    p = pool_budget([b, b, b])
-    assert p.ram_budget == 3 * b.ram_budget and p.nodes == 3
-    r = recommend(vm8, budget=p, pool=True)
-    assert r.default.placement == "pool"
-    assert r.default.need.total > b.ram_budget  # pooling unlocked a bigger model
 
 
 def test_llama_args_carry_headroom(vm8):

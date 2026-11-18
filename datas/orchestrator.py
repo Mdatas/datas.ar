@@ -24,7 +24,6 @@ from datas.config import Config, home, models_dir
 from datas.engines import images as image_engine
 from datas.engines import voice as voice_engine
 from datas.hardware.detect import DeviceSpec, detect
-from datas.pool.discovery import Node, parse_manual
 from datas.recommend.engine import (
     Budget,
     Candidate,
@@ -32,7 +31,6 @@ from datas.recommend.engine import (
     budget_for,
     evaluate,
     llama_server_args,
-    pool_budget,
     recommend,
 )
 from datas.runtime import downloader, gguf_meta, llamacpp
@@ -114,7 +112,6 @@ class Datas:
         self.agent_stop = threading.Event()
         self._spec: DeviceSpec | None = None
         self._spec_at = 0.0
-        self._pool_nodes: list[Node] = []
         self.http_port = self.cfg.ui_port  # where the local API listens (set by the server)
         # connections to the local service that come from a linked phone through the encrypted
         # link: (address, port) as the service sees them -> the phone's id (datas/link)
@@ -157,30 +154,9 @@ class Datas:
         kv_bits: int = 16,
         want: list[str] | None = None,
         role: str = "general",
-        pool_nodes: list[Node] | None = None,
     ) -> Recommendation:
         ctx = context or self.cfg.context
         hr = headroom if headroom is not None else self.cfg.headroom
-        if pool_nodes:
-            local = budget_for(self.spec(), hr, self.cfg.headroom_min_gib)
-            remote = [
-                Budget(
-                    ram_total=n.ram_budget,
-                    ram_budget=n.ram_budget,
-                    ram_headroom=0,
-                    vram_total=n.vram_budget,
-                    vram_budget=n.vram_budget,
-                    unified=False,
-                    backend=n.backend or "cpu",
-                    disk_free=0,
-                    threads=1,
-                )
-                for n in pool_nodes
-            ]
-            b = pool_budget([local, *remote])
-            return recommend(
-                self.spec(), budget=b, context=ctx, kv_bits=kv_bits, want=want, role=role, pool=True
-            )
         return recommend(
             self.spec(),
             headroom=hr,
@@ -197,12 +173,11 @@ class Datas:
         quant: str | None = None,
         context: int | None = None,
         kv_bits: int = 16,
-        pool_nodes: list[Node] | None = None,
     ) -> tuple[CatalogModel, ModelFile, Candidate]:
         m = self.catalog.get(model_id)
         f = m.file(quant) if quant else m.smallest()
-        rec = self.recommendation(context=context, kv_bits=kv_bits, pool_nodes=pool_nodes)
-        c = evaluate(m, f, rec.budget, context or self.cfg.context, kv_bits, pool=bool(pool_nodes))
+        rec = self.recommendation(context=context, kv_bits=kv_bits)
+        c = evaluate(m, f, rec.budget, context or self.cfg.context, kv_bits)
         return m, f, c
 
     # ---- jobs --------------------------------------------------------------
@@ -297,10 +272,10 @@ class Datas:
         if facts.context_train and ctx > facts.context_train:
             notes.append(f"Context capped at the model's trained length ({facts.context_train}).")
             ctx = facts.context_train
-        new = evaluate(m2, f, budget, ctx, c.need.kv_bits, pool=(c.placement == "pool"))
+        new = evaluate(m2, f, budget, ctx, c.need.kv_bits)
         while not new.fits and ctx > 2048:
             ctx //= 2
-            new = evaluate(m2, f, budget, ctx, c.need.kv_bits, pool=(c.placement == "pool"))
+            new = evaluate(m2, f, budget, ctx, c.need.kv_bits)
         if ctx != c.need.context:
             notes.append(f"Context reduced to {ctx} so the exact KV cache fits the budget.")
         if new.need.kv_cache != c.need.kv_cache:
@@ -316,7 +291,6 @@ class Datas:
         quant: str,
         context: int | None = None,
         kv_bits: int = 16,
-        pool_nodes: list[Node] | None = None,
         job: Job | None = None,
         exact_layers: bool = False,
         with_vision: bool = False,
@@ -327,10 +301,8 @@ class Datas:
         path = self.ensure_model(model_id, quant, job, with_vision=with_vision)
         if with_voice:
             self.ensure_voice(job)
-        m, f, c = self.candidate(model_id, quant, context, kv_bits, pool_nodes)
-        rec_budget = self.recommendation(
-            context=context, kv_bits=kv_bits, pool_nodes=pool_nodes
-        ).budget
+        m, f, c = self.candidate(model_id, quant, context, kv_bits)
+        rec_budget = self.recommendation(context=context, kv_bits=kv_bits).budget
         c, notes = self.refine(c, path, rec_budget)
         for n in notes:
             say(n)
@@ -339,14 +311,6 @@ class Datas:
                 "Warning: this model does not fit the budget; starting anyway because you asked. "
                 "llama-server --fit will shrink what it can; expect swapping or a failed load."
             )
-        rpc = [n.endpoint for n in pool_nodes] if pool_nodes else None
-        if pool_nodes:
-            for n in pool_nodes:
-                if n.tag and n.tag != self.cfg.llamacpp_tag:
-                    say(
-                        f"Warning: worker {n.host} runs llama.cpp {n.tag}, this node runs {self.cfg.llamacpp_tag}. "
-                        "RPC needs identical builds — run `datas runtime pin` on both."
-                    )
         mmproj = None
         if with_vision and "mmproj" in m.extras:
             mp = downloader.local_path(m, m.extras["mmproj"].path)
@@ -356,16 +320,15 @@ class Datas:
             rec_budget,
             str(path),
             self.cfg.llama_port,
-            rpc=rpc,
             mmproj_path=mmproj,
             exact_layers=exact_layers,
         )
         if job:
             job.phase = "starting"
         say("Starting llama-server: " + " ".join(args))
-        state = self.server.start(args, str(path), model_id, quant, rpc=rpc)
+        state = self.server.start(args, str(path), model_id, quant)
         self.cfg.model_id, self.cfg.quant = model_id, quant
-        self.cfg.provider = "pool" if rpc else "local"
+        self.cfg.provider = "local"
         if model_id != STARTER_ID or not self.starter_active:
             self.cfg.last_run = {
                 "model_id": model_id,
@@ -373,7 +336,6 @@ class Datas:
                 "context": c.need.context,
                 "kv_bits": kv_bits,
                 "with_vision": bool(mmproj),
-                "pool": bool(rpc),
             }
         self.cfg.save()
         self.asleep = False
@@ -461,7 +423,7 @@ class Datas:
     def can_wake(self) -> bool:
         """True when no AI is running but we know which one to bring back and it is on disk."""
         lr = self.cfg.last_run or {}
-        if self.server.running() or self.cfg.provider not in ("local", "pool") or not lr:
+        if self.server.running() or self.cfg.provider != "local" or not lr:
             return False
         if lr.get("custom"):
             return Path(lr["custom"]).exists()
@@ -480,13 +442,11 @@ class Datas:
             if lr.get("custom"):
                 self.run_custom(lr["custom"], lr.get("context"), lr.get("kv_bits", 16))
             else:
-                nodes = self.pool_nodes(refresh=True) if lr.get("pool") else None
                 self.run(
                     lr["model_id"],
                     lr["quant"],
                     lr.get("context"),
                     lr.get("kv_bits", 16),
-                    nodes or None,
                     with_vision=bool(lr.get("with_vision")),
                 )
             self.asleep = False
@@ -535,11 +495,7 @@ class Datas:
         elif self.server.proc is not None and not self.server.running():
             # the engine process ended on its own (crash, killed by the system for memory)
             tail = self.server.log_tail(8)
-            pooled = bool(self.server.state.rpc)
             self.server._clear()  # noqa: SLF001
-            if pooled:
-                self.fallback_local()
-                return
             self.asleep = True
             self.notice = {
                 "kind": "engine_stopped",
@@ -599,13 +555,11 @@ class Datas:
         quant: str,
         context: int | None = None,
         kv_bits: int = 16,
-        pool: bool = False,
         with_vision: bool = False,
         with_voice: bool = False,
         starter: bool = True,
     ) -> Job:
         job = self._job("run", f"Run {model_id} {quant}")
-        nodes = self.pool_nodes() if pool else None
 
         def with_starter(j: Job) -> dict:
             # Nothing running and a real download ahead → bring up the small helper first, so the
@@ -619,7 +573,7 @@ class Datas:
                     j.say(
                         "Starting a small helper AI first so you can chat while the big one downloads…"
                     )
-                    self.run(STARTER_ID, STARTER_QUANT, 8192, 16, None, j)
+                    self.run(STARTER_ID, STARTER_QUANT, 8192, 16, j)
                     self.starter_active = True
                     j.phase = "model"
                     j.say("Helper ready — you can chat now. Downloading your AI…")
@@ -631,7 +585,6 @@ class Datas:
                     quant,
                     context,
                     kv_bits,
-                    nodes,
                     j,
                     with_vision=with_vision,
                     with_voice=with_voice,
@@ -648,7 +601,6 @@ class Datas:
                 quant,
                 context,
                 kv_bits,
-                nodes,
                 j,
                 with_vision=with_vision,
                 with_voice=with_voice,
@@ -702,7 +654,7 @@ class Datas:
                 self.wake()
             except Exception as e:  # noqa: BLE001
                 return "error", f"The AI could not be started for this task: {e}", ""
-        if not self.server.running() and self.cfg.provider in ("local", "pool"):
+        if not self.server.running() and self.cfg.provider == "local":
             return "error", "No AI was running when the task came due.", ""
         acfg = AgentConfig(
             base_url=f"http://127.0.0.1:{self.http_port}/v1",
@@ -924,11 +876,11 @@ class Datas:
         job = self._job("bench", "Benchmark")
         return self._run_job(job, lambda j: self.bench())
 
-    # ---- pool ---------------------------------------------------------------
+    # ---- what the AI can see; the link to the user's other devices -------------
     def ai_sees(self) -> bool:
         """Can the AI in use understand pictures? A local one says so when it starts; for an
         online service we assume yes (most do, and the service says so itself if not)."""
-        if self.cfg.provider in ("local", "pool"):
+        if self.cfg.provider == "local":
             return "--mmproj" in (self.server.state.args or [])
         return True
 
@@ -941,83 +893,12 @@ class Datas:
                 self.link = LinkManager(self)
             return self.link
 
-    def pool_nodes(self, refresh: bool = False, seconds: float = 3.0) -> list[Node]:
-        """Devices whose memory can be added to this one: the user's linked devices, reached
-        through the encrypted link. (Experts can also list raw llama.cpp workers by hand with
-        ``datas pool nodes --set`` — those connections are not encrypted by Datas.)"""
-        nodes: list[Node] = []
-        if self.link is not None or self.cfg.link_enabled:
-            try:
-                nodes = self.link_manager().pool_nodes(refresh=refresh)
-            except Exception:  # noqa: BLE001 - a link problem must not break a local run
-                nodes = []
-        manual = getattr(self.cfg, "pool_nodes", "")
-        if manual:
-            known = {n.endpoint for n in nodes}
-            nodes += [n for n in parse_manual(manual) if n.endpoint not in known]
-        self._pool_nodes = nodes
-        return self._pool_nodes
-
-    def fallback_local(self, lost: str = "") -> dict:
-        """A device this AI was spread over went away (or the link dropped): carry on with the
-        best installed AI that fits this device alone, and tell the user."""
-        from datas import library
-
-        with self._wake_lock:
-            was = self.model_name(
-                self.server.state.model_id or (self.cfg.last_run or {}).get("model_id")
-            )
-            self.server.stop()
-            rec = self.recommendation(pool_nodes=None)
-            have = {i["model_id"] for i in library.installed() if not i["custom"]}
-            pick = None
-            for c in rec.fits:
-                if c.model_id not in have or c.role != "general":
-                    continue
-                m = self.catalog.get(c.model_id)
-                if downloader.is_downloaded(m, m.file(c.quant)):
-                    pick = c
-                    break
-            if pick is None:
-                self.cfg.last_run = {}
-                self.cfg.provider = "local"
-                self.cfg.save()
-                self.notice = {
-                    "kind": "fallback_none",
-                    "lost": lost,
-                    "was": was,
-                    "text": f"{lost or 'A linked device'} went offline, and none of the AIs installed "
-                    "here fits this device alone. Open My AIs to add a lighter one.",
-                }
-                return self.notice
-            self.run(pick.model_id, pick.quant)
-            self.notice = {
-                "kind": "fallback",
-                "lost": lost,
-                "was": was,
-                "now": pick.name,
-                "text": f"{lost or 'A linked device'} went offline. The chat continues on this "
-                f"device with {pick.name}.",
-            }
-            return self.notice
-
     # ---- background helpers ---------------------------------------------------
     def _self_cmd(self) -> list[str]:
         """How to start another Datas process (frozen exe or python -m datas)."""
         if getattr(sys, "frozen", False):
             return [sys.executable]
         return [sys.executable, "-m", "datas"]
-
-    def worker_running(self) -> bool:
-        return bool(self.cfg.link_enabled and self.cfg.link_share_memory)
-
-    def set_pool_offer(self, on: bool) -> dict:
-        """Offer this device's memory to the user's linked devices (through the encrypted link;
-        the open, unencrypted worker of earlier versions is gone)."""
-        self.cfg.link_share_memory = on
-        self.cfg.pool_offer = on
-        self.cfg.save()
-        return {"offering": self.worker_running()}
 
     def open_url_window(self, url: str, title: str) -> dict:
         p = subprocess.Popen(self._self_cmd() + ["open-url", url, "--title", title])
@@ -1096,8 +977,6 @@ class Datas:
             "headroom": self.cfg.headroom,
             "context": self.cfg.context,
             "installed_models": downloader.installed_models(),
-            "pool_nodes": [n.to_dict() for n in self._pool_nodes],
-            "pool_offering": self.worker_running(),
             "privacy": {
                 "memory_mode": self.cfg.memory_mode,
                 "keep_logs": self.cfg.keep_logs,

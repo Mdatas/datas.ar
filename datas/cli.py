@@ -7,7 +7,7 @@ datas install <id>    → fetch llama.cpp + the model
 datas run [<id>]      → install if needed, then start the local server
 datas chat            → terminal chat against whatever is running / the active provider
 datas agent "<task>"  → run the built-in agent
-datas pool worker     → offer this device's memory to a pool
+datas link …          → your other devices: sync chats, use another device's AI
 datas provider …      → manage API-key providers
 datas runtime …       → pin/update llama.cpp
 datas doctor          → diagnostics
@@ -32,13 +32,11 @@ from datas.orchestrator import Datas
 app = typer.Typer(
     add_completion=False, no_args_is_help=False, help="Datas.ar — local AI for everyone."
 )
-pool_app = typer.Typer(help="Pool several devices into one model.")
 provider_app = typer.Typer(help="Remote OpenAI-compatible providers (API keys).")
 runtime_app = typer.Typer(help="llama.cpp runtime management.")
 catalog_app = typer.Typer(help="Model catalog.")
 voice_app = typer.Typer(help="Hearing (whisper.cpp) and speaking (Kokoro).")
 images_app = typer.Typer(help="Making images (stable-diffusion.cpp, Z-Image-Turbo).")
-app.add_typer(pool_app, name="pool")
 link_app = typer.Typer(help="Link your own devices (encrypted): share memory, the AI, chats.")
 app.add_typer(link_app, name="link")
 app.add_typer(voice_app, name="voice")
@@ -161,19 +159,16 @@ def recommend(
     kv: int = typer.Option(16, help="KV cache bits: 16 or 8"),
     role: str = "general",
     want: str = typer.Option("", help="comma-separated capabilities, e.g. coding,vision"),
-    pool: bool = False,
     as_json: bool = typer.Option(False, "--json"),
 ):
     """Rank catalog models against this device and show the pick."""
     core = _core()
-    nodes = core.pool_nodes(refresh=True) if pool else None
     rec = core.recommendation(
         headroom=headroom,
         context=context,
         kv_bits=kv,
         role=role,
         want=[w for w in want.split(",") if w] or None,
-        pool_nodes=nodes,
     )
     if as_json:
         con.print_json(json.dumps(rec.to_dict()))
@@ -182,7 +177,6 @@ def recommend(
     con.print(
         f"Budget: [bold]{b.total_budget / GiB:.1f} GiB[/] (RAM {b.ram_budget / GiB:.1f} + VRAM {b.vram_budget / GiB:.1f}, "
         f"keeping {b.ram_headroom / GiB:.1f} GiB free) · ctx {rec.context} · kv {rec.kv_bits}-bit · backend {b.backend}"
-        + (f" · {b.nodes} nodes" if b.nodes > 1 else "")
     )
     d = rec.default
     if not d:
@@ -284,7 +278,7 @@ def _datas_is_open(port: int | None = None) -> bool:
 
 
 def _run_in_open_datas(
-    model_id: str | None, quant: str | None, context: int | None, kv: int, pool: bool, vision: bool
+    model_id: str | None, quant: str | None, context: int | None, kv: int, vision: bool
 ) -> None:
     """Ask the Datas that is already running here to install and start an AI, and follow it."""
     if not model_id or not quant:
@@ -313,7 +307,7 @@ def _run_in_open_datas(
         "POST",
         "/api/run",
         json={"model_id": model_id, "quant": quant, "context": context, "kv_bits": kv,
-              "pool": pool, "with_vision": vision, "starter": False},
+              "with_vision": vision, "starter": False},
     )  # fmt: skip
     last = ""
     while True:
@@ -339,7 +333,6 @@ def run(
     quant: str | None = None,
     context: int | None = None,
     kv: int = 16,
-    pool: bool = False,
     vision: bool = False,
     exact_layers: bool = False,
     custom: Path | None = typer.Option(None, help="run a GGUF file you already have"),
@@ -348,7 +341,7 @@ def run(
     window, or the background service), the AI is started there; otherwise it runs here
     until Ctrl-C."""
     if not custom and _datas_is_open():
-        _run_in_open_datas(model_id, quant, context, kv, pool, vision)
+        _run_in_open_datas(model_id, quant, context, kv, vision)
         return
     core = _core()
     from datas.orchestrator import Job
@@ -369,10 +362,7 @@ def run(
             rec = core.recommendation(context=context, kv_bits=kv)
             same = [c for c in rec.fits if c.model_id == model_id]
             quant = same[0].quant if same else core.catalog.get(model_id).smallest().quant
-        nodes = core.pool_nodes(refresh=True) if pool else None
-        core.run(
-            model_id, quant, context, kv, nodes, job, exact_layers=exact_layers, with_vision=vision
-        )
+        core.run(model_id, quant, context, kv, job, exact_layers=exact_layers, with_vision=vision)
     con.print(
         f"\n[bold green]Ready.[/] OpenAI-compatible API: {core.server.base_url()}/v1   (Ctrl-C to stop)"
     )
@@ -606,66 +596,6 @@ def selftest(as_json: bool = typer.Option(False, "--json")):
 
 
 # ---------------------------------------------------------------------------
-# pool
-
-
-@pool_app.command("worker")
-def pool_worker(port: int | None = None, host: str = "127.0.0.1"):
-    """Expert use: run llama.cpp's worker by hand (for your own VPN or SSH tunnel).
-
-    Linked devices (the Devices screen, or `datas link`) do this for you over an encrypted
-    link. A worker bound to anything but 127.0.0.1 accepts unencrypted, unauthenticated
-    connections from that network.
-    """
-    from datas.pool.worker import run_worker
-
-    core = _core()
-    core.ensure_runtime()
-    if host not in ("127.0.0.1", "localhost"):
-        con.print(
-            "[yellow]Warning:[/] this worker will accept unencrypted connections from the network "
-            f"({host}). Use linked devices instead unless the network itself is private."
-        )
-    raise typer.Exit(run_worker(core.cfg, core.spec(), port, host, log=con.print))
-
-
-@pool_app.command("discover")
-def pool_discover(seconds: float = 3.0):
-    """List devices whose memory can be added to this one (linked devices that are online)."""
-    nodes = _core().pool_nodes(refresh=True, seconds=seconds)
-    if not nodes:
-        con.print("no linked device is offering memory right now (see: datas link status)")
-        return
-    t = Table(box=None)
-    for c in ("device", "local endpoint", "llama.cpp", "RAM", "VRAM", "backend"):
-        t.add_column(c)
-    for n in nodes:
-        t.add_row(
-            n.host,
-            n.endpoint,
-            n.tag or "?",
-            f"{n.ram_budget / GiB:.1f} GiB",
-            f"{n.vram_budget / GiB:.1f} GiB",
-            n.backend,
-        )
-    con.print(t)
-
-
-@pool_app.command("nodes")
-def pool_nodes(
-    set_: str | None = typer.Option(
-        None, "--set", help='workers listed by hand: host:port,host:port ("" to clear)'
-    ),
-):
-    """Show, or with --set change, the workers listed by hand (added to linked devices)."""
-    cfg = Config.load()
-    if set_ is not None and set_ != cfg.pool_nodes:
-        cfg.pool_nodes = set_
-        cfg.save()
-    con.print(f"manual workers: {cfg.pool_nodes or '(none)'}")
-
-
-# ---------------------------------------------------------------------------
 # linked devices (the app must be open: these commands talk to it)
 
 
@@ -849,7 +779,7 @@ def provider_add(
 def provider_use(name: str):
     """Make a provider the active one for the /v1 proxy, chat and agents."""
     cfg = Config.load()
-    if name not in ("local", "pool") and cfg.remote(name) is None:
+    if name != "local" and cfg.remote(name) is None:
         con.print(f"[red]unknown provider {name}[/]")
         raise typer.Exit(1)
     cfg.provider = name
@@ -882,7 +812,7 @@ def runtime_info():
 
 @runtime_app.command("pin")
 def runtime_pin(tag: str):
-    """Pin a llama.cpp build tag (e.g. b11669). All pool nodes must share one."""
+    """Pin a llama.cpp build tag (e.g. b11669)."""
     cfg = Config.load()
     cfg.llamacpp_tag = tag
     cfg.save()

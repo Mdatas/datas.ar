@@ -82,7 +82,7 @@ SCREENS.setup = async view => {
     const b = rec.budget, d = rec.default, others = rec.fits.filter(c => !d || c.model_id !== d.model_id);
     add(clear(result),
       h("p", { class: "muted", style: "margin-top:22px", text: t("device_line", { ram: gb(b.ram_total_gib), budget: gb(b.total_budget_gib) }) + " " +
-        (b.vram_total_gib > 0 ? t("device_gpu", { vram: gb(b.vram_total_gib) }) : t("device_cpu")) + (b.nodes > 1 ? " " + t("device_pool", { n: b.nodes - 1 }) : "") }),
+        (b.vram_total_gib > 0 ? t("device_gpu", { vram: gb(b.vram_total_gib) }) : t("device_cpu")) }),
       (rec.unsupported_use_cases || []).length > 0 && h("p", { class: "note", text: t("setup_unsupported", { list: rec.unsupported_use_cases.map(u => t("use_" + u)).join(", ") }) }),
       d ? h("div", { class: "hero", style: "margin-top:14px" },
         h("div", { class: "small muted", text: t("get_recommended") }),
@@ -108,14 +108,13 @@ SCREENS.setup = async view => {
       h("section", { class: "section" }, more(t("setup_advanced"),
         h("label", { class: "field" }, t("set_context"), h("span", { class: "hint", text: t("set_context_hint") }),
           h("select", { onchange: e => { ctx = +e.target.value; load(); } }, [2048, 4096, 8192, 16384, 32768].map(n => h("option", { value: n, selected: n === ctx }, t("ctx_" + n))))),
-        switchRow(t("setup_pool"), t("setup_pool_hint"), S.pool, v => { S.pool = v; load(); }),
         h("button", { class: "btn", style: "justify-self:start", onclick: ownFileDialog }, icon("folder", 18), t("lib_own_file")))));
   };
   const load = async () => {
     add(clear(result), spinner());
     try {
       lib = await Chat.library(true);
-      const q = new URLSearchParams({ use: [...uses].join(","), mode, context: String(ctx), pool: S.pool ? "1" : "0" });
+      const q = new URLSearchParams({ use: [...uses].join(","), mode, context: String(ctx) });
       let rec = await api("/api/recommend?" + q), relaxed = 0;
       for (const c of [4096, 2048]) {
         if (rec.default || ctx <= c) break;
@@ -581,13 +580,11 @@ SCREENS.devices = async view => {
             call("/api/link/peers/" + p.id, { method: "DELETE" });
           } }, t("dev_unlink"))),
         h("div", { class: "muted", text: [p.address, p.os, p.online && p.ai && p.ai.name ? t("dev_ai_there", { name: p.ai.name }) : "",
-          p.online && p.shares_memory ? t("dev_shares", { mem: gb(p.memory_gib) }) : "", p.busy ? t("dev_busy") : ""].filter(Boolean).join(", ") }),
+          p.busy ? t("dev_busy") : ""].filter(Boolean).join(", ") }),
         !p.online && p.error && h("div", { class: "small muted", text: p.error }),
-        p.online && !p.tag_matches && h("div", { class: "small", style: "color:var(--warn)", text: t("dev_tag_mismatch") }),
         switchRow(t("dev_phone_window"), t("dev_pc_window_hint"), p.window, v => call("/api/link/peers/" + p.id, { body: { window: v } })))))
         : h("p", { class: "muted", text: t("dev_no_peers") })),
       sec(t("dev_options"), null,
-        switchRow(t("dev_share"), t("dev_share_hint"), st.share_memory, v => call("/api/link/options", { body: { share_memory: v } })),
         switchRow(t("dev_sync"), t(st.forget ? "dev_sync_forget" : "dev_sync_hint"), st.sync_chats && !st.forget, v => call("/api/link/options", { body: { sync_chats: v } }), st.forget),
         h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => { st = await api("/api/link/sync", { method: "POST" }); toast(t("dev_synced")); Chat.loadList(); draw(); }) }, icon("refresh", 18), t("dev_sync_now")),
           h("span", { class: "small muted", text: st.sync_error ? st.sync_error : st.last_sync ? t("dev_last_sync", { when: when(st.last_sync) }) : "" }))));
@@ -725,7 +722,7 @@ SCREENS.settings = async view => {
   // --- paid services
   const pName = h("input", { type: "text", placeholder: t("paid_name") }), pUrl = h("input", { type: "text", placeholder: "https://…/v1" }), pKey = h("input", { type: "password", placeholder: t("paid_key"), autocomplete: "off" }), pModel = h("input", { type: "text", placeholder: t("paid_model") });
   const preset = h("select", { onchange: e => { const k = e.target.value; if (k) { pName.value = k.split(" ")[0]; pUrl.value = provs.presets[k]; } } }, h("option", { value: "" }, t("paid_preset")), Object.keys(provs.presets).map(k => h("option", { value: k }, k)));
-  const remote = provs.providers.filter(p => p.kind !== "local" && p.kind !== "pool" && p.kind !== "linked");
+  const remote = provs.providers.filter(p => p.kind !== "local" && p.kind !== "linked");
   wrap.append(sec(t("set_paid"), t("set_paid_sub"),
     remote.length ? h("div", { class: "list" }, remote.map(p => h("div", { class: "item" }, h("div", { class: "row" }, icon("globe"), h("span", { class: "name grow", text: p.name }),
       provs.active === p.name ? h("span", { class: "chip ok", text: t("ai_in_use") }) : h("button", { class: "btn small", onclick: async () => { await post("/api/providers/active", { name: p.name }); go("settings"); } }, t("paid_use")),

@@ -123,32 +123,6 @@ def test_newest_change_wins_and_deletions_stick(tmp_path, monkeypatch):
     assert not chats.apply_remote_chat({"id": "c2", "updated": now, "messages": "no"})
 
 
-def test_carrying_on_alone_when_a_linked_device_goes_away(monkeypatch):
-    from datas import library
-    from datas.orchestrator import Datas
-    from datas.runtime import downloader
-
-    core = Datas()
-    started = []
-    monkeypatch.setattr(core.server, "stop", lambda *a, **k: None)
-    monkeypatch.setattr(core, "run", lambda mid, q, *a, **k: started.append((mid, q)) or {})
-    fits = [c for c in core.recommendation().fits if c.role == "general"]
-    assert fits, "the test machine must fit at least the smallest model"
-    small = fits[-1]
-    monkeypatch.setattr(
-        library, "installed", lambda: [{"model_id": small.model_id, "custom": False}]
-    )
-    monkeypatch.setattr(
-        downloader, "is_downloaded", lambda m, f: m.id == small.model_id and f.quant == small.quant
-    )
-    n = core.fallback_local("Desk PC")
-    assert n["kind"] == "fallback" and started == [(small.model_id, small.quant)]
-    assert "Desk PC" in n["text"] and small.name in n["text"]
-    # nothing installed fits alone → a clear message, not a crash
-    monkeypatch.setattr(library, "installed", lambda: [])
-    assert core.fallback_local("Desk PC")["kind"] == "fallback_none"
-
-
 # ---- two real instances talking to each other ------------------------------------------
 
 
@@ -163,7 +137,6 @@ class Instance:
                     "ui_port": self.ui,
                     "link_port": self.link,
                     "llama_port": free_port(),
-                    "rpc_port": free_port(),
                     "memory_mode": "remember",
                     "onboarded": True,
                     "device_name": f"Device {name}",

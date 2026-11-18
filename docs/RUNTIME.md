@@ -10,7 +10,6 @@ time you install a model, and pins the build tag.
 - CPU, CUDA, ROCm, Metal, Vulkan, OpenCL (Adreno), SYCL and OpenVINO backends.
 - `llama-server`: OpenAI-compatible HTTP API, tool calling via the model's own chat
   template (`--jinja`), vision via `--mmproj`, speculative decoding, multimodal.
-- `ggml-rpc-server` + `--rpc`: distributed inference across machines.
 - `llama-bench`: real tokens/s numbers.
 - `--fit on`: the engine itself sizes the layer split to free memory, with a margin we set.
 - MIT licensed, 100k+ stars, the de-facto core of nearly every local-AI app.
@@ -48,8 +47,7 @@ Override the backend with `datas` config `backend` (`cpu`, `cuda`, `rocm`, `vulk
    the build machine used for the tests in this repo.
 
 `datas runtime update` asks the API (or the Atom feed) for the newest `bNNNN` build,
-re-pins and installs. `datas runtime pin <tag>` pins explicitly. **Pool nodes must share
-a tag** — the RPC protocol changes between builds.
+re-pins and installs. `datas runtime pin <tag>` pins explicitly.
 
 ## Layout on disk
 
@@ -59,11 +57,10 @@ a tag** — the RPC protocol changes between builds.
   b11669/
     .datas-ok                       # tag · asset · backend
     llama-b11669/                   # as extracted (flat on Linux/macOS; flat on Windows)
-      llama-server, ggml-rpc-server, llama-bench, llama-cli, lib*.so …
+      llama-server, llama-bench, llama-cli, lib*.so …
 ```
 
-`find_binary()` searches recursively, so layout changes upstream don't break us. The RPC
-worker is accepted under both names (`rpc-server`, `ggml-rpc-server`).
+`find_binary()` searches recursively, so layout changes upstream don't break us.
 
 ## Flags we pass to llama-server
 
@@ -76,7 +73,6 @@ worker is accepted under both names (`rpc-server`, `ggml-rpc-server`).
 --fit on --fit-target <ram_headroom MiB>   # engine-side fit with our margin
 -ngl auto | 0            # auto unless CPU placement
 [-ctk q8_0 -ctv q8_0]    # 8-bit KV when chosen
-[--rpc host:port,…]      # pool mode
 [--mmproj <file>]        # vision
 ```
 

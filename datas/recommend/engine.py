@@ -50,7 +50,6 @@ class Budget:
     backend: str
     disk_free: int
     threads: int
-    nodes: int = 1  # >1 in pool mode
 
     @property
     def total_budget(self) -> int:
@@ -68,7 +67,6 @@ class Budget:
             "backend": self.backend,
             "disk_free_gib": round(self.disk_free / GiB, 1),
             "threads": self.threads,
-            "nodes": self.nodes,
         }
 
 
@@ -157,25 +155,6 @@ def budget_for(
     )
 
 
-def pool_budget(budgets: list[Budget]) -> Budget:
-    """Sum per-node budgets for llama.cpp RPC mode (memory is additive, speed is not)."""
-    if not budgets:
-        raise ValueError("pool needs at least one node")
-    head = budgets[0]
-    return Budget(
-        ram_total=sum(b.ram_total for b in budgets),
-        ram_budget=sum(b.ram_budget for b in budgets),
-        ram_headroom=sum(b.ram_headroom for b in budgets),
-        vram_total=sum(b.vram_total for b in budgets),
-        vram_budget=sum(b.vram_budget for b in budgets),
-        unified=all(b.unified for b in budgets),
-        backend=head.backend,
-        disk_free=head.disk_free,  # the head node holds the file
-        threads=head.threads,
-        nodes=len(budgets),
-    )
-
-
 # ---------------------------------------------------------------------------
 # Memory model
 # ---------------------------------------------------------------------------
@@ -254,7 +233,7 @@ class Candidate:
     capabilities: list[str]
     need: MemoryNeed
     fits: bool
-    placement: str  # gpu | split | cpu | unified | pool | none
+    placement: str  # gpu | split | cpu | unified | none
     ngl: int  # layers to offload (99 = all)
     gpu_fraction: float
     speed_class: str  # fast | ok | slow | crawl
@@ -294,7 +273,6 @@ class Candidate:
             "split": "Runs partly on your graphics card (GPU) and partly in main memory (RAM).",
             "cpu": "Runs on your processor (CPU) using main memory (RAM).",
             "unified": "Runs in your device's shared memory (used by both the processor and graphics).",
-            "pool": "Runs spread across your devices on the home network.",
             "none": "Does not fit in this device's memory.",
         }[self.placement]
         return {
@@ -403,9 +381,6 @@ def _speed_class(placement: str, gpu_fraction: float, active_bytes: int, backend
         if a <= 10:
             return "slow"
         return "crawl"
-    if placement == "pool":
-        # Wi-Fi/Ethernet round trips per token: fine for small-active MoE, painful for dense
-        return "ok" if a <= 5 else ("slow" if a <= 12 else "crawl")
     return "crawl"
 
 
@@ -420,7 +395,6 @@ def evaluate(
     budget: Budget,
     context: int,
     kv_bits: int = 16,
-    pool: bool = False,
 ) -> Candidate:
     need = memory_need(model, f, context, kv_bits)
     hint, _ = kv_hint_for(model, f)
@@ -442,15 +416,7 @@ def evaluate(
         )
 
     placement, ngl, frac, fits = "none", 0, 0.0, False
-    if pool:
-        fits = need.total <= budget.total_budget
-        placement = "pool" if fits else "none"
-        ngl, frac = 99, 1.0
-        if fits:
-            reasons.append(
-                f"Fits across {budget.nodes} nodes ({budget.total_budget / GiB:.1f} GiB pooled)."
-            )
-    elif budget.unified:
+    if budget.unified:
         fits = need.total <= budget.ram_budget
         if fits:
             placement, ngl, frac = "unified", 99, 1.0
@@ -475,16 +441,16 @@ def evaluate(
             )
 
     if placement == "gpu":
-        pool_budget_bytes = budget.vram_budget
-    elif placement in ("split", "pool") or (not fits and not budget.unified):
-        pool_budget_bytes = budget.total_budget
+        room = budget.vram_budget
+    elif placement == "split" or (not fits and not budget.unified):
+        room = budget.total_budget
     else:
-        pool_budget_bytes = budget.ram_budget
-    margin = pool_budget_bytes - need.total
+        room = budget.ram_budget
+    margin = room - need.total
     speed = _speed_class(placement, frac, active_bytes, budget.backend) if fits else "crawl"
     fit_level = "none"
     if fits:
-        fit_level = "comfortable" if margin >= comfortable_margin(pool_budget_bytes) else "tight"
+        fit_level = "comfortable" if margin >= comfortable_margin(room) else "tight"
         if fit_level == "tight":
             warnings.append(
                 f"Tight fit: only {margin / GiB:.1f} GiB spare inside the budget. Works, but close other heavy apps first."
@@ -578,7 +544,7 @@ class Recommendation:
         }
 
 
-PLACEMENT_RANK = {"gpu": 0, "unified": 0, "split": 1, "cpu": 2, "pool": 2, "none": 3}
+PLACEMENT_RANK = {"gpu": 0, "unified": 0, "split": 1, "cpu": 2, "none": 3}
 
 
 def _usable(c: Candidate) -> bool:
@@ -609,14 +575,13 @@ def recommend(
     kv_bits: int = 16,
     want: list[str] | None = None,
     budget: Budget | None = None,
-    pool: bool = False,
     role: str = "general",
 ) -> Recommendation:
     """Rank every catalog file against the device budget and pick a default.
 
     ``want`` filters by capability (e.g. ["coding"], ["vision"]).
     ``role`` selects which specialists may become the default ("general" excludes them).
-    ``budget`` lets pool mode pass a summed budget.
+    ``budget`` replaces the device's own budget (tests, other devices).
     """
     catalog = catalog or load_catalog()
     if budget is None:
@@ -631,7 +596,7 @@ def recommend(
         if want and not all(w in m.capabilities for w in want):
             continue
         for f in m.files:
-            cands.append(evaluate(m, f, budget, context, kv_bits, pool=pool))
+            cands.append(evaluate(m, f, budget, context, kv_bits))
 
     fits = sorted([c for c in cands if c.fits and c.disk_ok], key=_rank_key)
     nofit = sorted([c for c in cands if not (c.fits and c.disk_ok)], key=lambda c: c.need.total)
@@ -691,7 +656,6 @@ def llama_server_args(
     model_path: str,
     port: int,
     host: str = "127.0.0.1",
-    rpc: list[str] | None = None,
     mmproj_path: str | None = None,
     exact_layers: bool = False,
 ) -> list[str]:
@@ -729,8 +693,6 @@ def llama_server_args(
         args += ["-ngl", "auto"]
     if c.need.kv_bits == 8:
         args += ["-ctk", "q8_0", "-ctv", "q8_0"]
-    if rpc:
-        args += ["--rpc", ",".join(rpc)]
     if mmproj_path:
         args += ["--mmproj", mmproj_path]
     return args

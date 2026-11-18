@@ -3,15 +3,18 @@
 Datas can connect the computers **you** own so that they:
 
 - **share chats** — the same list of chats on each of them (Remember mode only);
-- **lend each other memory** — a bigger AI fits when two or three devices add up their memory;
-- **use each other's AI** — a small laptop can chat with the AI running on the desktop;
-- **carry on alone** — if a device drops out mid-chat, the one you are using continues with
-  the best AI that fits on it.
+- **use each other's AI** — a small laptop or a phone chats with the AI running on the
+  desktop. Only the words travel, so it is as quick as the desktop itself;
+- **share out a long document** — each linked computer with an AI writes some of the parts.
+
+Adding up the memory of several devices to run one bigger AI was **removed in 0.9**. Every
+word needed many trips over the network, so it was much slower than a smaller AI on one
+device, and it promised more than it gave.
 
 Only devices you pair yourself can connect. There is no Datas account and no Datas server.
 
-Strangers' devices are a different matter and are **not** supported: see [P2P.md](P2P.md) for
-why that cannot be made private today.
+Strangers' devices are **not** supported: whoever computes part of an answer sees what you
+asked, and no technology available on ordinary computers and phones prevents that today.
 
 ## Pairing, step by step
 
@@ -117,20 +120,16 @@ secret in the app's private storage.
 
 | Purpose | What is sent |
 |---|---|
-| Presence | Name, system, Datas version, engine version, memory on offer, name of the AI running (if any). Asked every 20 seconds (8 while memory is being shared). |
+| Presence | Name, system, Datas version, engine version, name of the AI running (if any). Asked every 20 seconds. |
 | Chat sync | The chats themselves. Newest change wins; a deleted chat is deleted everywhere (a small "deleted" marker travels so it does not come back). Never in Forget mode. |
-| Shared memory | llama.cpp's own protocol between the device that runs the AI and the ones lending memory, inside the encrypted tunnel. The helper program on the lending device listens on `127.0.0.1` only — it is reachable through the tunnel and nowhere else. |
 | Using another device's AI | Your messages and the answers, as `/v1` requests. The other device processes them with its local AI and keeps nothing unless that chat is also synced. The same goes for the parts of a long document shared out between devices. |
 | Opening another computer's Datas | Everything that window shows and sends, as ordinary requests to that computer's Datas, inside the encrypted link. |
 
 ## Limits, stated plainly
 
 - **Phones are a window, not a full member yet.** A linked phone shows and uses a computer's
-  Datas; it does not lend memory or share the chats of its own small AI. Android 10 or
+  Datas; it does not share the chats of its own small AI. Android 10 or
   newer; iPhone and iPad with iOS 15 or newer.
-- **Bigger, not faster.** Shared memory lets a larger AI fit. Every word still passes
-  through all the devices, so the speed is set by the slowest one and by the network. A cable
-  or good Wi-Fi matters.
 - **One answer cannot be split and written in parallel — a long document can.** *Tools →
   Long documents → Share the work with my linked devices* gives each part to whichever
   device is free: this one and every linked computer that has an AI of its own ready. It
@@ -142,9 +141,6 @@ secret in the app's private storage.
   relay server by design, because a relay would be a third party. Use a private network
   between your devices (WireGuard or Tailscale, for example) or open port 8424 on the router
   of the device that shows the code. The link stays encrypted end to end either way.
-- **Same engine on both.** Sharing memory needs the same llama.cpp version on every device;
-  Devices says so when they differ, and Settings → Updates brings them in line.
-- **A device that is running its own AI lends no memory** while it does.
 - **Chat sync is "newest change wins".** If you edit the same chat on two devices while they
   are disconnected, the later edit replaces the earlier one.
 - **Trust is all-or-nothing between paired devices.** A paired device can read synced chats
@@ -163,10 +159,10 @@ secret in the app's private storage.
 Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_link.py`.
 
 - Listener: TCP port 8424 (`cfg.link_port`), TLS 1.3 only, started when linking is on.
-- Messages: a 4-byte length followed by JSON; after an `rpc` or `v1` request the same
+- Messages: a 4-byte length followed by JSON; after a `v1` or `window` request the same
   connection carries raw bytes.
-- Operations: `pair`, `info`, `sync`, `rpc` (tunnel to the local `ggml-rpc-server` on
-  `127.0.0.1`), `v1` (OpenAI-compatible request to the local AI), and `window` (the
+- Operations: `pair`, `info`, `sync`, `v1` (OpenAI-compatible request to the local AI), and
+  `window` (the
   connection is joined to the local service on `127.0.0.1`) — for phones, and for a computer
   that was allowed to (`"window": true` on that peer in `peers.json`).
 - A phone pairs with `{"op":"pair","app":true,"id":<SHA-256 of its secret>,…}` and later
@@ -193,5 +189,3 @@ Code: [`datas/link/__init__.py`](../datas/link/__init__.py). Tests: `tests/test_
 - Files in `<data folder>/link/`: `device.key` (private, mode 600), `device.crt`,
   `peers.json` (name, address and certificate of each paired computer; name and secret
   fingerprint of each paired phone).
-- The older, manual way of pooling memory without pairing is described in
-  [POOLING.md](POOLING.md); it is unencrypted and meant only for a network you fully control.

@@ -243,8 +243,8 @@ def _ask(core, prompt: str, max_tokens: int | None = None, provider=None) -> str
     else:
         if not core.server.running() and core.can_wake():
             core.wake()
-        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-        if prov.kind in ("local", "pool") and not core.server.running():
+        prov = active_provider(core.cfg, core.server.running())
+        if prov.kind == "local" and not core.server.running():
             raise RuntimeError("No AI is running. Start one in My AIs first.")
     core.touch()
     body = {
@@ -254,7 +254,7 @@ def _ask(core, prompt: str, max_tokens: int | None = None, provider=None) -> str
     }
     if max_tokens:
         body["max_tokens"] = max_tokens
-    if prov.kind in ("local", "pool", "linked"):
+    if prov.kind in ("local", "linked"):
         # Piece work (summarise this part, translate that one) needs the answer, not the
         # thinking aloud some AIs do first: a small one can think until its working memory
         # is full and then answer nothing. llama.cpp's server takes this per request and

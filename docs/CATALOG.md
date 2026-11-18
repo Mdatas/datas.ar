@@ -77,8 +77,8 @@ ones there with their nominal bits/weight).
 
 - **Qwen3.8-Flash-Next** (125B MoE) — only sharded/foldered quants; `datas catalog add`
   with the exact shard once we support multi-file entries (see ROADMAP).
-- **DeepSeek V4 Flash** (ggml-org/DeepSeek-V4-Flash-0731-GGUF, 160+ GB) — pool-only
-  territory; add manually if you have the cluster.
+- **DeepSeek V4 Flash** (ggml-org/DeepSeek-V4-Flash-0731-GGUF, 160+ GB) — beyond any single
+  ordinary computer; add manually on a workstation with that much memory.
 - **Llama 3.x** — superseded on every size by the models above.
 - Vision-only, embedding, OCR, TTS and ASR repos — different product surface.
 

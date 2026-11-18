@@ -11,7 +11,7 @@ model card; where that was not possible the line says "verify".
 
 | Project | License | How we use it |
 |---|---|---|
-| [llama.cpp](https://github.com/ggml-org/llama.cpp) (ggml-org) | MIT | `llama-server` (OpenAI-compatible inference, tool calling, vision, `--fit`), `ggml-rpc-server` + `--rpc` (pooling), `llama-bench` (measurements), prebuilt release archives for every platform, the `gguf` Python package (header reading) |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) (ggml-org) | MIT | `llama-server` (OpenAI-compatible inference, tool calling, vision, `--fit`), `llama-bench` (measurements), prebuilt release archives for every platform, the `gguf` Python package (header reading) |
 
 ## Models
 
@@ -103,9 +103,6 @@ authors and publishers; each entry names who made it. → [LEARN.md](LEARN.md)
   whichllm, best-engine-ai-helper. Datas' recommender follows their principle —
   deterministic memory math, fit levels, never recommend "too tight" — and adds the
   headroom policy, placement/speed classes and the GGUF-header refinement.
-- **Distributed inference**: [exo](https://github.com/exo-explore/exo) (Apache-2.0)
-  showed that a home cluster of everyday devices can run frontier-scale models. Datas
-  uses llama.cpp RPC for format/platform reasons and plans an exo backend.
 - **Mobile local AI**: [PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai) (MIT),
   [Google AI Edge Gallery](https://github.com/google-ai-edge/gallery) (Apache-2.0),
   MLC Chat — references for the native apps on the roadmap.

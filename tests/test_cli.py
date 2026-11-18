@@ -6,12 +6,19 @@ from datas.config import Config
 run = CliRunner().invoke
 
 
-def test_showing_the_hand_listed_workers_does_not_clear_them():
-    assert "10.0.0.5:50052" in run(app, ["pool", "nodes", "--set", "10.0.0.5:50052"]).output
-    assert "10.0.0.5:50052" in run(app, ["pool", "nodes"]).output  # only looking
-    assert Config.load().pool_nodes == "10.0.0.5:50052"
-    assert "(none)" in run(app, ["pool", "nodes", "--set", ""]).output
-    assert Config.load().pool_nodes == ""
+def test_pooling_is_gone_and_old_settings_still_load():
+    """Memory pooling was removed in 0.9: no command, and a settings file that still says
+    "pool" (from an older version) simply runs the AI on this device."""
+    import json
+
+    from datas.config import home
+
+    assert run(app, ["pool", "nodes"]).exit_code != 0
+    (home() / "config.json").write_text(
+        json.dumps({"provider": "pool", "pool_nodes": "10.0.0.5:50052", "rpc_port": 50052})
+    )
+    cfg = Config.load()
+    assert cfg.provider == "local" and not hasattr(cfg, "pool_nodes")
 
 
 def test_version_and_help_work():

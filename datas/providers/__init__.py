@@ -2,10 +2,9 @@
 
 Everything above this layer (chat UI, agents, the /v1 proxy) talks to *one* interface —
 an OpenAI-compatible ``/v1/chat/completions`` endpoint — so switching between a local
-model, a pooled cluster and a paid API is a config change, not a code path.
+model, an AI on another of the user's devices and a paid API is a config change, not a code path.
 
     local  → llama-server on this machine (started by Datas)
-    pool   → llama-server on this machine with --rpc workers (memory pooled)
     linked → the AI running on another of the user's devices, through the encrypted link
              (datas.link); the request goes to /link/<device>/v1 on this machine, which
              forwards it over mutual TLS
@@ -43,7 +42,7 @@ HTTP_PORT: int | None = None  # where this machine's local API listens (set by t
 @dataclass
 class Provider:
     name: str
-    kind: str  # local | pool | linked | remote
+    kind: str  # local | linked | remote
     base_url: str
     api_key: str = ""
     model: str = ""
@@ -72,17 +71,14 @@ class Provider:
         }
 
 
-def local_provider(
-    cfg: Config, running: bool, model_id: str = "", rpc: list[str] | None = None
-) -> Provider:
-    kind = "pool" if rpc else "local"
+def local_provider(cfg: Config, running: bool, model_id: str = "") -> Provider:
     return Provider(
-        name=kind,
-        kind=kind,
+        name="local",
+        kind="local",
         base_url=f"http://127.0.0.1:{cfg.llama_port}/v1",
         model=model_id or cfg.model_id,
         available=running,
-        detail=("running" if running else "stopped") + (f", {len(rpc)} worker(s)" if rpc else ""),
+        detail="running" if running else "stopped",
     )
 
 
@@ -98,8 +94,8 @@ def remote_provider(r: RemoteProviderConfig) -> Provider:
     )
 
 
-def all_providers(cfg: Config, running: bool, rpc: list[str] | None = None) -> list[Provider]:
-    out = [local_provider(cfg, running, rpc=rpc)]
+def all_providers(cfg: Config, running: bool) -> list[Provider]:
+    out = [local_provider(cfg, running)]
     out += [remote_provider(r) for r in cfg.remotes]
     return out
 
@@ -114,14 +110,14 @@ def linked_provider(cfg: Config, device_id: str) -> Provider:
     )
 
 
-def active_provider(cfg: Config, running: bool, rpc: list[str] | None = None) -> Provider:
-    if cfg.provider in ("local", "pool"):
-        return local_provider(cfg, running, rpc=rpc)
+def active_provider(cfg: Config, running: bool) -> Provider:
+    if cfg.provider in ("local", "pool"):  # "pool": what versions before 0.9 may have saved
+        return local_provider(cfg, running)
     if cfg.provider.startswith("link:"):
         return linked_provider(cfg, cfg.provider[5:])
     r = cfg.remote(cfg.provider)
     if r is None:
-        return local_provider(cfg, running, rpc=rpc)
+        return local_provider(cfg, running)
     return remote_provider(r)
 
 

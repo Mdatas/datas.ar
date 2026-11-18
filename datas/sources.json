@@ -8,7 +8,7 @@
   "sources": [
     {
       "name": "llama.cpp",
-      "role": "The engine that runs the AI models (llama-server, pooling over RPC, benchmarks).",
+      "role": "The engine that runs the AI models (llama-server, benchmarks).",
       "by": "ggml-org / Georgi Gerganov and contributors",
       "license": "MIT",
       "url": "https://github.com/ggml-org/llama.cpp",
@@ -241,15 +241,6 @@
       "license": "various",
       "url": "https://github.com/alexsjones/llmfit",
       "group": "ideas"
-    },
-    {
-      "name": "exo",
-      "role": "Showed home devices can share one big model; inspiration for pooling.",
-      "by": "exo labs",
-      "license": "Apache-2.0",
-      "url": "https://github.com/exo-explore/exo",
-      "group": "ideas",
-      "license_url": "https://spdx.org/licenses/Apache-2.0.html"
     },
     {
       "name": "PocketPal AI, Google AI Edge Gallery",

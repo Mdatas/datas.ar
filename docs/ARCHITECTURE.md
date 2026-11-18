@@ -17,13 +17,13 @@ borrows everything else:
                │ /api/*                │ python                 │ /v1/*
 ┌──────────────▼───────────────────────▼────────────────────────▼──────────────┐
 │  datas.server.app (FastAPI, 127.0.0.1:8420)                                  │
-│    /api: spec · recommend · catalog · install/run jobs · providers · pool    │
+│    /api: spec · recommend · catalog · install/run jobs · providers · link    │
 │    /v1 : streaming proxy → active provider                                   │
 └──────────────┬───────────────────────────────────────────────────────────────┘
                │
 ┌──────────────▼──────────────┐   ┌──────────────────────────────────────────┐
 │ datas.orchestrator.Datas    │   │ datas.providers                          │
-│  detect → recommend →       │──▶│  local | pool | remote (API key)         │
+│  detect → recommend →       │──▶│  local | linked device | remote (API key)│
 │  ensure_runtime → ensure_   │   │  one interface: base_url + headers       │
 │  model → refine (GGUF hdr)  │   └──────────────────────────────────────────┘
 │  → llama-server args → run  │
@@ -38,14 +38,14 @@ borrows everything else:
 │sysfs   │ └─────────┘ └──────────────────────────────────────────────────────┘
 │sys_prof│       ▲
 │CIM     │  ┌────┴─────┐      ┌────────────────────┐   ┌───────────────────┐
-└────────┘  │ catalog  │      │ pool               │   │ agents            │
-            │models.json│     │ zeroconf discovery │   │ tool loop over /v1│
-            │+ user.json│     │ ggml-rpc-server    │   │ sandboxed tools   │
+└────────┘  │ catalog  │      │ link               │   │ agents            │
+            │models.json│     │ pairing, mTLS,     │   │ tool loop over /v1│
+            │+ user.json│     │ chat sync, AI use  │   │ sandboxed tools   │
             └──────────┘      └────────────────────┘   └───────────────────┘
                                         │
                               ┌─────────▼──────────┐
                               │ llama.cpp (ggml-org)│  ← the engine. MIT. Not ours.
-                              │ llama-server · RPC  │
+                              │ llama-server        │
                               └────────────────────┘
 ```
 
@@ -95,7 +95,6 @@ borrows everything else:
 | 8420 | Datas UI + API + `/v1` proxy |
 | 8421 | llama-server (local engine; also OpenAI-compatible) |
 | 8424 | the encrypted link to your other devices (TLS 1.3; only when linking is on) |
-| 50052 | `ggml-rpc-server` when this device lends memory — on `127.0.0.1` for linked devices |
 
 ## Why Python
 
@@ -136,8 +135,7 @@ datas/
   guide.py              the Datas guide (knows this device)
   learn/                Learn: catalog.json (paths, links, glossary) + lessons in EN/ES
   library.py            installed AIs, per-AI metadata, removal
-  link/__init__.py      linked devices: identity, pairing, mutual TLS, sync, shared memory
-  pool/discovery.py     nodes; workers listed by hand      pool/worker.py  ggml-rpc-server by hand
+  link/__init__.py      linked devices: identity, pairing, mutual TLS, chat sync, using their AI
   netguard.py           which addresses the AI may open (no private networks by default)
   updates.py            updates and going back: app, engines, list of AIs
   programs.py           programs found on the computer, conversions, ArtCraft; FFmpeg fetched once and checked

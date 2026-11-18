@@ -149,7 +149,7 @@ const Chat = {
         note: running ? t("ai_running") : (it.resources ? t("speed_" + it.resources.speed_class) : ""),
         fn: async () => { if (!running) await Chat.runModel(it); after(); } });
     }
-    const remote = prov.providers.filter(p => p.kind !== "local" && p.kind !== "pool" && p.kind !== "linked");
+    const remote = prov.providers.filter(p => p.kind !== "local" && p.kind !== "linked");
     if (remote.length) items.push({ head: t("ai_paid") });
     for (const p of remote) {
       items.push({ label: p.name, icon: "globe", note: prov.active === p.name ? t("ai_in_use") : (p.model || t("ai_leaves_device")),
@@ -186,7 +186,7 @@ const Chat = {
       const custom = it.custom || String(it.model_id).startsWith("custom:");
       const job = custom
         ? await api("/api/run-custom", { body: { path: it.path || String(it.model_id).slice(7), context: st.context } })
-        : await api("/api/run", { body: { model_id: it.model_id, quant: it.quant, context: st.context, kv_bits: 16, pool: !!S.pool,
+        : await api("/api/run", { body: { model_id: it.model_id, quant: it.quant, context: st.context, kv_bits: 16,
             with_vision: (it.capabilities || []).includes("vision") || String(st.use_cases || "").includes("images"), with_voice: false, starter: true } });
       S.getting = it.name;
       if (S.screen === "chat" && !Chat.cur.msgs.length) Chat.draw();

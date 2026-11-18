@@ -49,7 +49,6 @@ Evaluated in this order, first match wins:
 | `split` | `need ≤ vram_budget + ram_budget` | `-ngl auto` (llama.cpp fits exactly; we show `floor(layers · vram_budget/need)`) |
 | `cpu` | `need ≤ ram_budget`, no dedicated GPU | `-ngl 0` |
 | `unified` | unified-memory device, `need ≤ ram_budget` | `-ngl auto` |
-| `pool` | pool mode, `need ≤ Σ budgets` | `--rpc host:port,…` |
 | `none` | nothing above | — (listed under "doesn't fit" with hints) |
 
 ## 4. Fit level
@@ -77,7 +76,6 @@ active_bytes = weights · (active_params / total_params)     # MoE touches a fra
 | split (by the part left in RAM = active·(1−gpu_fraction)) | ≤ 1.5 GiB | ≤ 4 | ≤ 8 | > 8 |
 | cpu | — | ≤ 5 GiB | ≤ 10 | > 10 |
 | iGPU/phone unified | — | ≤ 3.5 GiB | ≤ 7 | > 7 |
-| pool | — | ≤ 5 GiB | ≤ 12 | > 12 |
 
 "ok" is meant to be ≈ 5+ tokens/s on typical hardware of that class — readable chat.
 These are classes, not predictions; `datas bench` / the Benchmark button measures the
@@ -91,7 +89,7 @@ Every file that fits is sorted by:
 2. `effective_tier` (catalog `quality_tier`, minus 1 for quants under ~3.6 bits/weight)
 3. speed class
 4. comfortable before tight
-5. simpler placement (gpu/unified → split → cpu/pool)
+5. simpler placement (gpu/unified → split → cpu)
 6. larger file
 
 The default is the first **comfortable, usable** candidate whose `role` is `general`

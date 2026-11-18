@@ -8,8 +8,8 @@
 - [x] Model download with resume + SHA-256; exact KV from GGUF header
 - [x] llama-server lifecycle with `--fit`, logs, health, bench
 - [x] Web UI (EN/ES) + CLI
-- [x] Providers: local / pool / API keys; `/v1` proxy
-- [x] Pool mode: mDNS discovery, worker, summed budget, tag check
+- [x] Providers: local / API keys; `/v1` proxy
+- [x] ~~Pool mode~~ — removed in 0.9 (see 0.9 below)
 - [x] Built-in agent runner with sandboxed tools
 - [x] Tests incl. a real llama-server integration test on a synthetic GGUF
 
@@ -17,7 +17,7 @@
 - [x] One window (pywebview), no browser/terminal; `Datas.exe` + `datas-cli.exe`; Program Files installer with Desktop icon and keep/delete-data uninstall
 - [x] Home: Run → what for (text / images / coding / agents; sound & video marked "later") → light / balanced / heavy → recommendation in plain words with paid-model comparison, limits, maker links, "see the other recommendations", advanced options
 - [x] My AIs library with per-AI Desktop icons; Remember/Forget privacy switch; chats, notes, "End & learn", documents, skills
-- [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; pool switches in Settings; About & sources page
+- [x] Internet per session (search + open pages) with visible lookups; agent in its own window/process; About & sources page
 - [x] Spanish/English; acronyms spelled out
 - [x] One installer file with a launcher window (Install · Repair · Uninstall · Exit · Read me); detects any earlier copy, removes it, installs clean, keeps every model/chat/note and says so (finish screen + first-start notice in the app)
 - [x] **Datas guide**: a chat that knows this device, its verdicts, the installed and recommended AIs and how to ask well (`datas/guide.py`, built live, no extra download)
@@ -131,7 +131,6 @@ Status:
 - [ ] Both phone apps tried on physical phones; the iPhone app signed with an Apple Developer account (TestFlight / App Store)
 - [ ] Linking devices in different places: a setup helper for WireGuard / Tailscale
 - [~] "Farm mode": many independent tasks at once across linked devices (one answer cannot be split) — done for long documents (each device takes parts); not yet for several chats or agent tasks
-- [ ] exo backend for all-Apple-Silicon pools
 - [ ] iOS app on the llama.cpp xcframework — needs an Apple Developer account (US$99/yr); iOS cannot run a downloaded engine binary like Android does
 
 **The window**
@@ -164,4 +163,4 @@ Status:
 - [ ] Task templates (research → file, inbox triage via IMAP, questions over a folder)
 
 **Ruled out for now**
-- [~] Pooling with strangers' devices: **not an option** while it cannot be made private — see docs/P2P.md
+- [~] Sharing work with strangers' devices: **not an option** — whoever computes part of an answer sees what was asked

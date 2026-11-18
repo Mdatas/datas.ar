@@ -2,7 +2,7 @@
 
 Download, hit run. Datas reads your device, picks the best open-weight model it can
 carry without freezing the machine, downloads it, and runs it through llama.cpp.
-Later: switch models, plug in an API key, pool several devices, run agents.
+Later: switch models, use the AI of another of your devices, run agents.
 """
 
 __version__ = "0.8.1"

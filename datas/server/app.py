@@ -1,9 +1,9 @@
 """FastAPI app.
 
 - ``/``            the single-file web UI
-- ``/api/*``       device, recommendation, catalog, install/run jobs, providers, pool
+- ``/api/*``       device, recommendation, catalog, install/run jobs, providers, linked devices
 - ``/v1/*``        OpenAI-compatible proxy to the *active provider* (local llama-server,
-                   pooled llama-server, or a remote API with your key). Any OpenAI SDK or
+                   AI on a linked device, or a remote API with your key). Any OpenAI SDK or
                    agent framework pointed at ``http://127.0.0.1:8420/v1`` just works.
 
 Binds to 127.0.0.1 by default. Expose it on the LAN only on purpose (``datas serve
@@ -239,7 +239,7 @@ def _starter_out_of_the_box() -> None:
             return
         others = [i for i in installed_models() if i["model_id"] != starter.ID]
         if not others and not core.server.running() and not os.environ.get("DATAS_NO_STARTER"):
-            core.start_run_job(starter.ID, starter.QUANT, 4096, 16, False, False, False, False)
+            core.start_run_job(starter.ID, starter.QUANT, 4096, 16, starter=False)
     except Exception:  # noqa: BLE001 - the starter is a convenience; never block Datas
         pass
 
@@ -348,7 +348,6 @@ def recommend(
     kv_bits: int = 16,
     want: str = "",
     role: str = "general",
-    pool: bool = False,
     use: str = "",
     mode: str = "",
 ) -> dict:
@@ -368,14 +367,12 @@ def recommend(
         core.cfg.resource_mode = mode
     if uses or mode:
         core.cfg.save()
-    nodes = core.pool_nodes() if pool else None
     rec = core.recommendation(
         headroom=headroom,
         context=context,
         kv_bits=kv_bits,
         want=wants or None,
         role=role,
-        pool_nodes=nodes,
     )
     out = rec.to_dict(core.cfg.lang)
     out["unsupported_use_cases"] = unsupported
@@ -653,7 +650,6 @@ class Settings(BaseModel):
     headroom: float | None = None
     context: int | None = None
     lang: str | None = None
-    pool_nodes: str | None = None
     backend: str | None = None
     voice_stt_model: str | None = None
     voice_tts_voice: str | None = None
@@ -674,12 +670,10 @@ def settings_get() -> dict:
         "headroom_min_gib": c.headroom_min_gib,
         "context": c.context,
         "lang": c.lang,
-        "pool_nodes": c.pool_nodes,
         "backend": c.backend,
         "llamacpp_tag": c.llamacpp_tag,
         "ui_port": c.ui_port,
         "llama_port": c.llama_port,
-        "rpc_port": c.rpc_port,
         "voice_stt_model": c.voice_stt_model,
         "voice_tts_voice": c.voice_tts_voice,
         "voice_speak_answers": c.voice_speak_answers,
@@ -701,8 +695,6 @@ def settings_set(body: Settings) -> dict:
         c.context = max(1024, min(262144, body.context))
     if body.lang is not None:
         c.lang = body.lang
-    if body.pool_nodes is not None:
-        c.pool_nodes = body.pool_nodes
     if body.backend is not None:
         c.backend = body.backend
     if body.voice_stt_model is not None:
@@ -761,7 +753,6 @@ class RunBody(BaseModel):
     quant: str
     context: int | None = None
     kv_bits: int = 16
-    pool: bool = False
     with_vision: bool = False
     with_voice: bool = False
     starter: bool = True
@@ -785,10 +776,9 @@ def run(body: RunBody) -> dict:
         body.quant,
         body.context,
         body.kv_bits,
-        body.pool,
-        body.with_vision,
-        body.with_voice,
-        body.starter,
+        with_vision=body.with_vision,
+        with_voice=body.with_voice,
+        starter=body.starter,
     ).to_dict()
 
 
@@ -801,9 +791,7 @@ def starter() -> dict:
 
     if core.server.running():
         return {"skipped": "an AI is already running"}
-    return core.start_run_job(
-        STARTER_ID, STARTER_QUANT, 4096, 16, False, False, False, False
-    ).to_dict()
+    return core.start_run_job(STARTER_ID, STARTER_QUANT, 4096, 16, starter=False).to_dict()
 
 
 @app.post("/api/run-custom")
@@ -859,19 +847,16 @@ class ProviderBody(BaseModel):
 
 @app.get("/api/providers")
 def providers() -> dict:
-    rpc = core.server.state.rpc
     return {
         "active": core.cfg.provider,
         "presets": PRESETS,
-        "providers": [
-            p.to_public_dict() for p in all_providers(core.cfg, core.server.running(), rpc)
-        ],
+        "providers": [p.to_public_dict() for p in all_providers(core.cfg, core.server.running())],
     }
 
 
 @app.post("/api/providers")
 def providers_add(body: ProviderBody) -> dict:
-    if body.name in ("local", "pool"):
+    if body.name in ("local", "pool"):  # "pool": from windows older than 0.9
         raise HTTPException(400, "reserved name")
     r = set_remote(core.cfg, body.name, body.base_url, body.api_key, body.model)
     return {"ok": True, "name": r.name}
@@ -985,7 +970,7 @@ def tools_long(body: LongBody) -> dict:
         raise HTTPException(400, "There is no text to work on.")
     if body.mode not in ("summary", "translate"):
         raise HTTPException(400, "mode must be summary or translate")
-    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+    prov = active_provider(core.cfg, core.server.running())
     ctx = _ctx_tokens(prov)
     lang = body.lang or core.cfg.lang
     hands = tools.helpers(core) if body.devices else []
@@ -1463,7 +1448,6 @@ class PairBody(BaseModel):
 
 
 class LinkOptions(BaseModel):
-    share_memory: bool | None = None
     sync_chats: bool | None = None
     device_name: str | None = None
 
@@ -1544,8 +1528,6 @@ def link_open(pid: str, body: LinkOpen | None = None) -> dict:
 @app.post("/api/link/options")
 def link_options(body: LinkOptions) -> dict:
     lm = _link()
-    if body.share_memory is not None:
-        core.cfg.link_share_memory = body.share_memory
     if body.sync_chats is not None:
         core.cfg.link_sync_chats = body.sync_chats
         lm.chats_changed()
@@ -1624,21 +1606,6 @@ async def link_v1(pid: str, path: str, request: Request):
         status_code=int(head.get("status", 200)),
         media_type=head.get("content_type") or "application/json",
     )
-
-
-# ---------------------------------------------------------------------------
-# Pool
-# ---------------------------------------------------------------------------
-
-
-@app.get("/api/pool/nodes")
-def pool_nodes(refresh: bool = True, seconds: float = 2.5) -> dict:
-    nodes = core.pool_nodes(refresh=refresh, seconds=seconds)
-    return {
-        "nodes": [n.to_dict() for n in nodes],
-        "local_tag": core.cfg.llamacpp_tag,
-        "worker_command": f"datas pool worker  # on each other device (port {core.cfg.rpc_port})",
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -1798,7 +1765,7 @@ class ChatBody(BaseModel):
 
 def _ctx_tokens(prov) -> int:  # noqa: ANN001 - Provider
     """Working memory of the AI that will answer: the running engine's, else an assumption."""
-    if prov.kind in ("local", "pool"):
+    if prov.kind == "local":
         args = core.server.state.args or []
         for i, a in enumerate(args[:-1]):
             if a in ("-c", "--ctx-size"):
@@ -1828,8 +1795,8 @@ async def chat(body: ChatBody):
     helper = body.assistant or body.skill
     lang = body.lang or core.cfg.lang
     core.touch()
-    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    local = prov.kind in ("local", "pool")
+    prov = active_provider(core.cfg, core.server.running())
+    local = prov.kind == "local"
     if local and not core.server.running() and core.can_wake():
         # the AI was put to sleep after a quiet spell (or the app restarted): wake the same one
         try:
@@ -1839,7 +1806,7 @@ async def chat(body: ChatBody):
                 {"error": "wake_failed", "message": f"The AI could not be started again: {e}"},
                 status_code=503,
             )
-        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
+        prov = active_provider(core.cfg, core.server.running())
     if local and not core.server.running() and helper == "guide":
         from datas import guide
 
@@ -1966,8 +1933,8 @@ async def chat_learn(body: SaveChatBody) -> dict:
     """End of session in 'remember' mode: distil durable facts into the notes file."""
     if core.cfg.forget:
         return {"learned": 0, "forget": True}
-    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    if prov.kind in ("local", "pool") and not core.server.running():
+    prov = active_provider(core.cfg, core.server.running())
+    if prov.kind == "local" and not core.server.running():
         return {"learned": 0}
     facts = await chat_engine.learn(prov, body.messages)
     return {"learned": chats.append_memory(core.cfg, facts), "facts": facts}
@@ -2584,15 +2551,6 @@ def agent_results() -> dict:
     }
 
 
-class OfferBody(BaseModel):
-    on: bool
-
-
-@app.post("/api/pool/offer")
-def pool_offer(body: OfferBody) -> dict:
-    return core.set_pool_offer(body.on)
-
-
 class ServiceBody(BaseModel):
     on: bool
 
@@ -2710,14 +2668,14 @@ _HOP = {
 @app.api_route("/v1/{path:path}", methods=["GET", "POST"])
 async def v1_proxy(path: str, request: Request):
     core.touch()
-    prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    if prov.kind in ("local", "pool") and not core.server.running() and core.can_wake():
+    prov = active_provider(core.cfg, core.server.running())
+    if prov.kind == "local" and not core.server.running() and core.can_wake():
         try:
             await run_in_threadpool(core.wake)
         except Exception:  # noqa: BLE001 - reported just below as "no model running"
             pass
-        prov = active_provider(core.cfg, core.server.running(), core.server.state.rpc)
-    if prov.kind in ("local", "pool") and not core.server.running():
+        prov = active_provider(core.cfg, core.server.running())
+    if prov.kind == "local" and not core.server.running():
         return JSONResponse(
             {
                 "error": {

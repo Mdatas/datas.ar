@@ -511,7 +511,6 @@ def linked(c: httpx.Client, a: argparse.Namespace) -> None:
                 "ui_port": ui_b,
                 "link_port": free_port(),
                 "llama_port": free_port(),
-                "rpc_port": free_port(),
                 "memory_mode": "remember",
                 "onboarded": True,
                 "device_name": "Laptop",

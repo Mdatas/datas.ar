@@ -1029,8 +1029,7 @@
       "tags": [
         "workstation",
         "xl",
-        "coding",
-        "pool"
+        "coding"
       ],
       "hf_repo": "unsloth/Qwen3-Coder-Next-GGUF",
       "files": [
@@ -1081,8 +1080,7 @@
       "tags": [
         "workstation",
         "xl",
-        "agents",
-        "pool"
+        "agents"
       ],
       "hf_repo": "ggml-org/gpt-oss-120b-GGUF",
       "files": [
@@ -1095,7 +1093,7 @@
         }
       ],
       "vendor_url": "https://openai.com/open-models",
-      "limits": "Frontier-class reasoning and agents; text only; needs 64+ GB of memory (a workstation or a pool of devices).",
+      "limits": "Frontier-class reasoning and agents; text only; needs 64+ GB of memory (a workstation).",
       "use_cases": [
         "text",
         "coding",
@@ -1299,7 +1297,6 @@
       "tags": [
         "workstation",
         "xl",
-        "pool",
         "finetune"
       ],
       "hf_repo": "lmstudio-community/Hermes-4-70B-GGUF",

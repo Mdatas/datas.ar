@@ -336,15 +336,4 @@ def assess(spec: DeviceSpec, rec: Recommendation, voice_available: bool = True) 
             )
         )
 
-    # ---- pooling ---------------------------------------------------------------
-    if rec.budget.nodes > 1:
-        out.append(
-            Ability(
-                "pool",
-                "yes",
-                f"{rec.budget.nodes} of your devices are working together ({rec.budget.total_budget / GiB:.0f} GB in total).",
-                f"{rec.budget.nodes} de tus dispositivos trabajan juntos ({rec.budget.total_budget / GiB:.0f} GB en total).",
-                engine="llama.cpp RPC",
-            )
-        )
     return out

@@ -44,8 +44,7 @@ What Datas does differently on a phone:
   acceleration), the generic `android-arm64` otherwise. GPU memory is unified: RAM is
   the budget.
 - Battery: Datas records `on_battery`; generation is CPU-heavy, so expect heat. Keep the
-  phone plugged for long sessions. (Thermal throttling is a reason phones make poor
-  *pool workers* — see POOLING.md.)
+  phone plugged for long sessions.
 
 Known rough edges: Termux's `wake-lock` is needed to keep the server alive in the
 background (`termux-wake-lock`); some vendors' background limits still kill it after a

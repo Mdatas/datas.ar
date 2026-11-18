@@ -32,7 +32,6 @@ class ServerState:
     args: list[str] = field(default_factory=list)
     started_at: float | None = None
     log_path: str | None = None
-    rpc: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return self.__dict__ | {"running": self.pid is not None}
@@ -53,7 +52,6 @@ class LlamaServer:
         model_id: str = "",
         quant: str = "",
         port: int | None = None,
-        rpc: list[str] | None = None,
         timeout: float = 600.0,
     ) -> ServerState:
         if self.proc and self.proc.poll() is None:
@@ -98,7 +96,6 @@ class LlamaServer:
             args=args,
             started_at=time.time(),
             log_path=str(log_path),
-            rpc=rpc or [],
         )
         self.wait_healthy(timeout)
         return self.state

@@ -77,7 +77,6 @@ def main() -> int:
                 "ui_port": ui,
                 "link_port": link,
                 "llama_port": free_port(),
-                "rpc_port": free_port(),
                 "memory_mode": "remember",
                 "onboarded": True,
                 "device_name": "Test computer",

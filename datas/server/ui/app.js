@@ -8,7 +8,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const S = {
   closedBanners: {},
   lang: "en", theme: "auto", status: null, priv: null, screen: "chat", cleanup: null,
-  helpers: null, library: null, pool: false, starterTold: false, getting: null,
+  helpers: null, library: null, starterTold: false, getting: null,
 };
 const SCREENS = {};
 
@@ -465,7 +465,7 @@ window.go = go;
 function aiState() {
   const s = S.status;
   if (!s) return { state: "none", name: "" };
-  if (s.provider && s.provider !== "local" && !String(s.provider).startsWith("pool")) {
+  if (s.provider && s.provider !== "local" && s.provider !== "pool") {
     const name = String(s.provider).startsWith("link:") ? t("ai_on_device") : s.provider;
     return { state: "awake", name, remote: true };
   }

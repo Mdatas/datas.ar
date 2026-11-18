@@ -167,7 +167,6 @@ def offline_answer(core, question: str, lang: str = "en") -> str:  # noqa: ANN00
         "sound": ("Voice", "Voz"),
         "image_gen": ("Making images", "Crear imágenes"),
         "video": ("Making video", "Crear video"),
-        "pool": ("Devices together", "Dispositivos en conjunto"),
     }
     word = {
         "yes": ("yes", "sí"),

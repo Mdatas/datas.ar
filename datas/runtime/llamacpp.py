@@ -2,7 +2,7 @@
 
 We do not build an inference engine. llama.cpp (MIT, ggml-org) publishes prebuilt
 archives for every platform on each release; we pick the right one for this device,
-download it once, and pin the tag so every node in a pool runs the same RPC protocol.
+download it once, and pin the tag so every start uses the build that was tested.
 
 Asset naming (from .github/workflows/release.yml in ggml-org/llama.cpp):
 
@@ -45,7 +45,7 @@ DL_BASE = f"https://github.com/{REPO}/releases/download"
 
 # The build this Datas release was tested against. Used when no tag is pinned yet and
 # as the offline fallback when the GitHub API is unreachable. `datas runtime update`
-# moves the pin to the newest build. All nodes of a pool must share one tag.
+# moves the pin to the newest build.
 KNOWN_GOOD_TAG = "b11669"
 
 # Version suffixes to probe when we cannot list a release's assets (API rate-limited or
@@ -313,14 +313,11 @@ def _extract(archive: Path, into: Path) -> None:
 
 BINARIES = (
     "llama-server",
-    "rpc-server",
-    "ggml-rpc-server",
     "llama-bench",
     "llama-cli",
     "llama-completion",
 )
-# the RPC worker was renamed upstream; accept both spellings
-ALIASES = {"rpc-server": ("ggml-rpc-server", "rpc-server")}
+ALIASES: dict[str, tuple[str, ...]] = {}
 
 
 def find_binary(root: Path, name: str) -> Path | None:

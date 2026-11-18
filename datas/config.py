@@ -123,11 +123,11 @@ class Config:
     headroom_min_gib: float = 2.0
     # Default context window to budget for.
     context: int = 8192
-    # llama.cpp release tag pinned for this install (pool nodes must match).
+    # llama.cpp release tag pinned for this install.
     llamacpp_tag: str = ""
     # Backend override: "", "cpu", "cuda", "rocm", "vulkan", "metal"
     backend: str = ""
-    # Active provider: "local" | "pool" | name of a remote provider
+    # Active provider: "local" | "link:<device>" | name of a remote provider
     provider: str = "local"
     # Currently selected catalog model id and quant (set after install/run)
     model_id: str = ""
@@ -135,9 +135,6 @@ class Config:
     # Local server ports
     ui_port: int = 8420
     llama_port: int = 8421
-    rpc_port: int = 50052
-    # Manual pool workers ("host:port,host:port") in addition to mDNS discovery
-    pool_nodes: str = ""
     # UI language: "en" | "es"
     lang: str = "en"
     # ---- privacy switches (set during the first-run welcome; changeable any time) ----
@@ -151,8 +148,6 @@ class Config:
     # Last use-case / resource-mode choices (so the Home screen remembers them)
     use_cases: str = "text"
     resource_mode: str = "balanced"
-    # Pool: offer this device to my other devices (runs a worker in the background)
-    pool_offer: bool = False
     # Version that last ran, to greet the user once after an upgrade or reinstall
     last_version: str = ""
     # Voice: hearing model ("auto" picks by device: tiny/base/small/large-v3-turbo-q5_0),
@@ -175,11 +170,9 @@ class Config:
     last_run: dict = field(default_factory=dict)
     # Let the AI's web tools open addresses inside the user's own network (off: public internet only)
     allow_local_fetch: bool = False
-    # Linked devices (datas.link): port of the encrypted link, share this device's memory with
-    # them, keep chats in step between them
+    # Linked devices (datas.link): port of the encrypted link, keep chats in step between them
     link_port: int = 8424
     link_enabled: bool = False
-    link_share_memory: bool = True
     link_sync_chats: bool = True
     device_name: str = ""
 
@@ -232,6 +225,8 @@ class Config:
         except TypeError:
             cfg = cls()
         cfg.remotes = remotes
+        if cfg.provider == "pool":  # memory pooling was removed in 0.9: the same AI, here only
+            cfg.provider = "local"
         return cfg
 
     def save(self) -> Path:

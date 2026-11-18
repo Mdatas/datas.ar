@@ -1,9 +1,13 @@
 """Linking the user's own devices — encrypted, authenticated, with nothing in the middle.
 
 What it is for
-    * add up the memory of several devices so a bigger AI fits (llama.cpp RPC through a tunnel);
-    * use the AI that is running on another of your devices (a small laptop asks the desktop);
+    * use the AI that is running on another of your devices (a small laptop or a phone asks
+      the desktop): only the words travel, so it is as quick as the desktop itself;
     * keep chats in step between devices (Remember mode only).
+
+    (Adding up the memory of several devices to run one bigger AI was removed in 0.9: every
+    word needs many trips over the network, so it was far slower than a smaller AI on one
+    device, and it promised more than it gave.)
 
 How two devices become linked (once)
     Device A shows an address and a one-time code. On device B the user types both. The code
@@ -26,7 +30,7 @@ Phones and tablets (the Datas apps)
     and shows its secret inside that encrypted connection. This device keeps only a
     fingerprint (SHA-256) of the secret. A linked phone can ask how this device is and —
     if you allow it — open this device's Datas window through the link ("window" below).
-    It cannot pair other devices, lend or borrow memory, or reach anything else.
+    It cannot pair other devices or reach anything else.
 
 See docs/DEVICES.md for the plain-language version and the limits.
 """
@@ -41,8 +45,6 @@ import os
 import secrets
 import socket
 import ssl
-import subprocess
-import sys
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -217,7 +219,7 @@ def proof(key: bytes, role: bytes, fp_self: str, fp_other: str, n1: bytes, n2: b
 
 
 # ---------------------------------------------------------------------------
-# framing: 4-byte length + JSON, then (for tunnels) raw bytes
+# framing: 4-byte length + JSON, then (for a window or the AI) raw bytes
 # ---------------------------------------------------------------------------
 
 
@@ -308,7 +310,7 @@ MDNS_TYPE = "_datas-link._tcp.local."
 
 class LinkManager:
     """One per running Datas. Owns a small event loop in its own thread: the link server, the
-    tunnels, the periodic check of linked devices and chat sync."""
+    doors, the periodic check of linked devices and chat sync."""
 
     def __init__(self, core) -> None:  # noqa: ANN001 - Datas orchestrator
         self.core = core
@@ -318,7 +320,6 @@ class LinkManager:
         self.id = fingerprint(self.cert)
         self.pairing: dict | None = None
         self.status: dict[str, dict] = {}
-        self.tunnels: dict[str, tuple[asyncio.AbstractServer, int]] = {}
         # pid -> (server, port): local doors that show another computer's Datas
         self.doors: dict[str, tuple[asyncio.AbstractServer, int]] = {}
         self.last_sync: float = 0.0
@@ -327,7 +328,6 @@ class LinkManager:
         self._peers = self._load_peers()
         self._server: asyncio.AbstractServer | None = None
         self._ctx: ssl.SSLContext | None = None
-        self._rpc: subprocess.Popen | None = None
         self._zc = None
         self._zc_info = None
         self._stop = False
@@ -359,7 +359,6 @@ class LinkManager:
             self._call(self._serve(False), 5)
         except Exception:  # noqa: BLE001
             pass
-        self._stop_rpc()
         self.loop.call_soon_threadsafe(self.loop.stop)
 
     # ---- peers store ----------------------------------------------------------
@@ -419,7 +418,7 @@ class LinkManager:
         self._peers.pop(pid)
         self._save_peers()
         self.status.pop(pid, None)
-        for doors in (self.tunnels, self.doors):
+        for doors in (self.doors,):
             t = doors.pop(pid, None)
             if t:
                 self.loop.call_soon_threadsafe(t[0].close)
@@ -463,7 +462,6 @@ class LinkManager:
         self.cfg.save()
         if not on:
             self.pairing = None
-            self._stop_rpc()
         return self.state()
 
     def begin_pairing(self) -> dict:
@@ -574,8 +572,6 @@ class LinkManager:
                 await self._op_window(pid, reader, writer)
             elif op == "sync":
                 await self._op_sync(msg, reader, writer)
-            elif op == "rpc":
-                await self._op_rpc(reader, writer)
             elif op == "v1":
                 await self._op_v1(msg, writer)
             else:
@@ -668,13 +664,12 @@ class LinkManager:
         core, cfg = self.core, self.cfg
         b = budget_for(core.spec(), cfg.headroom, cfg.headroom_min_gib)
         running = core.server.running()
-        can_share = cfg.link_share_memory and core.runtime_installed() and not running
         ctx = cfg.context
         args = core.server.state.args or []
         for i, a in enumerate(args[:-1]):
             if a in ("-c", "--ctx-size") and str(args[i + 1]).isdigit():
                 ctx = int(args[i + 1])
-        local_ai = cfg.provider in ("local", "pool")
+        local_ai = cfg.provider in ("local", "pool")  # "pool": saved by versions before 0.9
         return {
             "name": self.name,
             "id": self.id,
@@ -682,9 +677,6 @@ class LinkManager:
             "os": core.spec().os,
             "tag": cfg.llamacpp_tag,
             "backend": b.backend,
-            "ram_budget": b.ram_budget if can_share else 0,
-            "vram_budget": b.vram_budget if can_share else 0,
-            "share_memory": cfg.link_share_memory,
             "engine": core.runtime_installed(),
             "busy": running,
             "ai": {
@@ -783,68 +775,6 @@ class LinkManager:
         self.sync_error = "; ".join(errors)
         return {"synced_with": done, "errors": errors}
 
-    # ---- op: memory sharing (llama.cpp RPC through the link) -------------------------
-    def _stop_rpc(self) -> None:
-        if self._rpc and self._rpc.poll() is None:
-            self._rpc.terminate()
-            try:
-                self._rpc.wait(5)
-            except Exception:  # noqa: BLE001
-                self._rpc.kill()
-        self._rpc = None
-
-    def _ensure_rpc(self) -> int:
-        """Start llama.cpp's worker bound to this device only (127.0.0.1). Returns its port."""
-        from datas.recommend.engine import budget_for
-        from datas.runtime import llamacpp
-
-        port = self.cfg.rpc_port
-        if self._rpc and self._rpc.poll() is None:
-            return port
-        exe = llamacpp.binary(self.cfg, "rpc-server")
-        b = budget_for(self.core.spec(), self.cfg.headroom, self.cfg.headroom_min_gib)
-        env = os.environ.copy()
-        if sys.platform.startswith("linux"):
-            env["LD_LIBRARY_PATH"] = str(exe.parent) + os.pathsep + env.get("LD_LIBRARY_PATH", "")
-        elif sys.platform == "darwin":
-            env["DYLD_LIBRARY_PATH"] = (
-                str(exe.parent) + os.pathsep + env.get("DYLD_LIBRARY_PATH", "")
-            )
-        self._rpc = subprocess.Popen(
-            [str(exe), "-H", "127.0.0.1", "-p", str(port), "-t", str(b.threads), "-c"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            env=env,
-            cwd=str(exe.parent),
-        )
-        deadline = time.time() + 15
-        while time.time() < deadline:
-            if self._rpc.poll() is not None:
-                raise LinkError("the engine's worker could not start on that device")
-            with socket.socket() as s:
-                s.settimeout(0.5)
-                if s.connect_ex(("127.0.0.1", port)) == 0:
-                    return port
-            time.sleep(0.2)
-        raise LinkError("the engine's worker did not start in time")
-
-    async def _op_rpc(self, reader, writer) -> None:  # noqa: ANN001
-        if not self.cfg.link_share_memory:
-            await send(writer, {"ok": False, "error": "that device is not sharing its memory"})
-            return
-        if self.core.server.running():
-            await send(writer, {"ok": False, "error": "that device is busy running its own AI"})
-            return
-        try:
-            port = await self.loop.run_in_executor(None, self._ensure_rpc)
-            r2, w2 = await asyncio.open_connection("127.0.0.1", port, limit=4 * BUF)
-        except Exception as e:  # noqa: BLE001 - engine missing, port busy…
-            await send(writer, {"ok": False, "error": f"memory sharing is not ready there: {e}"})
-            return
-        await send(writer, {"ok": True})
-        await splice(reader, writer, r2, w2)
-
-    # ---- op: this device's Datas window, for a linked phone -------------------------
     async def _op_window(self, pid: str, reader, writer) -> None:  # noqa: ANN001
         """Join the encrypted connection to the local service, so the phone's app can show
         this device's Datas. The service is told which of its connections come this way
@@ -868,29 +798,6 @@ class LinkManager:
         finally:
             self.core.remote_clients.pop(me, None)
             self.status.setdefault(pid, {})["seen"] = time.time()
-
-    async def _ensure_tunnel(self, pid: str) -> int:
-        """A door on this device (127.0.0.1) that leads, encrypted, to the worker on ``pid``."""
-        if pid in self.tunnels:
-            return self.tunnels[pid][1]
-
-        async def on_conn(lr: asyncio.StreamReader, lw: asyncio.StreamWriter) -> None:
-            try:
-                r, w = await self._connect(pid)
-                await send(w, {"op": "rpc", "port": self.cfg.link_port})
-                head = await asyncio.wait_for(recv(r, 1 << 20), 30)
-                if not head.get("ok"):
-                    raise LinkError(head.get("error") or "refused")
-            except Exception:  # noqa: BLE001
-                self._fail(pid)
-                lw.close()
-                return
-            await splice(lr, lw, r, w)
-
-        srv = await asyncio.start_server(on_conn, "127.0.0.1", 0, limit=4 * BUF)
-        port = srv.sockets[0].getsockname()[1]
-        self.tunnels[pid] = (srv, port)
-        return port
 
     # ---- the Datas of another computer of mine, shown here ----------------------------
     async def _ask_window(self, pid: str):  # noqa: ANN202
@@ -956,39 +863,6 @@ class LinkManager:
             ) from e
         return {"url": f"http://127.0.0.1:{port}/", "name": self._peers[pid]["name"]}
 
-    def pool_nodes(self, refresh: bool = False) -> list:
-        """Linked devices that are online and offering memory, as endpoints llama.cpp can use."""
-        from datas.pool.discovery import Node
-
-        if refresh:
-            self.refresh()
-        out = []
-        for pid, p in self._peers.items():
-            st = self.status.get(pid, {})
-            info = st.get("info") or {}
-            if not st.get("online") or not (info.get("ram_budget") or info.get("vram_budget")):
-                continue
-            port = self._call(self._ensure_tunnel(pid), 10)
-            out.append(
-                Node(
-                    host=p["name"],
-                    ip="127.0.0.1",
-                    port=port,
-                    tag=info.get("tag", ""),
-                    backend=info.get("backend", ""),
-                    ram_budget=int(info.get("ram_budget", 0)),
-                    vram_budget=int(info.get("vram_budget", 0)),
-                    datas_version=info.get("version", ""),
-                )
-            )
-        return out
-
-    def tunnel_owner(self, endpoint: str) -> str | None:
-        for pid, (_, port) in self.tunnels.items():
-            if endpoint == f"127.0.0.1:{port}":
-                return pid
-        return None
-
     # ---- op: use the AI running on a linked device ----------------------------------
     async def _op_v1(self, msg: dict, writer: asyncio.StreamWriter) -> None:
         import httpx
@@ -1000,7 +874,7 @@ class LinkManager:
         if path not in V1_PATHS:
             await send(writer, {"ok": False, "error": "not available over the link"})
             return
-        if self.cfg.provider not in ("local", "pool"):
+        if self.cfg.provider not in ("local", "pool"):  # "pool": saved before 0.9
             await send(
                 writer, {"ok": False, "error": "that device is not running an AI of its own"}
             )
@@ -1016,7 +890,7 @@ class LinkManager:
         if not core.server.running():
             await send(writer, {"ok": False, "error": "no AI is running on that device"})
             return
-        prov = active_provider(self.cfg, True, core.server.state.rpc)
+        prov = active_provider(self.cfg, True)
         body = msg.get("body")
         if isinstance(body, dict):
             body["model"] = prov.model or "default"
@@ -1136,25 +1010,13 @@ class LinkManager:
         tick = 0
         while not self._stop:
             try:
-                pooled = bool(self.core.server.state.rpc) and self.core.server.running()
-                await asyncio.sleep(8 if pooled else 20)
+                await asyncio.sleep(20)
                 tick += 1
                 if not self._peers:
                     continue
                 await self._refresh()
                 if tick % 6 == 0:
                     await self.loop.run_in_executor(None, self._rediscover)
-                # a device this AI is spread over went away → carry on with what fits here
-                if pooled:
-                    lost = [
-                        self._peers[pid]["name"]
-                        for pid in {self.tunnel_owner(e) for e in self.core.server.state.rpc}
-                        if pid and pid in self._peers and not self.status.get(pid, {}).get("online")
-                    ]
-                    if lost:
-                        await self.loop.run_in_executor(
-                            None, self.core.fallback_local, ", ".join(lost)
-                        )
                 # chats: when something changed, and every couple of minutes anyway
                 if (
                     self.cfg.link_sync_chats
@@ -1253,7 +1115,6 @@ class LinkManager:
         p = self._peers[pid]
         st = self.status.get(pid, {})
         info = st.get("info") or {}
-        mem = (info.get("ram_budget", 0) + info.get("vram_budget", 0)) / 2**30
         app = p.get("kind") == "app"
         return {
             "id": pid,
@@ -1268,12 +1129,8 @@ class LinkManager:
             "error": st.get("error", "") if not st.get("online") and not app else "",
             "os": p.get("os", "") if app else info.get("os", ""),
             "version": info.get("version", ""),
-            "memory_gib": round(mem, 1),
-            "shares_memory": bool(info.get("share_memory")),
             "busy": bool(info.get("busy")),
             "engine": bool(info.get("engine")),
-            "tag": info.get("tag", ""),
-            "tag_matches": not info.get("tag") or info.get("tag") == self.cfg.llamacpp_tag,
             "ai": info.get("ai") or {},
             "sync": bool(info.get("sync")),
             "in_use": self.cfg.provider == f"link:{pid}",
@@ -1299,7 +1156,6 @@ class LinkManager:
                 else None
             ),
             "peers": [self.peer_public(pid) for pid in self._peers],
-            "share_memory": self.cfg.link_share_memory,
             "sync_chats": self.cfg.link_sync_chats,
             "forget": self.cfg.forget,
             "last_sync": self.last_sync or None,

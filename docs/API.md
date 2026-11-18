@@ -11,9 +11,9 @@ no key: send JSON, get JSON.
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/status` | version, runtime, server state, active provider, installed models, pool nodes |
+| GET | `/api/status` | version, runtime, server state, active provider, installed models |
 | GET | `/api/spec?refresh=0\|1` | `DeviceSpec` + `default_headroom` |
-| GET | `/api/recommend?headroom=0.25&context=8192&kv_bits=16&role=general&want=coding,vision&pool=0\|1` | `Recommendation` (`budget`, `default`, `fits[]`, `does_not_fit[]`) |
+| GET | `/api/recommend?headroom=0.25&context=8192&kv_bits=16&role=general&want=coding,vision` | `Recommendation` (`budget`, `default`, `fits[]`, `does_not_fit[]`) |
 | GET | `/api/catalog` | the merged catalog |
 | POST | `/api/catalog` `{entry}` | add/override a model in the user catalog |
 | POST | `/api/catalog/reload` | reload catalog files |
@@ -23,14 +23,14 @@ no key: send JSON, get JSON.
 | Method | Path | Body |
 |---|---|---|
 | GET | `/api/settings` | — |
-| POST | `/api/settings` | `{headroom?, context?, lang?, theme?, idle_sleep_min?, allow_local_fetch?, backend?, image_backend?, voice_stt_model?, voice_tts_voice?, voice_speak_answers?, pool_nodes?}` |
+| POST | `/api/settings` | `{headroom?, context?, lang?, theme?, idle_sleep_min?, allow_local_fetch?, backend?, image_backend?, voice_stt_model?, voice_tts_voice?, voice_speak_answers?}` |
 
 ## Jobs (long-running)
 
 | Method | Path | Body / returns |
 |---|---|---|
 | POST | `/api/install` | `{model_id, quant, with_vision?}` → `Job` |
-| POST | `/api/run` | `{model_id, quant, context?, kv_bits?, pool?, with_vision?, with_voice?, starter?}` → `Job` (`starter`: a small AI starts first so chatting works during the download) |
+| POST | `/api/run` | `{model_id, quant, context?, kv_bits?, with_vision?, with_voice?, starter?}` → `Job` (`starter`: a small AI starts first so chatting works during the download) |
 | POST | `/api/run-custom` | `{path, context?, kv_bits?}` → `Job` |
 | POST | `/api/stop` | stops llama-server |
 | POST | `/api/bench` | → `Job` whose `result` has `prompt_tps`, `gen_tps` |
@@ -49,18 +49,12 @@ Poll `/api/jobs/{id}` every ~0.7 s; `state ∈ queued|running|done|error`.
 | DELETE | `/api/providers/{name}` | — |
 | POST | `/api/providers/active` | `{name}` |
 
-## Pool
-
-| Method | Path | Returns |
-|---|---|---|
-| GET | `/api/pool/nodes?refresh=1&seconds=2.5` | linked devices lending memory + workers listed by hand, local tag |
-
 ## OpenAI-compatible
 
 `ANY /v1/{path}` → proxied to the active provider, streaming. `model` may be `"datas"`; the
 proxy substitutes the provider's configured model. (The window itself chats through
 `POST /api/chat`, which adds notes, documents, helpers and the internet tools.) Returns `503 {"error":{"type":"datas_no_model"}}` when nothing local is
-running and the active provider is `local`/`pool`.
+running and the active provider is `local`.
 
 ## Python
 
@@ -90,7 +84,6 @@ d.stop()
 | GET/POST/DELETE | `/api/context[/{name}]` | documents (JSON with base64 content) |
 | GET | `/api/skills` · `/api/sources` | the earlier, short list of skills (the window now uses `/api/assistants`); project + every dependency with links |
 | GET | `/agent` · POST `/api/agent/run` (SSE) · GET `/api/agent/workspace` · POST `/api/window/agent` | agent page, run, files, open in a separate window/process |
-| POST | `/api/pool/offer` `{on}` | run/stop the background worker |
 | POST | `/api/shutdown` | window closed → stop everything |
 
 ## v0.3 additions
@@ -130,7 +123,7 @@ d.stop()
 | POST · DELETE | `/api/link/pairing` | show a one-time code (ten minutes) · cancel it |
 | POST | `/api/link/pair` | `{address, code}` — link with the device that shows the code |
 | GET | `/api/link/nearby` | devices on this network with linking on (names only) |
-| POST | `/api/link/options` | `{share_memory?, sync_chats?, device_name?}` |
+| POST | `/api/link/options` | `{sync_chats?, device_name?}` |
 | DELETE · POST | `/api/link/peers/{id}` | unlink · for a phone `{window}`: may it open this device's Datas |
 | POST | `/api/link/sync` · `/api/link/use/{id}` | sync chats now · chat with the AI running on that device |
 | ANY | `/link/{id}/v1/{path}` | local door to the AI on a linked device; the request travels over the encrypted link |

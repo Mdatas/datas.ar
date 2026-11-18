@@ -5,7 +5,7 @@ One interface — an OpenAI-compatible `/v1/chat/completions` — three sources 
 | Provider | What it is | Key |
 |---|---|---|
 | `local` | `llama-server` on this machine, started by Datas | none |
-| `pool` | the same `llama-server` with `--rpc` workers | none |
+| `link:<device>` | the AI running on another of your linked devices ([DEVICES.md](DEVICES.md)) | none |
 | any name you choose | an external OpenAI-compatible API | yours, stored locally |
 
 The UI's *Using* dropdown, `datas provider use <name>`, or `POST /api/providers/active`
@@ -42,7 +42,7 @@ datas provider use local
 `datas/server/app.py::v1_proxy` forwards `GET/POST /v1/*` to the active provider,
 streaming the response body unchanged (SSE included). It:
 
-- rejects with `503 datas_no_model` when `local`/`pool` is active but nothing is running;
+- rejects with `503 datas_no_model` when `local` is active but nothing is running;
 - fills in `model` when the client sends none or `"datas"`/`"default"`/`"auto"`;
 - strips hop-by-hop headers and the client's own `Authorization`, adds the provider's.
 

@@ -66,14 +66,14 @@ device can and cannot do, and the choices are yours.
 
 ### Your devices, together
 
-Link the computers you own with a one-time code. They can then keep the same chats, lend
-each other memory so a bigger AI fits, and use each other's AI; if one drops out, the one
-you are on carries on alone. A phone (Android, iPhone) links the same way and shows the
+Link the computers you own with a one-time code. They can then keep the same chats, and a
+small one can use the AI running on a strong one — only the words travel, so it is as quick
+as the strong one. A phone (Android, iPhone) links the same way and shows the
 computer's Datas, so a small phone uses the big AI at home; a computer can show the Datas of
 another one of yours too — handy for one without a screen. The link is encrypted with the
 web's standard (TLS 1.3) and only devices you paired can connect — no account, no server in
 the middle. Strangers' devices are not supported, because that cannot be made private today.
-→ [docs/DEVICES.md](docs/DEVICES.md) · [docs/P2P.md](docs/P2P.md)
+→ [docs/DEVICES.md](docs/DEVICES.md)
 
 ### Offline survival
 
@@ -175,7 +175,7 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | [CATALOG.md](docs/CATALOG.md) | the 27 verified AIs, the format, how to add one |
 | [RUNTIME.md](docs/RUNTIME.md) · [UPDATES.md](docs/UPDATES.md) | llama.cpp builds, pinning, updates and going back |
 | [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) · [SIGNING.md](docs/SIGNING.md) | what is stored where; how the app is protected and what it does not protect against; what is signed |
-| [DEVICES.md](docs/DEVICES.md) · [POOLING.md](docs/POOLING.md) · [P2P.md](docs/P2P.md) | linked devices; the older manual pooling; why strangers' devices are ruled out |
+| [DEVICES.md](docs/DEVICES.md) | linked devices: synced chats, using another device's AI |
 | [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
 | [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
 | [HARDWARE.md](docs/HARDWARE.md) · [SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard; Raspberry Pi, home servers, NAS and the background service |
