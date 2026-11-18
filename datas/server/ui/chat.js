@@ -138,8 +138,8 @@ const Chat = {
   },
   async aiMenu(anchor, forNewChat) {
     const items = [];
-    let lib = { installed: [] }, prov = { providers: [], active: "local" }, link = { peers: [] };
-    try { [lib, prov, link] = await Promise.all([Chat.library(true), api("/api/providers"), api("/api/link").catch(() => ({ peers: [] }))]); } catch (e) { /* show what we have */ }
+    let lib = { installed: [] }, link = { peers: [] };
+    try { [lib, link] = await Promise.all([Chat.library(true), api("/api/link").catch(() => ({ peers: [] }))]); } catch (e) { /* show what we have */ }
     const st = S.status, after = () => { if (forNewChat) { Chat.fresh(); go("chat"); } else if (S.screen === "chat") { Chat.syncTop(); Chat.drawBanner(); Chat.drawFine(); } };
     items.push({ head: t("ai_here") });
     if (!lib.installed.length) items.push({ label: t("ai_none_installed"), disabled: true });
@@ -148,12 +148,6 @@ const Chat = {
       items.push({ label: it.name, icon: sunMark(running ? "awake" : "none", 18),
         note: running ? t("ai_running") : (it.resources ? t("speed_" + it.resources.speed_class) : ""),
         fn: async () => { if (!running) await Chat.runModel(it); after(); } });
-    }
-    const remote = prov.providers.filter(p => p.kind !== "local" && p.kind !== "linked");
-    if (remote.length) items.push({ head: t("ai_paid") });
-    for (const p of remote) {
-      items.push({ label: p.name, icon: "globe", note: prov.active === p.name ? t("ai_in_use") : (p.model || t("ai_leaves_device")),
-        fn: async () => { try { await api("/api/providers/active", { body: { name: p.name } }); await refreshStatus(); } catch (e) { oops(e); } after(); } });
     }
     const peers = (link.peers || []).filter(p => p.online && p.ai && p.ai.name);
     if (peers.length) items.push({ head: t("ai_other_devices") });

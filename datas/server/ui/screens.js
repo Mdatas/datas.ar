@@ -92,7 +92,7 @@ SCREENS.setup = async view => {
         h("div", { class: "row" }, get(d, true)),
         more(t("details"), modelFacts(d)))
         : h("div", { class: "hero", style: "margin-top:14px" }, h("h2", { text: t("get_none_title") }), h("p", { text: t("get_none_text") }),
-          h("div", { class: "row" }, h("button", { class: "btn primary", onclick: () => go("devices") }, t("nav_devices")), h("button", { class: "btn", onclick: () => go("settings") }, t("set_paid")))),
+          h("div", { class: "row" }, h("button", { class: "btn primary", onclick: () => go("devices") }, t("nav_devices")))),
       others.length > 0 && sec(t("setup_others"), t("setup_others_sub"), h("div", { class: "list" }, others.map(c => h("div", { class: "item" },
         h("div", { class: "row" }, h("span", { class: "name grow", text: c.name }), speedChip(c), get(c, false)),
         h("div", { class: "muted", text: t("speedl_" + c.speed_class) }), more(t("details"), modelFacts(c)))))),
@@ -674,7 +674,7 @@ SCREENS.learn = async view => {
 /* ======================= Settings ======================= */
 SCREENS.settings = async view => {
   const wrap = page(view, t("set_title"), null);
-  const [settings, priv, provs, voice] = await Promise.all([api("/api/settings"), api("/api/privacy"), api("/api/providers"), api("/api/voice")]);
+  const [settings, priv, voice] = await Promise.all([api("/api/settings"), api("/api/privacy"), api("/api/voice")]);
   const post = (path, body) => guard(async () => { await api(path, { body }); await refreshStatus(); })();
   // --- look
   wrap.append(sec(t("set_look"), null,
@@ -719,21 +719,6 @@ SCREENS.settings = async view => {
       if (v) toast([t("set_service_on")].concat(r.notes || []).join(" "), { ms: 9000 });
     })()));
   }).catch(() => {});
-  // --- paid services
-  const pName = h("input", { type: "text", placeholder: t("paid_name") }), pUrl = h("input", { type: "text", placeholder: "https://…/v1" }), pKey = h("input", { type: "password", placeholder: t("paid_key"), autocomplete: "off" }), pModel = h("input", { type: "text", placeholder: t("paid_model") });
-  const preset = h("select", { onchange: e => { const k = e.target.value; if (k) { pName.value = k.split(" ")[0]; pUrl.value = provs.presets[k]; } } }, h("option", { value: "" }, t("paid_preset")), Object.keys(provs.presets).map(k => h("option", { value: k }, k)));
-  const remote = provs.providers.filter(p => p.kind !== "local" && p.kind !== "linked");
-  wrap.append(sec(t("set_paid"), t("set_paid_sub"),
-    remote.length ? h("div", { class: "list" }, remote.map(p => h("div", { class: "item" }, h("div", { class: "row" }, icon("globe"), h("span", { class: "name grow", text: p.name }),
-      provs.active === p.name ? h("span", { class: "chip ok", text: t("ai_in_use") }) : h("button", { class: "btn small", onclick: async () => { await post("/api/providers/active", { name: p.name }); go("settings"); } }, t("paid_use")),
-      h("button", { class: "icon-btn", "aria-label": t("delete"), onclick: guard(async () => { await api("/api/providers/" + encodeURIComponent(p.name), { method: "DELETE" }); await refreshStatus(); go("settings"); }) }, icon("trash", 16))),
-      h("div", { class: "small muted", text: [p.base_url, p.model, p.has_key ? t("paid_has_key") : ""].filter(Boolean).join(", ") })))) : null,
-    provs.active !== "local" && h("button", { class: "btn", style: "margin:10px 0", onclick: async () => { await post("/api/providers/active", { name: "local" }); go("settings"); } }, t("paid_back_local")),
-    more(t("paid_add"), h("div", { class: "stack" }, preset, pName, pUrl, pKey, pModel,
-      h("button", { class: "btn", style: "justify-self:start", onclick: guard(async () => {
-        await api("/api/providers", { body: { name: pName.value.trim(), base_url: pUrl.value.trim(), api_key: pKey.value, model: pModel.value.trim() } });
-        go("settings");
-      }) }, t("save"))))));
   // --- voice
   const ready = voice.installed.ready, can = voice.available.stt && voice.available.tts;
   wrap.append(sec(t("set_voice"), t("set_voice_sub"),

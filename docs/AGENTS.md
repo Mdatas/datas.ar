@@ -16,7 +16,7 @@ datas agent --devices --control "…"                                         # 
 ```
 
 `datas/agents/runner.py` is a plain tool-calling loop over the active provider's
-`/v1/chat/completions` (local model, another of your devices, or API key — identical code):
+`/v1/chat/completions` (the AI on this device or on another of your devices — identical code):
 
 1. system prompt + task → model
 2. if the reply contains `tool_calls`, run each tool, append results, go to 1
@@ -259,8 +259,6 @@ their settings; point them at the same address.
   steps ask first.
 - **The AI's claims are not trusted.** The runner reports only the tool results it actually
   observed, and tells the AI so.
-- **A paid online service sees the task and the tool results** — that is what choosing it
-  means. Use an AI on this device for anything private.
 
 The full picture, including what Datas does *not* protect against: [SECURITY.md](SECURITY.md).
 

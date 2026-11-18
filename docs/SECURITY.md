@@ -100,7 +100,7 @@ Details: [AGENTS.md](AGENTS.md), [PROGRAMS.md](PROGRAMS.md).
 - Devices on the network are only listened to (their own announcements). Datas does not scan
   addresses or try passwords.
 - A picture attached to a chat goes where that chat goes: nowhere with an AI on this device;
-  to the company you chose with a paid online service.
+  to your linked device, encrypted, when you use that device's AI.
 - What text a camera or a screen shows can be written to mislead an AI, exactly like a web
   page. This is why acting on the world asks first.
 
@@ -117,8 +117,6 @@ code. Full description and limits: [DEVICES.md](DEVICES.md).
   folder. The settings file is readable only by your user account (mode 600 where the system
   supports it). None of it is encrypted on disk: someone with access to your unlocked user
   account can read it. Use your system's disk encryption (BitLocker, FileVault, LUKS) for that.
-- Keys for paid services are in the same settings file. They are sent only to the service
-  they belong to.
 - Forget mode writes no chats, notes or logs.
 - A damaged settings file is set aside and replaced with a working one; the previous copy is
   kept as a backup.
@@ -166,7 +164,6 @@ nothing and downloads nothing. Every installer is built only if the finished app
 - A model file from an unknown source. Datas is neutral about what you load, and a model is
   data rather than a program, but it is read by the engine; prefer files from publishers you
   recognise.
-- A paid online service you choose: it sees what you send it.
 - The bigger creative tools (ComfyUI and others) and any program started through a
   connection: they run with your user's rights, like any program you install.
 - What your own devices do once told: a board runs whatever its program does with a line it

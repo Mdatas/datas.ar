@@ -8,7 +8,7 @@
 - [x] Model download with resume + SHA-256; exact KV from GGUF header
 - [x] llama-server lifecycle with `--fit`, logs, health, bench
 - [x] Web UI (EN/ES) + CLI
-- [x] Providers: local / API keys; `/v1` proxy
+- [x] Providers: local / linked device; `/v1` proxy (paid online AIs removed in 0.9)
 - [x] ~~Pool mode~~ — removed in 0.9 (see 0.9 below)
 - [x] Built-in agent runner with sandboxed tools
 - [x] Tests incl. a real llama-server integration test on a synthetic GGUF

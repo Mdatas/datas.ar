@@ -48,12 +48,6 @@ printer, other computers) are refused unless you allow them in Settings
 Datas. From then on it is ordinary browsing: that website sees your visit as it would any
 other. Datas adds nothing to the address and keeps no list of what you opened.
 
-## Paid providers
-
-An API key the user adds is stored in `config.json` on this device and sent only to the
-base URL of that provider when the user chats through it. `GET /api/providers` never returns
-keys. Using a paid provider means that company sees the conversation — the UI says so.
-
 ## Your linked devices
 
 Devices you link yourself (*Devices*) talk over an encrypted connection (TLS 1.3, a pinned
@@ -77,7 +71,6 @@ connections are all to third parties, and these are all of them:
 | GitHub | the AI engine is downloaded; about twice a day while Datas runs, if *Keep Datas up to date by itself* is on (Settings → Updates); you press *Check for updates* or *Get ArtCraft*; FFmpeg is fetched because a camera or a recording needs it and the computer has none | the request for the file or for the public list of versions |
 | Hugging Face, or the mirror you typed in Settings → Updates | as above, when you set a mirror; every file is checked against the SHA-256 Datas keeps for it | the request for that file |
 | The publishers of the library documents (FEMA, CDC, WHO, Hesperian, Project Gutenberg…) | you ask for them in *Offline survival* | the request for that document |
-| A paid service | you added its key and chat through it | the conversation |
 | The web | you switched internet on in a chat or for the agent | search words and page addresses |
 | Your other devices | you linked them | see above |
 | Your own hub and devices (MQTT broker, Home Assistant, Modbus devices) | you typed their address and the agent uses them | the message, request or value, to that address on your network |
@@ -101,9 +94,8 @@ button in a chat or when the agent asks and you allow it; the same for a picture
 screen. → [HARDWARE.md](HARDWARE.md)
 
 - A picture attached to a chat is part of that chat: it is kept with the chat in Remember
-  mode (so you can read the chat again) and not kept in Forget mode. With an AI on this
-  device it goes nowhere; with a paid online service it is sent to that company like the rest
-  of the conversation.
+  mode (so you can read the chat again) and not kept in Forget mode. It goes nowhere else
+  (with the AI of a linked device, it travels to that device over the encrypted link).
 - Pictures the agent takes are saved in the agent's folder (`photos/`, `screens/`) so you can
   see what it saw. Delete them there like any file.
 - An answer you print becomes a PDF in your Documents/Datas folder first, like *Save as PDF*.
@@ -112,8 +104,7 @@ screen. → [HARDWARE.md](HARDWARE.md)
 - The address, user and password of your broker and the address and token of your Home
   Assistant are in `things.json` in Datas' data folder, readable only by your user. To make
   Datas forget one, save that connection with an empty address (or delete the file). *Erase
-  everything* in Settings removes chats, notes and documents — not these, and not the keys of
-  paid services.
+  everything* in Settings removes chats, notes and documents — not these.
 
 ## Images
 

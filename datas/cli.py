@@ -8,7 +8,6 @@ datas run [<id>]      → install if needed, then start the local server
 datas chat            → terminal chat against whatever is running / the active provider
 datas agent "<task>"  → run the built-in agent
 datas link …          → your other devices: sync chats, use another device's AI
-datas provider …      → manage API-key providers
 datas runtime …       → pin/update llama.cpp
 datas doctor          → diagnostics
 datas selftest        → check that every part of this copy is present and works
@@ -32,7 +31,6 @@ from datas.orchestrator import Datas
 app = typer.Typer(
     add_completion=False, no_args_is_help=False, help="Datas.ar — local AI for everyone."
 )
-provider_app = typer.Typer(help="Remote OpenAI-compatible providers (API keys).")
 runtime_app = typer.Typer(help="llama.cpp runtime management.")
 catalog_app = typer.Typer(help="Model catalog.")
 voice_app = typer.Typer(help="Hearing (whisper.cpp) and speaking (Kokoro).")
@@ -41,7 +39,6 @@ link_app = typer.Typer(help="Link your own devices (encrypted): share memory, th
 app.add_typer(link_app, name="link")
 app.add_typer(voice_app, name="voice")
 app.add_typer(images_app, name="images")
-app.add_typer(provider_app, name="provider")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(catalog_app, name="catalog")
 
@@ -735,63 +732,6 @@ def link_sync():
     con.print("synced with: " + (", ".join(r["synced_with"]) or "nobody online"))
     for e in r["errors"]:
         con.print(f"[yellow]{e}[/]")
-
-
-# ---------------------------------------------------------------------------
-# providers
-
-
-@provider_app.command("list")
-def provider_list():
-    from datas.providers import all_providers
-
-    cfg = Config.load()
-    t = Table(box=None)
-    for c in ("name", "kind", "base_url", "model", "key", "active"):
-        t.add_column(c)
-    for p in all_providers(cfg, False):
-        t.add_row(
-            p.name,
-            p.kind,
-            p.base_url,
-            p.model,
-            "✓" if p.api_key else "—",
-            "●" if cfg.provider == p.name else "",
-        )
-    con.print(t)
-
-
-@provider_app.command("add")
-def provider_add(
-    name: str,
-    base_url: str,
-    model: str = "",
-    api_key: str = typer.Option("", prompt=True, hide_input=True),
-):
-    """Add/update an OpenAI-compatible provider. The key is stored in the local config only."""
-    from datas.providers import set_remote
-
-    set_remote(Config.load(), name, base_url, api_key, model)
-    con.print(f"saved provider {name}")
-
-
-@provider_app.command("use")
-def provider_use(name: str):
-    """Make a provider the active one for the /v1 proxy, chat and agents."""
-    cfg = Config.load()
-    if name != "local" and cfg.remote(name) is None:
-        con.print(f"[red]unknown provider {name}[/]")
-        raise typer.Exit(1)
-    cfg.provider = name
-    cfg.save()
-    con.print(f"active provider: {name}")
-
-
-@provider_app.command("remove")
-def provider_remove(name: str):
-    from datas.providers import remove_remote
-
-    con.print("removed" if remove_remote(Config.load(), name) else "not found")
 
 
 # ---------------------------------------------------------------------------

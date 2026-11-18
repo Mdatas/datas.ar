@@ -4,7 +4,7 @@
 
 Datas puts an AI (Artificial Intelligence) assistant — the kind you know from ChatGPT — on
 your own computer. It runs there, offline, for free. Nothing you type leaves your device
-unless *you* switch the internet on for a chat or choose a paid online service.
+unless *you* switch the internet on for a chat.
 
 > **A local app that runs 100% on your device. Datas has no server to talk to** — it is just
 > code in a public repository under an open-source licence (GPL-3.0): anyone may use and change
@@ -45,7 +45,7 @@ device can and cannot do, and the choices are yours.
 | **Devices** | Link your own computers with a one-time code. |
 | **Learn** | AI from zero to expert, in English and Spanish. |
 | **Offline survival** | Guides and a library kept on the device for when the power, the water or the internet fail — water, food, electricity, staying connected, travel, long self-sufficiency and, above all, organising with neighbours. The smallest AI answers from it with no internet. |
-| **Settings** | Privacy, language and look (day or night), the AI, voice, paid online services, updates. |
+| **Settings** | Privacy, language and look (day or night), the AI, voice, updates. |
 | **About Datas** | Version, how Datas works in seven steps, everything it is built on (grouped, each with its official link and licence), technical logs. |
 
 ### In a chat
@@ -60,9 +60,6 @@ device can and cannot do, and the choices are yours.
   print it on paper.
 - **Internet, per chat.** Off until you switch it on; the AI shows which pages it used.
 - **Voice.** Talk to it and have answers read aloud, all on this device.
-- **Paid AIs, optionally.** Paste an API key (Application Programming Interface key: a
-  password-like code from OpenAI, Google, Anthropic, Groq…) and use the same chat with their
-  AI. The key stays on your computer; that company then sees what you send it.
 
 ### Your devices, together
 
@@ -179,7 +176,7 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
 | [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
 | [HARDWARE.md](docs/HARDWARE.md) · [SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard; Raspberry Pi, home servers, NAS and the background service |
-| [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; paid services and the `/v1` address; phones |
+| [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; the `/v1` address other apps can use; phones |
 | [API.md](docs/API.md) | the local HTTP interface |
 | [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | what is next; who Datas is built on; how to help |
 
@@ -188,7 +185,7 @@ git clone https://github.com/Mdatas/datas.ar && cd datas.ar
 pip install -e ".[dev]" && pytest   # about 170 tests, about a minute; one runs a real llama-server on a tiny model
 datas selftest                      # checks this copy: window files, lessons, documents, device link, local service, hardware parts
 datas open --selfcheck out.json     # opens the real window, checks every screen shows, writes a report
-datas-cli --help                    # scan | recommend | run | chat | agent | link | things | provider | runtime | catalog | doctor …
+datas-cli --help                    # scan | recommend | run | chat | agent | link | things | runtime | catalog | doctor …
 ```
 
 A command line, a local interface (`http://127.0.0.1:8420/api/…`) and an OpenAI-compatible

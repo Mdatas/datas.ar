@@ -1,56 +1,33 @@
-# Providers
+# Where the AI's words come from
 
-One interface — an OpenAI-compatible `/v1/chat/completions` — three sources of tokens.
+One interface — an OpenAI-compatible `/v1/chat/completions` — two sources:
 
-| Provider | What it is | Key |
-|---|---|---|
-| `local` | `llama-server` on this machine, started by Datas | none |
-| `link:<device>` | the AI running on another of your linked devices ([DEVICES.md](DEVICES.md)) | none |
-| any name you choose | an external OpenAI-compatible API | yours, stored locally |
-
-The UI's *Using* dropdown, `datas provider use <name>`, or `POST /api/providers/active`
-switches the active provider. Chat, agents and every app pointed at
-`http://127.0.0.1:8420/v1` follow it immediately.
-
-## Presets
-
-Base URLs offered in the UI (you still enter the key and model id):
-
-| Preset | Base URL |
+| Provider | What it is |
 |---|---|
-| openai | `https://api.openai.com/v1` |
-| anthropic (openai-compatible) | `https://api.anthropic.com/v1` (Datas also sends `x-api-key` + `anthropic-version`) |
-| groq | `https://api.groq.com/openai/v1` |
-| mistral | `https://api.mistral.ai/v1` |
-| openrouter | `https://openrouter.ai/api/v1` |
-| together | `https://api.together.xyz/v1` |
-| ollama (local) | `http://127.0.0.1:11434/v1` |
-| lm studio (local) | `http://127.0.0.1:1234/v1` |
-| another datas node | `http://<host>:8421/v1` |
+| `local` | `llama-server` on this machine, started by Datas |
+| `link:<device>` | the AI running on another of your linked devices ([DEVICES.md](DEVICES.md)) |
 
-Presets are conveniences, not endorsements; check each vendor's current docs.
+The AI picker in the chat, *Devices → Use its AI*, or `POST /api/providers/active` switches
+between them. Chat, the agent and every app pointed at `http://127.0.0.1:8420/v1` follow it
+immediately.
 
-```bash
-datas provider add openai https://api.openai.com/v1 --model gpt-4.1-mini     # prompts for the key
-datas provider use openai
-datas chat
-datas provider use local
-```
+Paid online AIs (an API key for a company's service) were **removed in 0.9**: Datas runs on
+your own devices, and a chat sent to a company's service would leave them. A settings file
+from an older version that still names one simply uses the AI on this device.
 
-## The `/v1` proxy
+## The `/v1` address for other apps
 
-`datas/server/app.py::v1_proxy` forwards `GET/POST /v1/*` to the active provider,
-streaming the response body unchanged (SSE included). It:
+`datas/server/app.py::v1_proxy` forwards `GET/POST /v1/*` to the active provider, streaming
+the answer unchanged (SSE included). Any app that speaks the OpenAI API (an editor plugin, a
+script, an agent framework) can use Datas' AI by setting its address to
+`http://127.0.0.1:8420/v1` and any key. It:
 
-- rejects with `503 datas_no_model` when `local` is active but nothing is running;
-- fills in `model` when the client sends none or `"datas"`/`"default"`/`"auto"`;
-- strips hop-by-hop headers and the client's own `Authorization`, adds the provider's.
-
-Keys never appear in logs or in `GET /api/providers` (only `has_key: true`).
+- answers `503 datas_no_model` when nothing is running here (it wakes a sleeping AI first);
+- fills in `model` when the app sends none or `"datas"`/`"default"`/`"auto"`;
+- strips hop-by-hop headers and the app's own `Authorization`.
 
 ## Exposure warning
 
-By default everything binds to `127.0.0.1`. `datas serve --host 0.0.0.0` makes the UI
-*and* the proxy reachable on your network: anyone who can reach port 8420 can spend your
-remote API quota. Put it behind a VPN (Tailscale/WireGuard) or a reverse proxy with auth
-if you need remote access.
+By default everything listens on `127.0.0.1` only. `datas serve --host 0.0.0.0` makes the
+window *and* the `/v1` address reachable on your network: anyone who can reach port 8420 can
+use your AI. Use linked devices instead (encrypted, paired), or a VPN you control.

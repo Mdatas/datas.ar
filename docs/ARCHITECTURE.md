@@ -23,7 +23,7 @@ borrows everything else:
                │
 ┌──────────────▼──────────────┐   ┌──────────────────────────────────────────┐
 │ datas.orchestrator.Datas    │   │ datas.providers                          │
-│  detect → recommend →       │──▶│  local | linked device | remote (API key)│
+│  detect → recommend →       │──▶│  local | linked device                   │
 │  ensure_runtime → ensure_   │   │  one interface: base_url + headers       │
 │  model → refine (GGUF hdr)  │   └──────────────────────────────────────────┘
 │  → llama-server args → run  │

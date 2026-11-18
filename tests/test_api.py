@@ -38,22 +38,10 @@ def test_proxy_without_model_is_503():
     assert r.json()["error"]["type"] == "datas_no_model"
 
 
-def test_providers_crud():
-    r = client.post(
-        "/api/providers",
-        json={
-            "name": "test-remote",
-            "base_url": "http://127.0.0.1:1/v1",
-            "api_key": "k",
-            "model": "m",
-        },
-    )
-    assert r.status_code == 200
+def test_only_this_device_or_a_linked_one():
+    """Paid online AIs were removed in 0.9: no way to add one, and none can be chosen."""
+    assert client.post("/api/providers", json={"name": "x"}).status_code in (404, 405)
     names = [p["name"] for p in client.get("/api/providers").json()["providers"]]
-    assert "test-remote" in names
-    assert (
-        client.post("/api/providers/active", json={"name": "test-remote"}).json()["active"]
-        == "test-remote"
-    )
-    client.post("/api/providers/active", json={"name": "local"})
-    assert client.delete("/api/providers/test-remote").json()["ok"]
+    assert names == ["local"]
+    assert client.post("/api/providers/active", json={"name": "openai"}).status_code == 404
+    assert client.post("/api/providers/active", json={"name": "local"}).json()["active"] == "local"

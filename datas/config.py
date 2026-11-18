@@ -108,14 +108,6 @@ CONFIG_PATH_NAME = "config.json"
 
 
 @dataclass
-class RemoteProviderConfig:
-    name: str
-    base_url: str
-    api_key: str = ""
-    model: str = ""
-
-
-@dataclass
 class Config:
     # Fraction of RAM/VRAM to keep free for the OS and your other apps. 0.25 = keep 25%.
     headroom: float = 0.25
@@ -181,7 +173,6 @@ class Config:
         return self.memory_mode == "forget"
 
     # Remote OpenAI-compatible providers (API keys live here, on disk, never uploaded)
-    remotes: list[RemoteProviderConfig] = field(default_factory=list)
     # Telemetry: none. This flag exists so it can never be flipped on silently.
     telemetry: bool = False
     # keep Datas, the list of AIs and the engine up to date by itself (datas/updates.py)
@@ -213,20 +204,14 @@ class Config:
                     raise ValueError("not an object")
             except (ValueError, OSError):
                 return cls()
-        remotes = []
-        for r in data.pop("remotes", []) or []:
-            try:
-                remotes.append(RemoteProviderConfig(**r))
-            except TypeError:
-                continue
+        data.pop("remotes", None)  # paid online AIs were removed in 0.9
         known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         try:
             cfg = cls(**known)
         except TypeError:
             cfg = cls()
-        cfg.remotes = remotes
-        if cfg.provider == "pool":  # memory pooling was removed in 0.9: the same AI, here only
-            cfg.provider = "local"
+        if cfg.provider != "local" and not cfg.provider.startswith("link:"):
+            cfg.provider = "local"  # "pool" or a paid service, both removed in 0.9
         return cfg
 
     def save(self) -> Path:
@@ -236,8 +221,3 @@ class Config:
         # settings, sometimes at the same moment: write_text_safely keeps them apart.
         return write_text_safely(p, json.dumps(asdict(self), indent=2), private=True, backup=True)
 
-    def remote(self, name: str) -> RemoteProviderConfig | None:
-        for r in self.remotes:
-            if r.name == name:
-                return r
-        return None

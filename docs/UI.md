@@ -13,7 +13,7 @@ One window, a few screens, nothing loaded from outside the computer.
 | **Tools** | The agent, everyday tools, cameras, printers and other hardware, programs found, connections, bigger creative tools. |
 | **Devices** | Link your own computers. |
 | **Learn** | Lessons, glossary and checked outside material. |
-| **Settings** | Language, look, privacy, the AI, paid services, voice, updates with "go back". |
+| **Settings** | Language, look, privacy, the AI, voice, updates with "go back". |
 
 Rules of the house: one main action per screen (the gold button); plain words, acronyms
 spelled out; nothing is hidden because it is too demanding — the app says what will happen

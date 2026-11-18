@@ -1,63 +1,38 @@
-"""Providers: where tokens come from.
+"""Providers: where the AI's words come from.
 
-Everything above this layer (chat UI, agents, the /v1 proxy) talks to *one* interface —
-an OpenAI-compatible ``/v1/chat/completions`` endpoint — so switching between a local
-model, an AI on another of the user's devices and a paid API is a config change, not a code path.
+Everything above this layer (chat, agent, the /v1 endpoint other apps use) talks to *one*
+interface — an OpenAI-compatible ``/v1/chat/completions`` endpoint — so using the AI on this
+device or the AI on another of the user's own devices is a setting, not a code path.
 
     local  → llama-server on this machine (started by Datas)
     linked → the AI running on another of the user's devices, through the encrypted link
              (datas.link); the request goes to /link/<device>/v1 on this machine, which
              forwards it over mutual TLS
-    remote → any OpenAI-compatible HTTP API with your key (OpenAI, Groq, Mistral,
-             OpenRouter, Together, a friend's Datas node, Ollama, LM Studio, …)
 
-Keys live in the local config file only. Datas never sends them anywhere except the
-base_url you configured.
+There is no third kind. Paid online AIs (an API key for a company's service) were removed in
+0.9: Datas runs on your own devices, and a chat sent to a company's service would leave them.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from datas.config import Config, RemoteProviderConfig
+from datas.config import Config
 
-# Base URLs of popular OpenAI-compatible endpoints, offered as presets in the UI.
-# The user supplies the key and picks the model; nothing here is pre-filled.
-PRESETS: dict[str, str] = {
-    "openai": "https://api.openai.com/v1",
-    "anthropic (openai-compatible)": "https://api.anthropic.com/v1",
-    "groq": "https://api.groq.com/openai/v1",
-    "mistral": "https://api.mistral.ai/v1",
-    "openrouter": "https://openrouter.ai/api/v1",
-    "together": "https://api.together.xyz/v1",
-    "ollama (local)": "http://127.0.0.1:11434/v1",
-    "lm studio (local)": "http://127.0.0.1:1234/v1",
-    "another datas node": "http://<host>:8421/v1",
-}
-
-
-HTTP_PORT: int | None = None  # where this machine's local API listens (set by the server)
+HTTP_PORT: int | None = None  # set by the server when it starts (it may not be the default)
 
 
 @dataclass
 class Provider:
     name: str
-    kind: str  # local | linked | remote
+    kind: str  # local | linked
     base_url: str
-    api_key: str = ""
     model: str = ""
     available: bool = True
     detail: str = ""
 
     def headers(self) -> dict[str, str]:
-        h = {"Content-Type": "application/json"}
-        if self.api_key:
-            h["Authorization"] = f"Bearer {self.api_key}"
-            # Anthropic's compatibility endpoint also accepts the key as x-api-key
-            if "anthropic.com" in self.base_url:
-                h["x-api-key"] = self.api_key
-                h["anthropic-version"] = "2023-06-01"
-        return h
+        return {"Content-Type": "application/json"}
 
     def to_public_dict(self) -> dict:
         return {
@@ -65,7 +40,6 @@ class Provider:
             "kind": self.kind,
             "base_url": self.base_url,
             "model": self.model,
-            "has_key": bool(self.api_key),
             "available": self.available,
             "detail": self.detail,
         }
@@ -82,24 +56,6 @@ def local_provider(cfg: Config, running: bool, model_id: str = "") -> Provider:
     )
 
 
-def remote_provider(r: RemoteProviderConfig) -> Provider:
-    return Provider(
-        name=r.name,
-        kind="remote",
-        base_url=r.base_url.rstrip("/"),
-        api_key=r.api_key,
-        model=r.model,
-        available=bool(r.base_url),
-        detail="api key set" if r.api_key else "no key",
-    )
-
-
-def all_providers(cfg: Config, running: bool) -> list[Provider]:
-    out = [local_provider(cfg, running)]
-    out += [remote_provider(r) for r in cfg.remotes]
-    return out
-
-
 def linked_provider(cfg: Config, device_id: str) -> Provider:
     return Provider(
         name=f"link:{device_id}",
@@ -110,39 +66,12 @@ def linked_provider(cfg: Config, device_id: str) -> Provider:
     )
 
 
+def all_providers(cfg: Config, running: bool) -> list[Provider]:
+    return [local_provider(cfg, running)]
+
+
 def active_provider(cfg: Config, running: bool) -> Provider:
-    if cfg.provider in ("local", "pool"):  # "pool": what versions before 0.9 may have saved
-        return local_provider(cfg, running)
     if cfg.provider.startswith("link:"):
         return linked_provider(cfg, cfg.provider[5:])
-    r = cfg.remote(cfg.provider)
-    if r is None:
-        return local_provider(cfg, running)
-    return remote_provider(r)
-
-
-def set_remote(
-    cfg: Config, name: str, base_url: str, api_key: str = "", model: str = ""
-) -> RemoteProviderConfig:
-    existing = cfg.remote(name)
-    if existing:
-        existing.base_url = base_url or existing.base_url
-        if api_key:
-            existing.api_key = api_key
-        if model:
-            existing.model = model
-        cfg.save()
-        return existing
-    r = RemoteProviderConfig(name=name, base_url=base_url, api_key=api_key, model=model)
-    cfg.remotes.append(r)
-    cfg.save()
-    return r
-
-
-def remove_remote(cfg: Config, name: str) -> bool:
-    before = len(cfg.remotes)
-    cfg.remotes = [r for r in cfg.remotes if r.name != name]
-    if cfg.provider == name:
-        cfg.provider = "local"
-    cfg.save()
-    return len(cfg.remotes) < before
+    # "local", and anything older versions saved ("pool", the name of a paid service)
+    return local_provider(cfg, running)

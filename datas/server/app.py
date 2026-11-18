@@ -44,7 +44,7 @@ from datas import export as exporter
 from datas.catalog import add_user_model
 from datas.catalog import reload as reload_catalog
 from datas.orchestrator import Datas
-from datas.providers import PRESETS, active_provider, all_providers, remove_remote, set_remote
+from datas.providers import active_provider, all_providers
 from datas.recommend.abilities import assess
 from datas.recommend.engine import default_headroom, headroom_for_mode, wants_for
 
@@ -838,33 +838,13 @@ def logs(lines: int = 80) -> dict:
 # ---------------------------------------------------------------------------
 
 
-class ProviderBody(BaseModel):
-    name: str
-    base_url: str = ""
-    api_key: str = ""
-    model: str = ""
-
-
 @app.get("/api/providers")
 def providers() -> dict:
+    """Where the AI's words come from: this device, or another of your linked devices."""
     return {
         "active": core.cfg.provider,
-        "presets": PRESETS,
         "providers": [p.to_public_dict() for p in all_providers(core.cfg, core.server.running())],
     }
-
-
-@app.post("/api/providers")
-def providers_add(body: ProviderBody) -> dict:
-    if body.name in ("local", "pool"):  # "pool": from windows older than 0.9
-        raise HTTPException(400, "reserved name")
-    r = set_remote(core.cfg, body.name, body.base_url, body.api_key, body.model)
-    return {"ok": True, "name": r.name}
-
-
-@app.delete("/api/providers/{name}")
-def providers_del(name: str) -> dict:
-    return {"ok": remove_remote(core.cfg, name)}
 
 
 class ActiveBody(BaseModel):
@@ -873,7 +853,7 @@ class ActiveBody(BaseModel):
 
 @app.post("/api/providers/active")
 def providers_active(body: ActiveBody) -> dict:
-    if body.name not in ("local", "pool") and core.cfg.remote(body.name) is None:
+    if body.name != "local" and not body.name.startswith("link:"):
         raise HTTPException(404, "unknown provider")
     core.cfg.provider = body.name
     core.cfg.save()
