@@ -53,6 +53,9 @@ class AgentConfig:
     allow_browser: bool = False  # its own browser window (datas/agents/browser.py); needs network
     sign_in_wait: Callable[[str], bool] | None = None  # waits while the person signs in
     vision: bool = False  # the AI understands pictures: photos and screen pictures are shown to it
+    # the chat this task comes from (one conversation): its system message (notes, documents,
+    # helper) and its earlier turns; the last user message is the task. None: a task alone.
+    conversation: list[dict] | None = None
 
 
 def run_agent(task: str, cfg: AgentConfig) -> Iterator[dict]:
@@ -140,10 +143,18 @@ def _loop(task: str, cfg: AgentConfig, ctx: T.ToolContext) -> Iterator[dict]:
         )
         + (T.pc_tools.SYSTEM_HINT if ctx.allow_setup else ""),
     )
-    messages: list[dict] = [
-        {"role": "system", "content": sys_msg},
-        {"role": "user", "content": task},
-    ]
+    if cfg.conversation:
+        convo = [dict(m) for m in cfg.conversation]
+        chat_sys = convo.pop(0)["content"] if convo and convo[0].get("role") == "system" else ""
+        messages: list[dict] = [
+            {"role": "system", "content": sys_msg + ("\n\n" + chat_sys if chat_sys else "")},
+            *convo,
+        ]
+    else:
+        messages = [
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": task},
+        ]
     headers = {"Content-Type": "application/json"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"

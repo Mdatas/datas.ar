@@ -327,7 +327,9 @@ SCREENS.tools = async view => {
     if (names.length) add(clear(lgHelp), switchRow(t("tool_long_hands"), t("tool_long_hands_hint", { names: names.join(", ") }), lgHands, v => { lgHands = v; }));
   }).catch(() => {});
   wrap.append(
-    sec(t("tools_agent"), t("tools_agent_sub"), h("button", { class: "btn primary", onclick: guard(async () => { await api("/api/window/agent", { method: "POST" }); toast(t("agent_opened")); }) }, icon("agent", 18), t("tools_agent_open"))),
+    sec(t("tools_agent"), t("tools_agent_sub"), h("div", { class: "row" },
+      h("button", { class: "btn primary", onclick: () => { Chat.fresh(); go("chat"); setTimeout(() => Chat.handsDialog(), 50); } }, icon("agent", 18), t("tools_agent_open")),
+      !isRemote() && h("button", { class: "btn", onclick: guard(async () => { await api("/api/window/agent", { method: "POST" }); toast(t("agent_opened")); }) }, t("tools_agent_tasks")))),
     sec(t("tools_everyday"), t("tools_everyday_sub"), h("div", { class: "grid2" },
       h("div", { class: "sheet stack" }, h("b", { text: t("tool_rec") }), h("span", { class: "muted small", text: t("tool_rec_sub") }), recFile, recBtn),
       h("div", { class: "sheet stack" }, h("b", { text: t("tool_speak") }), h("span", { class: "muted small", text: t("tool_speak_sub") }), spText, spBtn),

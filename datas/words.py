@@ -326,6 +326,10 @@ ES: dict[str, str] = {
     "en esta dirección (ver docs/SECURITY.md).",
     "Requests from other web pages are not accepted.": "No se aceptan pedidos de otras "
     "páginas web.",
+    "From a linked device the AI cannot run commands or use the computer's devices. Switch "
+    "those on at the computer itself.": "Desde un dispositivo vinculado la IA no puede "
+    "ejecutar comandos ni usar los aparatos de la computadora. Activá eso en la computadora "
+    "misma.",
     "From a linked device the agent cannot run commands or use the computer's devices. Switch "
     "those on at the computer itself.": "Desde un dispositivo vinculado el agente no puede "
     "ejecutar comandos ni usar los aparatos de la computadora. Activá eso en la computadora "

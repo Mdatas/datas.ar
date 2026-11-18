@@ -11,7 +11,7 @@ const Chat = {
   fresh(helper) {
     Chat.stop();
     Chat.cur = { id: null, msgs: [], helper: helper || null, atts: [], model: "", modelName: "", provider: "", title: "",
-      internet: !!(S.priv && S.priv.internet_default) };
+      internet: !!(S.priv && S.priv.internet_default), hands: Chat.handsDefault() };
     Chat.pendingImages = [];
     Chat.markList();
   },
@@ -78,7 +78,7 @@ const Chat = {
     try { c = await api("/api/chats/" + id); } catch (e) { oops(e); return; }
     Chat.cur = { id: c.id, msgs: c.messages || [], helper: await Chat.helperById(c.skill), atts: c.attachments || [],
       model: c.model || "", modelName: c.model_name || "", provider: c.provider || "", title: c.title || "",
-      internet: !!(S.priv && S.priv.internet_default) };
+      internet: !!(S.priv && S.priv.internet_default), hands: Chat.handsDefault() };
     Chat.pendingImages = [];
     go("chat");
     Chat.markList();
@@ -115,6 +115,7 @@ const Chat = {
       h("button", { class: "pill", id: "aiPill", "aria-haspopup": "menu", onclick: e => Chat.aiMenu(e.currentTarget, false) }),
       h("button", { class: "pill", id: "helperPill", title: t("helper_title"), onclick: () => Chat.helperDialog() }),
       h("span", { class: "grow" }),
+      !isRemote() && h("button", { class: "pill", id: "handsPill", title: t("hands_hint"), "aria-haspopup": "dialog", onclick: () => Chat.handsDialog() }),
       h("button", { class: "pill", id: "netPill", title: t("net_hint"), onclick: () => Chat.toggleNet() }));
     Chat.syncTop();
   },
@@ -130,6 +131,54 @@ const Chat = {
     net.className = "pill" + (Chat.cur.internet ? " on" : "");
     net.setAttribute("aria-pressed", String(Chat.cur.internet));
     add(clear(net), icon("globe", 18), h("span", { class: "wide-only", text: t(Chat.cur.internet ? "net_on" : "net_off") }));
+    const hp = $("#handsPill");
+    if (hp) {
+      const on = Chat.handsOn(Chat.cur.hands);
+      hp.className = "pill" + (on ? " on" : "");
+      hp.setAttribute("aria-pressed", String(!!on));
+      add(clear(hp), icon("agent", 18), h("span", { class: "wide-only", text: on ? t("hands_on", { n: on }) : t("hands_off") }));
+    }
+  },
+
+  /* ---- what the AI may do in this chat besides answering: the agent, in the same conversation ---- */
+  handsDefault() {
+    return Object.assign({ files: false, folders: [], shell: false, browser: false, setup: false, devices: false, control: false, ask: "risky" }, S.lastHands || {});
+  },
+  handsOn(hd) {
+    if (!hd) return 0;
+    return [hd.files || hd.folders.length > 0, hd.shell, hd.browser, hd.setup, hd.devices].filter(Boolean).length;
+  },
+  async handsDialog() {
+    const hd = JSON.parse(JSON.stringify(Chat.cur.hands || Chat.handsDefault()));
+    let known = [];
+    try { known = (await api("/api/agent/folders")).known || []; } catch (e) { /* only its own folder */ }
+    const folderBox = h("div", { class: "chips", style: "margin:6px 0 0 4px" }, known.map(f => {
+      const on = hd.folders.includes(f.id);
+      return h("label", { class: "chip plain", style: "cursor:pointer" }, h("input", { type: "checkbox", checked: on, onchange: e => {
+        hd.folders = e.target.checked ? [...new Set([...hd.folders, f.id])] : hd.folders.filter(x => x !== f.id);
+        if (e.target.checked) hd.files = true;
+      } }), " " + (S.lang === "es" ? f.name_es || f.name : f.name));
+    }));
+    const ctlRow = switchRow(t("hands_control"), t("hands_control_hint"), hd.control, v => { hd.control = v; if (v) hd.devices = true; });
+    const body = [
+      h("p", { class: "muted", text: t("hands_lead") }),
+      switchRow(t("hands_files"), t("hands_files_hint"), hd.files, v => { hd.files = v; if (!v) hd.folders = []; }),
+      folderBox,
+      switchRow(t("hands_shell"), t("hands_shell_hint"), hd.shell, v => { hd.shell = v; }),
+      switchRow(t("hands_browser"), t("hands_browser_hint"), hd.browser, v => { hd.browser = v; }),
+      switchRow(t("hands_setup"), t("hands_setup_hint"), hd.setup, v => { hd.setup = v; }),
+      switchRow(t("hands_devices"), t("hands_devices_hint"), hd.devices, v => { hd.devices = v; if (!v) hd.control = false; }),
+      ctlRow,
+      h("label", { class: "field" }, t("hands_ask"),
+        seg([["risky", t("hands_ask_risky")], ["all", t("hands_ask_all")], ["none", t("hands_ask_none")]], hd.ask, v => { hd.ask = v; })),
+      h("p", { class: "small muted", text: t("hands_note") }),
+      h("p", { class: "small" }, h("a", { href: "#", onclick: e => { e.preventDefault(); api("/api/window/agent", { method: "POST" }).catch(oops); } }, t("hands_tasks")))];
+    const none = { files: false, folders: [], shell: false, browser: false, setup: false, devices: false, control: false };
+    openDialog({ title: t("hands_title"), body, actions: close => [
+      h("button", { class: "btn", onclick: () => { Chat.cur.hands = Object.assign({}, hd, none); S.lastHands = Chat.cur.hands; Chat.syncTop(); Chat.drawFine(); close(); } }, t("hands_none")),
+      h("button", { class: "btn primary", onclick: () => {
+        if (hd.browser && !Chat.cur.internet) { Chat.cur.internet = true; toast(t("hands_browser_net"), { ms: 6000 }); }
+        Chat.cur.hands = hd; S.lastHands = hd; Chat.syncTop(); Chat.drawFine(); close(); } }, t("save"))] });
   },
   toggleNet() {
     Chat.cur.internet = !Chat.cur.internet;
@@ -239,7 +288,53 @@ const Chat = {
     if (b) { add(clear(b), icon(on ? "stop" : "send", 18), h("span", { text: t(on ? "stop" : "send") })); b.classList.toggle("primary", !on); }
     Chat.syncTop();
   },
-  stop() { if (Chat.abort) Chat.abort.abort(); },
+  stop() {
+    if (Chat.abort) {
+      Chat.abort.abort();
+      if (Chat.cur && Chat.handsOn(Chat.cur.hands)) api("/api/agent/stop", { method: "POST" }).catch(() => {});   // and any step it was about to take
+    }
+  },
+
+  /* ---- the AI acting in the chat: its steps, its questions, what really happened ---- */
+  addStep(box, ev) {
+    box.classList.remove("hidden");
+    let line;
+    const kind = ev.kind || ev.type;
+    if (kind === "tool_call") {
+      let a = ev.arguments;
+      try { a = typeof a === "string" ? JSON.parse(a) : a; } catch (e) { /* keep as text */ }
+      const shown = a && typeof a === "object" ? Object.values(a).filter(v => typeof v === "string" || typeof v === "number").join(" · ").slice(0, 160) : String(a || "");
+      line = h("div", { class: "step call" }, icon("agent", 16), h("span", { text: ev.name + (shown ? ": " + shown : "") }));
+    } else if (kind === "tool_result") {
+      const r = String(ev.result || ""), bad = /^(DENIED|REFUSED|STOPPED|error|exit [1-9])/i.test(r);
+      line = h("details", { class: "step result" + (bad ? " bad" : "") }, h("summary", { text: r.split("\n")[0].slice(0, 140) }), h("pre", { text: r.slice(0, 4000) }));
+    } else if (kind === "picture") {
+      line = h("img", { class: "step pic", src: ev.data || ev.url, alt: t("picture") });
+    } else if (kind === "assistant" && ev.content) {
+      line = h("div", { class: "step say", text: ev.content.slice(0, 600) });
+    }
+    if (line) { box.append(line); Chat.toBottom(); }
+  },
+  async pollAsks(box) {
+    let r;
+    try { r = await api("/api/agent/approvals"); } catch (e) { return; }
+    const ids = new Set((r.pending || []).map(a => a.id));
+    for (const el of [...box.children]) if (!ids.has(el.dataset.id)) el.remove();
+    for (const a of r.pending || []) {
+      if (box.querySelector(`[data-id="${a.id}"]`)) continue;
+      const answer = ok => async () => { try { await api("/api/agent/approvals/" + a.id, { body: { ok } }); } catch (e) { /* timed out */ } box.querySelector(`[data-id="${a.id}"]`)?.remove(); };
+      box.append(h("div", { class: "ask-card", "data-id": a.id }, h("div", { text: a.text }),
+        h("div", { class: "row" }, h("button", { class: "btn primary small", onclick: answer(true) }, t("allow")), h("button", { class: "btn small", onclick: answer(false) }, t("deny")))));
+      Chat.toBottom(true);
+    }
+  },
+  reallyNode(list) {
+    const ok = list.filter(x => x.ok), bad = list.filter(x => !x.ok);
+    const text = !list.length ? t("really_none")
+      : t("really_done", { n: ok.length }) + (ok.length ? " (" + [...new Set(ok.map(x => x.name))].join(", ") + ")" : "")
+        + (bad.length ? " · " + t("really_bad", { n: bad.length }) + " " + bad.map(x => `${x.name}: ${x.said}`).join(" · ") : "");
+    return h("div", { class: "really" + (bad.length || !list.length ? " warn" : "") }, icon(bad.length || !list.length ? "info" : "check", 16), h("span", { text }));
+  },
   textOf(c) { return Array.isArray(c) ? c.filter(p => p.type === "text").map(p => p.text).join("\n") : String(c || ""); },
   firstWords() { const m = Chat.cur.msgs.find(x => x.role === "user"); return m ? Chat.textOf(m.content).slice(0, 60) : ""; },
 
@@ -265,7 +360,7 @@ const Chat = {
     }
     if (m.role !== "assistant") return h("div", { class: "hidden" });
     const text = Chat.textOf(m.content);
-    return h("div", { class: "msg ai" }, sunMark("awake", 26), h("div", {}, h("div", { class: "md" }, md(text)), Chat.actions(text)));
+    return h("div", { class: "msg ai" }, sunMark("awake", 26), h("div", {}, h("div", { class: "md" }, md(text)), m.really && Chat.reallyNode(m.really), Chat.actions(text)));
   },
   actions(text) {
     return h("div", { class: "msg-actions" },
@@ -420,13 +515,20 @@ const Chat = {
     list.append(asked, node);
     Chat.toBottom(true);
     Chat.setSending(true);
-    let full = "", thinking = "", failed = "", raf = 0, firstAt = 0;
+    let full = "", thinking = "", failed = "", raf = 0, firstAt = 0, really = null;
+    const acting = Chat.handsOn(c.hands) > 0 && !isRemote();
+    const steps = h("div", { class: "steps hidden" }), asks = h("div", {});
+    holder.insertBefore(steps, think);
+    holder.insertBefore(asks, think);
+    let askTimer = null;
+    if (acting) askTimer = setInterval(() => Chat.pollAsks(asks), 1000);
     const paint = () => { raf = 0; body.replaceChildren(md(full)); Chat.toBottom(); };
     Chat.abort = new AbortController();
     if (st.state === "asleep") notes.append(h("div", { class: "toolnote" }, t("waking")));
     try {
       const r = await fetch("/api/chat", { method: "POST", signal: Chat.abort.signal, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: c.msgs, internet: c.internet, assistant: helper ? helper.id : null, attachments: c.atts, lang: S.lang, chat_id: c.id }) });
+        body: JSON.stringify({ messages: c.msgs.map(m => ({ role: m.role, content: m.content })), internet: c.internet, assistant: helper ? helper.id : null, attachments: c.atts, lang: S.lang, chat_id: c.id,
+          hands: acting ? c.hands : null }) });
       if (!r.ok) {
         let j = {};
         try { j = await r.json(); } catch (e) { /* not JSON */ }
@@ -450,11 +552,14 @@ const Chat = {
             else if (ev.type === "thinking") { thinking += ev.text; think.classList.remove("hidden"); think.textContent = thinking.slice(-320); }
             else if (ev.type === "tool") notes.append(h("div", { class: "toolnote" }, icon("globe", 16), t("looking_up") + " " + ((ev.args && (ev.args.query || ev.args.url)) || "")));
             else if (ev.type === "error") failed = ev.message;
+            else if (ev.type === "step") Chat.addStep(steps, ev);
+            else if (ev.type === "really") really = ev.really;
           }
         }
       }
     } catch (e) { if (e.name !== "AbortError") failed = e.message; }
     if (raf) cancelAnimationFrame(raf);
+    if (askTimer) { clearInterval(askTimer); clear(asks); }
     think.classList.add("hidden");
     Chat.abort = null;
     Chat.setSending(false);
@@ -463,9 +568,10 @@ const Chat = {
       // slow answers (under ~2 words a second over a real answer): offer a faster AI, once
       const secs = firstAt ? (performance.now() - firstAt) / 1000 : 0, words = full.split(/\s+/).length;
       if (secs > 6 && words / secs < 2 && !S.offeredFaster && !aiState().remote) { S.offeredFaster = true; Chat.offerAI("faster"); }
-      c.msgs.push({ role: "assistant", content: full });
+      c.msgs.push(really ? { role: "assistant", content: full, really } : { role: "assistant", content: full });
       node.replaceChild(sunMark("awake", 26), node.firstChild);
       body.replaceChildren(md(full));
+      if (really) holder.append(Chat.reallyNode(really));
       holder.append(Chat.actions(full));
       Chat.lastFailed = null;
       if (failed) toast(failed, { bad: true });

@@ -1733,9 +1733,29 @@ class Attachment(BaseModel):
     text: str = ""
 
 
+class Hands(BaseModel):
+    """What the AI may do in this chat besides answering (the agent, in the same conversation).
+    All off: a plain chat."""
+
+    folders: list[str] = []  # the person's folders it may work in (its own folder always)
+    shell: bool = False  # its own terminal
+    browser: bool = False  # its own browser window (needs internet)
+    setup: bool = False  # configure this computer: apps, settings
+    devices: bool = False  # cameras, printers, boards, home and industrial devices
+    control: bool = False  # the mouse and keyboard (experimental; needs devices)
+    files: bool = False  # work with files at all (its own folder, and the folders above)
+    ask: str = "risky"  # all | risky | none
+
+    def any(self) -> bool:
+        return bool(
+            self.files or self.folders or self.shell or self.browser or self.setup or self.devices
+        )
+
+
 class ChatBody(BaseModel):
     messages: list[dict[str, Any]]
     internet: bool = False
+    hands: Hands | None = None
     skill: str | None = None  # helper id ("assistant" is accepted too)
     assistant: str | None = None
     attachments: list[Attachment] = []
@@ -1771,7 +1791,7 @@ def _canned(text: str) -> StreamingResponse:
 
 
 @app.post("/api/chat")
-async def chat(body: ChatBody):
+async def chat(body: ChatBody, request: Request):
     helper = body.assistant or body.skill
     lang = body.lang or core.cfg.lang
     core.touch()
@@ -1821,6 +1841,15 @@ async def chat(body: ChatBody):
         ctx_tokens=_ctx_tokens(prov),
         allow_local=core.cfg.allow_local_fetch,
     )
+    if body.hands and body.hands.any():
+        h = body.hands
+        if remote_peer(request) and (h.shell or h.devices or h.control or h.setup or h.browser):
+            raise HTTPException(
+                403,
+                "From a linked device the AI cannot run commands or use the computer's devices. "
+                "Switch those on at the computer itself.",
+            )
+        return _chat_with_hands(body, req)
 
     async def stream():
         try:
@@ -1832,6 +1861,71 @@ async def chat(body: ChatBody):
 
     return StreamingResponse(
         stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+def _chat_with_hands(body: ChatBody, req) -> StreamingResponse:  # noqa: ANN001
+    """The same chat, with the agent's tools: one conversation. The agent's steps stream as
+    `step` events, its questions are answered from the chat (/api/agent/approvals), and its
+    final answer arrives as `token` like any answer, followed by what the tools really did."""
+    from datas.agents import AgentConfig, run_agent
+    from datas.agents.folders import resolve_grant
+
+    hands = body.hands
+    try:
+        roots = [resolve_grant(f) for f in hands.folders]
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    core.granted_folders = [str(r) for r in roots]
+    core.agent_stop.clear()
+    ask = hands.ask if hands.ask in ("all", "risky", "none") else "risky"
+    convo = chat_engine.build_messages(core.cfg, req)
+    task = next(
+        (chat_engine.text_of(m["content"]) for m in reversed(convo) if m["role"] == "user"), ""
+    )
+    acfg = AgentConfig(
+        base_url=f"http://127.0.0.1:{core.http_port}/v1",
+        roots=roots,
+        allow_shell=hands.shell,
+        allow_network=body.internet,
+        ask=ask,
+        confirm=None if ask == "none" else core.ask_user,
+        should_stop=core.agent_stop.is_set,
+        lang=req.lang,
+        allow_local=core.cfg.allow_local_fetch,
+        allow_things=hands.devices,
+        allow_control=hands.devices and hands.control,
+        vision=core.ai_sees(),
+        allow_setup=hands.setup,
+        sign_in_wait=core.ask_user,
+        allow_browser=hands.browser and body.internet,
+        conversation=convo,
+    )
+
+    def gen():
+        core.agent_busy += 1
+        try:
+            for ev in run_agent(task, acfg):
+                core.touch()
+                kind = ev.get("type")
+                if kind == "final":
+                    yield chat_engine._sse({"type": "token", "text": ev.get("content") or ""})  # noqa: SLF001
+                    yield chat_engine._sse({"type": "really", "really": ev.get("really") or []})  # noqa: SLF001
+                elif kind == "error":
+                    yield chat_engine._sse({"type": "error", "message": ev.get("error", "")})  # noqa: SLF001
+                else:
+                    yield chat_engine._sse({**ev, "type": "step", "kind": kind})  # noqa: SLF001
+        except Exception as e:  # noqa: BLE001
+            yield chat_engine._sse({"type": "error", "message": str(e)})  # noqa: SLF001
+        finally:
+            core.agent_busy -= 1
+            core.touch()
+        yield chat_engine._sse({"type": "done"})  # noqa: SLF001
+
+    return StreamingResponse(
+        gen(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
