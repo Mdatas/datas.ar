@@ -68,7 +68,15 @@ Status:
 - [x] **Release files**: a checksum and a signed provenance record for each; certificate signing for Windows and macOS wired for when certificates exist — docs/SIGNING.md
 - [x] Catalog: 27 AIs (Hermes 4 family and Dolphin 3.0 added)
 
-## 0.8 (this release) — an agent that really does things
+## 0.9 (this release) — focused: one chat that can act, everything on your own devices
+
+- [x] **The AI acts in the chat**: one box, one conversation; choose per chat what it may do (files, its own terminal and browser, configure this computer, devices); steps, questions and "what really happened" appear in the answer
+- [x] **Removed: memory pooling** across devices (much slower than a smaller AI on one device); linking keeps synced chats and using another device's AI
+- [x] **Removed: paid online AIs** (API keys): Datas runs on your own devices
+- [x] **Removed: the iPhone app** until there is an Apple developer account (its code is in 0.8.1)
+- [x] **Docs: 26 pages became 20**, so the small built-in AI answers from fewer, clearer pages
+
+## 0.8 — an agent that really does things
 
 - [x] **Tested for real**: the agent with real AIs does five tasks checked on disk, on Linux and Windows (`scripts/e2e_real.py --agent`)
 - [x] **Its own terminal**: a real shell (PowerShell / bash) that remembers `cd` — before, most Windows commands failed
