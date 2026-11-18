@@ -1,7 +1,33 @@
-# Agents
+# The AI acting for you (the agent)
 
-Datas lets the model *do* things — but only what you allow, inside a sandbox, with every
+Datas lets the AI *do* things — but only what you allow, inside a sandbox, with every
 action visible.
+
+## In the chat: one box, one conversation
+
+There is no separate place to give the AI a task. In any chat, the button at the top
+(**Only talks** / **Can act (n)**) says what the AI may do in that chat:
+
+- **Work with files** — its own folder, plus the folders you tick (Desktop, Documents…);
+- **Its own terminal** — PowerShell on Windows, bash on Mac and Linux;
+- **Its own browser** — a separate, visible window (needs Internet on for the chat);
+- **Configure this computer** — open apps and settings, change a few settings, with undo;
+- **Devices around this computer** — camera, printer, boards, home and industrial devices;
+  and **Mouse and keyboard** (experimental) under it;
+- **Ask me before** — anything risky (default), every step, or never.
+
+All off, the AI only answers. With any on, the same chat runs the agent: the whole
+conversation (your notes, documents, helper and earlier messages) is what the AI works from;
+its steps appear inside the answer; a question ("Run the command: mkdir PDFs") appears as a
+card with **Allow** / **Don't**; **Stop** stops it; and under the answer Datas writes what the
+tools themselves reported — *Checked: 3 actions done; 1 did not work: …* — never just what the
+AI says. Code: `ChatBody.hands` and `_chat_with_hands` in `datas/server/app.py`,
+`AgentConfig.conversation` in `datas/agents/runner.py`, `Chat.handsDialog` / `addStep` /
+`pollAsks` / `reallyNode` in `datas/server/ui/chat.js`.
+
+The separate agent window stays for **tasks on a schedule** (below), which run with nobody
+watching. From a linked phone, the terminal, the browser, configuring the computer and its
+devices are refused.
 
 ## The built-in runner
 
@@ -119,7 +145,7 @@ inbox. They run while Datas is running: with its window open, or — with *Start
 computer* on (Settings, or the button in the agent window) — in the background on Windows, macOS
 and Linux. Closing the window then hands the tasks to a background Datas at once
 (`service.continue_in_background`, `datas-cli serve --wait-free`), not only at the next login.
-From the command line: `datas-cli service install` ([SMALL_COMPUTERS.md](SMALL_COMPUTERS.md)).
+From the command line: `datas-cli service install` ([DEVICES.md](DEVICES.md)).
 
 ### What "do tasks on my computer by itself" means today
 

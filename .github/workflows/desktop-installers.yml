@@ -134,7 +134,7 @@ jobs:
     # Raspberry Pi 4 and 5 (with a 64-bit system), NAS boxes, ARM home servers and laptops.
     # Built on Ubuntu 22.04 (glibc 2.35) so it runs on Raspberry Pi OS / Debian 12 and newer.
     # No window toolkit inside: on these machines Datas is used from the phone app, from
-    # another computer, or in the browser of the same machine (docs/SMALL_COMPUTERS.md).
+    # another computer, or in the browser of the same machine (docs/DEVICES.md).
     runs-on: ubuntu-22.04-arm
     steps:
       - uses: actions/checkout@v4

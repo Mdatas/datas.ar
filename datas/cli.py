@@ -1066,7 +1066,7 @@ def apps_remove(app_id: str, keep_models: bool = False):
 
 # ---------------------------------------------------------------------------
 # Datas without a window: start with the computer (Linux), for a Raspberry Pi, a NAS or a
-# home server — docs/SMALL_COMPUTERS.md
+# home server — docs/DEVICES.md
 
 service_app = typer.Typer(
     help="Start Datas with the computer, without a window (Linux): Raspberry Pi, NAS, home server."

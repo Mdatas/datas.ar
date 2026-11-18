@@ -53,7 +53,7 @@ device can and cannot do, and the choices are yours.
 - **Helpers.** 43 ready ones — the same AI prepared for one kind of job (write a letter,
   explain a contract, plan a week, review code…) — and you can make your own.
 - **Documents.** Attach PDF, Word, Excel, PowerPoint, web pages or text and ask about them;
-  pictures too when the AI can see. → [docs/EVERYDAY.md](docs/EVERYDAY.md)
+  pictures too when the AI can see. → [docs/USING.md](docs/USING.md)
 - **A photo or your screen.** The camera button adds a photo from the camera or a picture of
   what is on your screen, for an AI that understands pictures.
 - **Save an answer** as Word, Excel, PowerPoint, PDF, web page, Markdown or plain text — or
@@ -122,7 +122,7 @@ before. Your AIs, chats and settings are kept. → [docs/UPDATES.md](docs/UPDATE
 |---|---|
 | **Windows 10/11** | `Datas-Setup-<version>.exe` from the [Releases](https://github.com/Mdatas/datas.ar/releases) page — one file. Double-click it: a window with **Install · Repair · Uninstall · Exit**. Install replaces any earlier copy with a clean one and keeps your AIs, chats and notes; Uninstall asks whether to keep or delete them. No administrator password. |
 | **Linux** | Debian/Ubuntu/Mint family: `datas_<version>_amd64.deb` (double-click). Arch/Manjaro/CachyOS family: `datas-bin-<version>-1-x86_64.pkg.tar.zst` (`sudo pacman -U …`). Others: `datas-<version>-linux-x64.tar.gz` + `./install.sh`. Details in [`installer/linux/README.md`](installer/linux/README.md). |
-| **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) |
+| **Raspberry Pi, ARM servers, NAS** (64-bit ARM Linux) | `datas_<version>_arm64.deb` or `datas-<version>-linux-arm64.tar.gz`. No window inside: `datas-cli service install` starts it with the computer, and you use it from the phone app or another computer of yours. → [docs/DEVICES.md](docs/DEVICES.md) |
 | **macOS 12+** | `Datas-<version>.dmg` — drag Datas to Applications; the first time **right-click → Open**. Apple Silicon runs the AI on the graphics chip. Details in [`installer/macos/README.md`](installer/macos/README.md). |
 | **Android** | `Datas-<version>-android.apk` from the Releases page (Android 8+, arm64). It runs a small AI on the phone and, under *My computers*, links to your computers and uses their Datas (Android 10+). → [`android/`](android/README.md) |
 | **iPhone, iPad** | Not available: Apple only allows apps signed with a paid Apple developer account, and the project has none. The iPhone app (it linked to your computers and used their Datas) was removed in 0.9; its code is in the project history (version 0.8.1) and comes back with an account. |
@@ -143,7 +143,7 @@ running with no window after you log in (scheduled tasks, phones and other devic
   what the paid certificates need is in [docs/SIGNING.md](docs/SIGNING.md).
 - **The phone app has not been tried on a physical phone by the project.** The Android app
   is built on every change and its link code is tested against a real Datas. It does not
-  run voice through a linked computer yet. There is no iPhone app ([docs/MOBILE.md](docs/MOBILE.md)).
+  run voice through a linked computer yet. There is no iPhone app ([docs/DEVICES.md](docs/DEVICES.md)).
 - **Linked devices make a bigger AI fit, not a faster one** — except long documents, whose
   parts can be shared out between your devices. Sharing out several chats or agent tasks at
   once is not there yet.
@@ -165,17 +165,15 @@ read in [`datas/recommend/engine.py`](datas/recommend/engine.py) — no AI picks
 | | |
 |---|---|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, data flow, code map |
-| [UI.md](docs/UI.md) | the window: files, design rules, how to add a screen or a text |
-| [RECOMMENDER.md](docs/RECOMMENDER.md) · [HARDWARE_DETECTION.md](docs/HARDWARE_DETECTION.md) | the memory arithmetic; what is read from the device, per system |
-| [CATALOG.md](docs/CATALOG.md) | the 27 verified AIs, the format, how to add one |
-| [RUNTIME.md](docs/RUNTIME.md) · [UPDATES.md](docs/UPDATES.md) | llama.cpp builds, pinning, updates and going back |
-| [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) · [SIGNING.md](docs/SIGNING.md) | what is stored where; how the app is protected and what it does not protect against; what is signed |
-| [DEVICES.md](docs/DEVICES.md) | linked devices: synced chats, using another device's AI |
-| [EVERYDAY.md](docs/EVERYDAY.md) · [LEARN.md](docs/LEARN.md) | helpers, documents, saving answers; the Learn screen and how its links are checked |
-| [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [APPS.md](docs/APPS.md) | the agent and its permissions; programs, connections (MCP), ArtCraft; bigger creative tools |
-| [HARDWARE.md](docs/HARDWARE.md) · [SMALL_COMPUTERS.md](docs/SMALL_COMPUTERS.md) | cameras, the screen, printers, boards, smart home, industrial devices, mouse and keyboard; Raspberry Pi, home servers, NAS and the background service |
-| [VIDEO.md](docs/VIDEO.md) · [PROVIDERS.md](docs/PROVIDERS.md) · [MOBILE.md](docs/MOBILE.md) | pictures and video; the `/v1` address other apps can use; phones |
-| [API.md](docs/API.md) | the local HTTP interface |
+| [USING.md](docs/USING.md) | the window and its screens; helpers, documents, saving answers |
+| [RECOMMENDER.md](docs/RECOMMENDER.md) | what is read from the device, per system; the memory arithmetic |
+| [CATALOG.md](docs/CATALOG.md) · [RUNTIME.md](docs/RUNTIME.md) · [UPDATES.md](docs/UPDATES.md) | the verified AIs; llama.cpp builds; updates and going back |
+| [AGENTS.md](docs/AGENTS.md) · [PROGRAMS.md](docs/PROGRAMS.md) · [HARDWARE.md](docs/HARDWARE.md) | the AI acting in a chat and its permissions; programs, connections (MCP), ArtCraft; cameras, printers, boards, smart home, industrial devices |
+| [DEVICES.md](docs/DEVICES.md) | linking your devices; phones; small computers without a screen (Raspberry Pi, NAS) |
+| [CREATE.md](docs/CREATE.md) | pictures and video; bigger creative tools |
+| [LEARN.md](docs/LEARN.md) · [SURVIVAL.md](docs/SURVIVAL.md) | the Learn screen; the offline survival library |
+| [PRIVACY.md](docs/PRIVACY.md) · [SECURITY.md](docs/SECURITY.md) · [SIGNING.md](docs/SIGNING.md) | what is stored where; how the app is protected; what is signed |
+| [API.md](docs/API.md) | the local HTTP interface and the `/v1` address other apps can use |
 | [ROADMAP.md](docs/ROADMAP.md) · [CREDITS.md](docs/CREDITS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) | what is next; who Datas is built on; how to help |
 
 ```bash

@@ -37,7 +37,7 @@ orchestrator is the only place that knows about all of them.
 6. **Neutral and plain.** The app says what a device can and cannot do (yes / slow / no);
    it does not hide options or decide for the user. Every text a user sees is plain
    language, with acronyms spelled out, in English and Spanish (`tests/test_ui.py` checks
-   that both languages have every text). See [docs/UI.md](docs/UI.md).
+   that both languages have every text). See [docs/USING.md](docs/USING.md).
 7. **Few clicks.** A new feature must be usable without reading a manual. If it needs an
    explanation, the explanation goes behind a "more" fold, not in the way.
 

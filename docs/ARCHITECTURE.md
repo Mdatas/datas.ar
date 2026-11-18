@@ -154,7 +154,7 @@ datas/
   fonts/                DejaVu, for the PDF files Datas writes
   server/app.py         FastAPI app: /api, /v1 proxy, who may talk to it
   server/ui/            the window: index.html, app.css, i18n.js, app.js, chat.js, screens.js,
-                        agent.html/.css/.js, fonts — see docs/UI.md
+                        agent.html/.css/.js, fonts — see docs/USING.md
 tests/                  unit + integration (synthetic GGUF, two linked devices, a phone, stand-ins for an
                         MCP server, an MQTT broker, a Modbus device, a serial board, a file server)
 scripts/ui_shot.py      screenshots of every screen without a display

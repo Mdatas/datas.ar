@@ -114,7 +114,7 @@ authors and publishers; each entry names who made it. → [LEARN.md](LEARN.md)
 - **Voice**: whisper.cpp (ggml-org, MIT; Whisper weights by OpenAI, MIT) via pywhispercpp (absadiki, MIT); Kokoro-82M (hexgrad, Apache-2.0) via kokoro-onnx (thewh1teagle, MIT) on ONNX Runtime (Microsoft, MIT); espeak-ng (GPL-3.0-or-later) for phonemes; python-sounddevice / PortAudio (MIT) for the microphone
 - **Pictures**: stable-diffusion.cpp (leejet, MIT) running Z-Image-Turbo (Tongyi-MAI, Apache-2.0; GGUF by leejet) with the Qwen3-4B-Instruct-2507 text encoder (Qwen, Apache-2.0; GGUF by Unsloth) and the FLUX.1 autoencoder (Black Forest Labs, Apache-2.0)
 - **Video**: Wan 2.2 TI2V 5B (Wan-AI, Apache-2.0 as stated on the model card) through the same engine; FFmpeg (LGPL/GPL, as published by each builder) for video, recordings and cameras — when none is installed, Datas fetches one build, checked against its SHA-256, from a fixed commit of [zackees/ffmpeg_bins](https://github.com/zackees/ffmpeg_bins), where the [static-ffmpeg](https://github.com/zackees/static_ffmpeg) project (MIT) gathers the builds of BtbN, gyan.dev, evermeet.cx and osxexperts.net → [HARDWARE.md](HARDWARE.md)
-- **Bigger creative tools**: ComfyUI (GPL-3.0), FaceFusion (OpenRAIL-AS) — installed only when you open them → [APPS.md](APPS.md)
+- **Bigger creative tools**: ComfyUI (GPL-3.0), FaceFusion (OpenRAIL-AS) — installed only when you open them → [CREATE.md](CREATE.md)
 
 ## Phone apps
 

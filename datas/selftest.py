@@ -79,7 +79,7 @@ def _lists() -> str:
     from datas import manual, survival
 
     docs = manual._docs()  # noqa: SLF001
-    if len(docs) < 20 or not any(n == "ARCHITECTURE.md" for n, _ in docs):
+    if len(docs) < 15 or not any(n == "ARCHITECTURE.md" for n, _ in docs):
         raise RuntimeError(f"the documentation the guide reads is missing ({len(docs)} files)")
     library = survival.catalog()["items"]
     return (

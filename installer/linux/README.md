@@ -11,7 +11,7 @@ Pick the file for your distro family from the [Releases](https://github.com/Mdat
 
 **64-bit ARM** (Raspberry Pi 4/5 with a 64-bit system, ARM servers): `datas_<version>_arm64.deb`
 or `datas-<version>-linux-arm64.tar.gz`. That build has no window toolkit inside; see
-[`docs/SMALL_COMPUTERS.md`](../../docs/SMALL_COMPUTERS.md).
+[`docs/DEVICES.md`](../../docs/DEVICES.md).
 
 After installing, **Datas.ar** is in your applications menu; `datas-cli` is on the PATH for the terminal.
 

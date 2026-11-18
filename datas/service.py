@@ -15,7 +15,7 @@ folders:
   (``HKEY_CURRENT_USER\\...\\CurrentVersion\\Run``, the same place every app that starts with
   Windows uses); it starts when you log in, with no window.
 
-See docs/SMALL_COMPUTERS.md.
+See docs/DEVICES.md.
 """
 
 from __future__ import annotations

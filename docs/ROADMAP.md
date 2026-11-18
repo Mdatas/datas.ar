@@ -45,17 +45,17 @@ Status:
 - [ ] Android: the same through whisper.cpp's and Kokoro's Android builds (not yet)
 - [x] **Images shipped** (`datas/engines/images.py`): stable-diffusion.cpp pinned release (Vulkan on any GPU, Metal on Mac, CPU fallback; CUDA/ROCm optional in Settings), recipe Z-Image-Turbo (GGUF Q3_K/Q4_K/Q8_0 by memory + Qwen3-4B text encoder + FLUX VAE, exact sizes in `media.json`), `sd-server` managed like `llama-server` (native async API, offload to CPU on small cards), Images screen with gallery, Forget mode keeps nothing on disk. Verdict "Making images" comes from the engine's own fit check.
 - [ ] Images: more recipes by device (Qwen-Image for big cards, FLUX.2 klein), image editing (Qwen-Image-Edit), upscaling
-- [x] **Video shipped**: Wan 2.2 TI2V 5B through the same engine (text→video, picture→video; WebM), rated per device, never refused — docs/VIDEO.md
-- [x] **More tools** (`datas/apps/`): third-party apps installed into isolated environments with uv and opened in their own window — ComfyUI (video/image making and editing) and FaceFusion (face swap, lip-sync, restoration); user recipes in `<data>/apps.d/` — docs/APPS.md
+- [x] **Video shipped**: Wan 2.2 TI2V 5B through the same engine (text→video, picture→video; WebM), rated per device, never refused — docs/CREATE.md
+- [x] **More tools** (`datas/apps/`): third-party apps installed into isolated environments with uv and opened in their own window — ComfyUI (video/image making and editing) and FaceFusion (face swap, lip-sync, restoration); user recipes in `<data>/apps.d/` — docs/CREATE.md
 - [x] **Chat from the first second**: the guide answers from device facts with no AI installed; on the first Run a 409 MB helper AI starts first so chatting works while the chosen AI downloads
 - [x] Specialist models on Home: Math, Legal texts, Medical (plus Programming)
 - [ ] One-click "translate my video" chain; voice cloning engine; more recipes (audio/music, 3D, OCR)
 
 ## 0.3 — a friendlier window, everyday work, your own devices
 
-- [x] **New window**: chats on the left with search, a new chat with any AI you have, each chat remembers its AI; day and night looks; plain verdicts instead of hidden options; English and Spanish — docs/UI.md
+- [x] **New window**: chats on the left with search, a new chat with any AI you have, each chat remembers its AI; day and night looks; plain verdicts instead of hidden options; English and Spanish — docs/USING.md
 - [x] **My AIs** with a plain summary per AI (good for, keep in mind, memory and disk), lighter and stronger versions, *Use a model file I already have*
-- [x] **Everyday work**: 43 ready helpers and your own; PDF, Word, Excel, PowerPoint, web pages and text in a chat; pictures for AIs that understand them; answers saved as Word, Excel, PowerPoint, PDF, web page, Markdown or text — docs/EVERYDAY.md
+- [x] **Everyday work**: 43 ready helpers and your own; PDF, Word, Excel, PowerPoint, web pages and text in a chat; pictures for AIs that understand them; answers saved as Word, Excel, PowerPoint, PDF, web page, Markdown or text — docs/USING.md
 - [x] **Everyday tools**: recording → text with subtitles, text → audio, long documents summarised or translated piece by piece
 - [x] **Your devices**: pairing with a one-time code, TLS 1.3 with pinned certificates on both sides; lend memory, use another device's AI, keep chats the same, carry on alone when a device drops out — docs/DEVICES.md
 - [x] **Learn**: 14 lessons, a 42-word glossary and 55 checked links in 18 paths, beginner to expert — docs/LEARN.md
@@ -110,8 +110,8 @@ Status:
 - [x] **FFmpeg fetched once and checked** (fixed commit, size, SHA-256) when the computer has none — this also makes *Recording to text* read MP3, M4A and video in the installed app
 - [x] **Backend messages in Spanish**: hardware problems and refusals are said in the language Datas is set to (`datas/words.py`)
 - [x] A linked phone cannot give a scheduled task commands or hardware, nor change a task that has them
-- [x] ~~**iPhone and iPad app**~~ (removed in 0.9 until there is an Apple developer account): link with the one-time code and use a computer's Datas; built for iPhone and tested in Apple's simulator against a real Datas on every change (`ios` workflow); the link code has the same known answers as the computer's — docs/MOBILE.md
-- [x] **Small computers without a screen**: packages for 64-bit ARM Linux (Raspberry Pi, NAS, ARM servers), `datas-cli service install` (starts with the computer, no window) — docs/SMALL_COMPUTERS.md
+- [x] ~~**iPhone and iPad app**~~ (removed in 0.9 until there is an Apple developer account): link with the one-time code and use a computer's Datas; built for iPhone and tested in Apple's simulator against a real Datas on every change (`ios` workflow); the link code has the same known answers as the computer's — docs/DEVICES.md
+- [x] **Small computers without a screen**: packages for 64-bit ARM Linux (Raspberry Pi, NAS, ARM servers), `datas-cli service install` (starts with the computer, no window) — docs/DEVICES.md
 - [x] **Open the Datas of another computer of yours** through the link, once that computer allows it; held to a phone's limits — docs/DEVICES.md
 - [x] **Long documents shared out between linked devices**: each takes the next part as soon as it is free; one that drops out gives its part back — docs/DEVICES.md
 - [x] **Spanish for what Datas says about each AI** (speed, where it runs, what to keep in mind, which paid AI it is like) and for linking problems
