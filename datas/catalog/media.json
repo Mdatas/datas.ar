@@ -147,7 +147,7 @@
           "flag": "--llm"
         },
         "vae": {
-          "repo": "black-forest-labs/FLUX.1-schnell",
+          "repo": "camenduru/FLUX.1-dev",
           "page": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
           "maker": "Black Forest Labs",
           "license": "Apache-2.0",
@@ -155,9 +155,11 @@
             {
               "quant": "f16",
               "file": "ae.safetensors",
-              "bytes": 335304388
+              "bytes": 335304388,
+              "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
             }
-          ]
+          ],
+          "note": "The FLUX autoencoder by Black Forest Labs (Apache-2.0 in black-forest-labs/FLUX.1-schnell). That repository asks for a Hugging Face sign-in, so Datas downloads an identical copy that does not: same size, and the same SHA-256 in two independent copies (camenduru/FLUX.1-dev, ffxvs/vae-flux)."
         }
       }
     },

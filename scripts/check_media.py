@@ -23,7 +23,7 @@ import httpx
 ROOT = Path(__file__).resolve().parent.parent
 MEDIA = ROOT / "datas" / "catalog" / "media.json"
 HF = "https://huggingface.co"
-client = httpx.Client(timeout=60, follow_redirects=False, headers={"User-Agent": "datas-check"})
+client = httpx.Client(timeout=60, follow_redirects=True, headers={"User-Agent": "datas-check"})
 
 
 def tree(repo: str) -> dict[str, dict]:

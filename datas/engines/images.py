@@ -448,6 +448,7 @@ def ensure_models(choice: ImageChoice, job: Job | None = None) -> list[Path]:
                 expected_size=f["bytes"],
                 progress=prog,
                 log=say,
+                pinned_sha256=f.get("sha256"),
             )
         )
         base += f["bytes"]
