@@ -1,0 +1,46 @@
+# Every file of the picture and video recipes must download without a Hugging Face account
+# (a "gated" file answers 401 and Datas cannot sign in for anyone). Weekly, on change, and by
+# hand. Run by hand with "pin" it also offers the files' sizes and SHA-256 on the side branch
+# bot/pin-media, reviewed and committed by hand.
+name: media-sources
+on:
+  workflow_dispatch:
+    inputs:
+      pin:
+        description: "store sizes and SHA-256 (push to bot/pin-media)"
+        type: boolean
+        default: false
+      find:
+        description: "look for an identical ungated copy: NAME SIZE REPO [REPO …]"
+        type: string
+        default: ""
+  schedule:
+    - cron: "41 6 * * 1"
+  push:
+    paths: ["datas/catalog/media.json", "scripts/check_media.py"]
+permissions:
+  contents: write  # only for the side branch bot/pin-media
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx
+      - name: look for an identical ungated copy
+        if: inputs.find != ''
+        run: python scripts/check_media.py --find ${{ inputs.find }}
+      - name: every file downloads without an account
+        run: python scripts/check_media.py ${{ inputs.pin && '--write' || '' }}
+      - name: offer the pinned list on bot/pin-media
+        if: inputs.pin
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B bot/pin-media
+          git add datas/catalog/media.json
+          git commit -m "Sizes and SHA-256 of the picture and video files" || echo "nothing changed"
+          git push -f origin bot/pin-media
