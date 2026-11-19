@@ -75,6 +75,7 @@ Status:
 - [x] **Removed: paid online AIs** (API keys): Datas runs on your own devices
 - [x] **Removed: the iPhone app** until there is an Apple developer account (its code is in 0.8.1)
 - [x] **Docs: 26 pages became 20**, so the small built-in AI answers from fewer, clearer pages
+- [x] **0.9.1: making pictures works without a Hugging Face account**: the FLUX autoencoder came from a repository that asks for a sign-in (error 401); it now comes from an identical open copy. Every picture and video file is checked weekly to download without an account, and its SHA-256 checksum is pinned
 
 ## 0.8 — an agent that really does things
 
